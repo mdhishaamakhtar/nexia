@@ -1,0 +1,466 @@
+basePath: /api/v1
+definitions:
+  internal_controllers.AuthRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  nexia-backend_internal_models.AssociatedSong:
+    properties:
+      artist:
+        type: string
+      name:
+        type: string
+      profile_id:
+        type: integer
+    type: object
+  nexia-backend_internal_models.BookGenre:
+    properties:
+      genre:
+        type: string
+      id:
+        type: integer
+      profile_id:
+        type: integer
+    type: object
+  nexia-backend_internal_models.FoodRestriction:
+    properties:
+      id:
+        type: integer
+      profile_id:
+        type: integer
+      restriction:
+        type: string
+    type: object
+  nexia-backend_internal_models.HangoutPlace:
+    properties:
+      id:
+        type: integer
+      place:
+        type: string
+      profile_id:
+        type: integer
+    type: object
+  nexia-backend_internal_models.MovieGenre:
+    properties:
+      genre:
+        type: string
+      id:
+        type: integer
+      profile_id:
+        type: integer
+    type: object
+  nexia-backend_internal_models.PoliticalView:
+    properties:
+      id:
+        type: integer
+      profile_id:
+        type: integer
+      view:
+        type: string
+    type: object
+  nexia-backend_internal_models.Profile:
+    properties:
+      associated_song:
+        $ref: '#/definitions/nexia-backend_internal_models.AssociatedSong'
+      bio:
+        type: string
+      birthday:
+        type: string
+      book_genres:
+        items:
+          $ref: '#/definitions/nexia-backend_internal_models.BookGenre'
+        type: array
+      created_at:
+        type: string
+      favorite_book:
+        type: string
+      favorite_memory:
+        type: string
+      favorite_movie:
+        type: string
+      food_restrictions:
+        items:
+          $ref: '#/definitions/nexia-backend_internal_models.FoodRestriction'
+        type: array
+      full_name:
+        type: string
+      hangout_places:
+        items:
+          $ref: '#/definitions/nexia-backend_internal_models.HangoutPlace'
+        type: array
+      id:
+        type: integer
+      long_term_goals:
+        type: string
+      movie_genres:
+        items:
+          $ref: '#/definitions/nexia-backend_internal_models.MovieGenre'
+        type: array
+      music_preference:
+        type: string
+      political_views:
+        items:
+          $ref: '#/definitions/nexia-backend_internal_models.PoliticalView'
+        type: array
+      profession:
+        type: string
+      quotes:
+        items:
+          $ref: '#/definitions/nexia-backend_internal_models.Quote'
+        type: array
+      relationship_type:
+        $ref: '#/definitions/nexia-backend_internal_models.RelationshipType'
+      tags:
+        description: Child Associations
+        items:
+          $ref: '#/definitions/nexia-backend_internal_models.Tag'
+        type: array
+      top_songs:
+        items:
+          $ref: '#/definitions/nexia-backend_internal_models.TopSong'
+        type: array
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      zodiac_sign:
+        $ref: '#/definitions/nexia-backend_internal_models.ZodiacSign'
+    type: object
+  nexia-backend_internal_models.Quote:
+    properties:
+      id:
+        type: integer
+      profile_id:
+        type: integer
+      quote:
+        type: string
+    type: object
+  nexia-backend_internal_models.RelationshipType:
+    enum:
+    - Friend
+    - Family
+    - Colleague
+    - Classmate
+    - Crush
+    - Ex
+    - Mentor
+    - Other
+    type: string
+    x-enum-varnames:
+    - RelFriend
+    - RelFamily
+    - RelColleague
+    - RelClassmate
+    - RelCrush
+    - RelEx
+    - RelMentor
+    - RelOther
+  nexia-backend_internal_models.Tag:
+    properties:
+      id:
+        type: integer
+      profile_id:
+        type: integer
+      tag:
+        type: string
+    type: object
+  nexia-backend_internal_models.TopSong:
+    properties:
+      artist:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      profile_id:
+        type: integer
+    type: object
+  nexia-backend_internal_models.ZodiacSign:
+    enum:
+    - Aries
+    - Taurus
+    - Gemini
+    - Cancer
+    - Leo
+    - Virgo
+    - Libra
+    - Scorpio
+    - Sagittarius
+    - Capricorn
+    - Aquarius
+    - Pisces
+    type: string
+    x-enum-varnames:
+    - ZodiacAries
+    - ZodiacTaurus
+    - ZodiacGemini
+    - ZodiacCancer
+    - ZodiacLeo
+    - ZodiacVirgo
+    - ZodiacLibra
+    - ZodiacScorpio
+    - ZodiacSagittarius
+    - ZodiacCapricorn
+    - ZodiacAquarius
+    - ZodiacPisces
+  nexia-backend_internal_utils.ErrorDetail:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  nexia-backend_internal_utils.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/nexia-backend_internal_utils.ErrorDetail'
+    type: object
+info:
+  contact: {}
+  description: REST API for Digital Slambook
+  title: Nexia Backend API
+  version: "1.0"
+paths:
+  /auth:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user. If user does not exist, create one. Returns
+        JWT.
+      parameters:
+      - description: Credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controllers.AuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      summary: Login or Signup
+      tags:
+      - auth
+  /profiles:
+    get:
+      consumes:
+      - application/json
+      description: List profiles with pagination and filtering
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page limit
+        in: query
+        name: limit
+        type: integer
+      - description: Search by name
+        in: query
+        name: search
+        type: string
+      - description: Filter by relationship type
+        in: query
+        name: relationship_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List profiles
+      tags:
+      - profiles
+    post:
+      consumes:
+      - application/json
+      description: Create a new profile with all child attributes
+      parameters:
+      - description: Profile Data
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/nexia-backend_internal_models.Profile'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              format: int64
+              type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new profile
+      tags:
+      - profiles
+  /profiles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a profile and all its child entities
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a profile
+      tags:
+      - profiles
+    get:
+      consumes:
+      - application/json
+      description: Get full profile details including all child lists
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_models.Profile'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a profile by ID
+      tags:
+      - profiles
+    put:
+      consumes:
+      - application/json
+      description: Full overwrite update of a profile
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Profile Data
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/nexia-backend_internal_models.Profile'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a profile
+      tags:
+      - profiles
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
