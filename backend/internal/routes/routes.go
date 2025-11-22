@@ -6,6 +6,7 @@ import (
 	"nexia-backend/internal/controllers"
 	"nexia-backend/internal/middleware"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -13,6 +14,15 @@ import (
 
 func SetupRouter(profileController *controllers.ProfileController, authController *controllers.AuthController, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
+
+	// CORS Middleware
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	// API Version 1
 	v1 := r.Group("/api/v1")
