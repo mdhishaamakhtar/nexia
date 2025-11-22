@@ -1,0 +1,139 @@
+package services
+
+import (
+	"errors"
+	"time"
+
+	"nexia-backend/internal/models"
+	"nexia-backend/internal/repositories"
+)
+
+type ProfileService struct {
+	Repo *repositories.ProfileRepository
+}
+
+func NewProfileService(repo *repositories.ProfileRepository) *ProfileService {
+	return &ProfileService{Repo: repo}
+}
+
+func (s *ProfileService) CreateProfile(profile *models.Profile, userID uint64) error {
+	profile.UserID = userID
+
+	// Validate Top Songs (Max 3)
+	if len(profile.TopSongs) > 3 {
+		return errors.New("cannot have more than 3 top songs")
+	}
+
+	// Derive Zodiac
+	if profile.Birthday != nil {
+		profile.ZodiacSign = DeriveZodiac(time.Time(*profile.Birthday))
+	}
+
+	return s.Repo.Create(profile)
+}
+
+func (s *ProfileService) GetProfile(id uint64, userID uint64) (*models.Profile, error) {
+	return s.Repo.FindByID(id, userID)
+}
+
+func (s *ProfileService) ListProfiles(page, limit int, search, relationshipType string, userID uint64) ([]models.Profile, int64, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 10
+	}
+	return s.Repo.FindAll(page, limit, search, relationshipType, userID)
+}
+
+func (s *ProfileService) UpdateProfile(id uint64, profile *models.Profile, userID uint64) error {
+	// Ensure ID matches
+	profile.ID = id
+	profile.UserID = userID
+
+	// Validate Top Songs (Max 3)
+	if len(profile.TopSongs) > 3 {
+		return errors.New("cannot have more than 3 top songs")
+	}
+
+	// Derive Zodiac
+	if profile.Birthday != nil {
+		profile.ZodiacSign = DeriveZodiac(time.Time(*profile.Birthday))
+	}
+
+	return s.Repo.Update(profile)
+}
+
+func (s *ProfileService) DeleteProfile(id uint64, userID uint64) error {
+	return s.Repo.Delete(id, userID)
+}
+
+func DeriveZodiac(date time.Time) models.ZodiacSign {
+	day := date.Day()
+	month := date.Month()
+
+	switch month {
+	case time.March:
+		if day >= 21 {
+			return models.ZodiacAries
+		}
+		return models.ZodiacPisces
+	case time.April:
+		if day >= 20 {
+			return models.ZodiacTaurus
+		}
+		return models.ZodiacAries
+	case time.May:
+		if day >= 21 {
+			return models.ZodiacGemini
+		}
+		return models.ZodiacTaurus
+	case time.June:
+		if day >= 21 {
+			return models.ZodiacCancer
+		}
+		return models.ZodiacGemini
+	case time.July:
+		if day >= 23 {
+			return models.ZodiacLeo
+		}
+		return models.ZodiacCancer
+	case time.August:
+		if day >= 23 {
+			return models.ZodiacVirgo
+		}
+		return models.ZodiacLeo
+	case time.September:
+		if day >= 23 {
+			return models.ZodiacLibra
+		}
+		return models.ZodiacVirgo
+	case time.October:
+		if day >= 23 {
+			return models.ZodiacScorpio
+		}
+		return models.ZodiacLibra
+	case time.November:
+		if day >= 22 {
+			return models.ZodiacSagittarius
+		}
+		return models.ZodiacScorpio
+	case time.December:
+		if day >= 22 {
+			return models.ZodiacCapricorn
+		}
+		return models.ZodiacSagittarius
+	case time.January:
+		if day >= 20 {
+			return models.ZodiacAquarius
+		}
+		return models.ZodiacCapricorn
+	case time.February:
+		if day >= 19 {
+			return models.ZodiacPisces
+		}
+		return models.ZodiacAquarius
+	default:
+		return ""
+	}
+}

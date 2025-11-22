@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS associated_songs;
+DROP TABLE IF EXISTS top_songs;
+DROP TABLE IF EXISTS quotes;
+DROP TABLE IF EXISTS hangout_places;
+DROP TABLE IF EXISTS book_genres;
+DROP TABLE IF EXISTS movie_genres;
+DROP TABLE IF EXISTS food_restrictions;
+DROP TABLE IF EXISTS political_views;
+DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS profiles;

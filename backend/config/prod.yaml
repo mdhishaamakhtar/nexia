@@ -1,0 +1,14 @@
+server:
+  port: 8080
+  mode: release
+  jwt_secret: "change-me-in-prod"
+
+db:
+  host: localhost
+  port: 3306
+  user: root
+  password: password
+  name: nexia_db
+  charset: utf8mb4
+  parseTime: True
+  loc: Local
