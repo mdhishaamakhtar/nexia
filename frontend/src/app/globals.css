@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --color-bg: #1A1A1D;
+  --color-surface: #3B1C32;
+  --color-accent: #6A1E55;
+  --color-accent-cta: #A64D79;
+  --color-text-primary: #EEEEEE;
+  --color-text-secondary: #C7C7C9;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+
+  /* New accent colors for variety */
+  --color-blue-accent: #4a90e2;
+  --color-purple-accent: #8b5cf6;
+  --color-teal-accent: #14b8a6;
+
+  --animate-hover-pop: hover-pop 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  --animate-press-shrink: press-shrink 0.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  --animate-fade-in: fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  --animate-shimmer: shimmer 2s linear infinite;
+
+  @keyframes hover-pop {
+    0% {
+      transform: scale(1);
+    }
+
+    100% {
+      transform: scale(1.02);
+    }
+  }
+
+  @keyframes press-shrink {
+    0% {
+      transform: scale(1);
+    }
+
+    100% {
+      transform: scale(0.97);
+    }
+  }
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+
+    100% {
+      background-position: 200% 0;
+    }
+  }
+}
+
+/* Base Styles */
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Utility for shimmer background */
+.shimmer-bg {
+  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-border-subtle) 50%, var(--color-surface) 75%);
+  background-size: 200% 100%;
+}
+
+/* Serif font for quotes */
+.font-serif {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
