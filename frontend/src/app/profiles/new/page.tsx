@@ -2,343 +2,397 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, User, Heart, Star, Coffee, MessageSquare, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
 import ProtectedRoute from "@/components/guards/ProtectedRoute";
 import Navbar from "@/components/molecules/Navbar";
-import Input from "@/components/atoms/Input";
-import Textarea from "@/components/atoms/Textarea";
 import Button from "@/components/atoms/Button";
-import Chip from "@/components/atoms/Chip";
+import Input from "@/components/atoms/Input";
 import api from "@/lib/api";
+
+// Section Component for cleaner code
+const FormSection = ({ id, title, icon: Icon, children }: { id: string, title: string, icon: any, children: React.ReactNode }) => (
+    <div id={id} className="scroll-mt-24">
+        <div className="glass-panel rounded-2xl p-8 border-t border-white/10">
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
+                <div className="p-2 bg-[var(--color-primary-from)]/10 rounded-lg text-[var(--color-primary-from)]">
+                    <Icon className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{title}</h2>
+            </div>
+            <div className="space-y-6">
+                {children}
+            </div>
+        </div>
+    </div>
+);
 
 export default function NewProfilePage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
-    // Basic Info
-    const [fullName, setFullName] = useState("");
-    const [bio, setBio] = useState("");
-    const [profession, setProfession] = useState("");
-    const [longTermGoals, setLongTermGoals] = useState("");
-    const [relationshipType, setRelationshipType] = useState("Friend");
-    const [birthday, setBirthday] = useState("");
-    const [musicPreference, setMusicPreference] = useState("");
-    const [favoriteMovie, setFavoriteMovie] = useState("");
-    const [favoriteBook, setFavoriteBook] = useState("");
-    const [favoriteMemory, setFavoriteMemory] = useState("");
+    // Form State
+    const [formData, setFormData] = useState({
+        full_name: "",
+        relationship_type: "Friend",
+        bio: "",
+        profession: "",
+        long_term_goals: "",
+        birthday: "",
+        zodiac_sign: "",
+        music_preference: "",
+        favorite_movie: "",
+        favorite_book: "",
+        favorite_memory: "",
+        associated_song_name: "",
+        associated_song_artist: "",
+    });
 
-    // Lists
-    const [tags, setTags] = useState<string[]>([]);
+    // List States
+    const [tags, setTags] = useState<{ tag: string }[]>([]);
     const [tagInput, setTagInput] = useState("");
-    const [politicalViews, setPoliticalViews] = useState<string[]>([]);
-    const [politicalViewInput, setPoliticalViewInput] = useState("");
-    const [foodRestrictions, setFoodRestrictions] = useState<string[]>([]);
-    const [foodRestrictionInput, setFoodRestrictionInput] = useState("");
-    const [movieGenres, setMovieGenres] = useState<string[]>([]);
-    const [movieGenreInput, setMovieGenreInput] = useState("");
-    const [bookGenres, setBookGenres] = useState<string[]>([]);
-    const [bookGenreInput, setBookGenreInput] = useState("");
-    const [hangoutPlaces, setHangoutPlaces] = useState<string[]>([]);
-    const [hangoutPlaceInput, setHangoutPlaceInput] = useState("");
-    const [quotes, setQuotes] = useState<string[]>([]);
-    const [quoteInput, setQuoteInput] = useState("");
-
-    // Songs
-    const [associatedSongName, setAssociatedSongName] = useState("");
-    const [associatedSongArtist, setAssociatedSongArtist] = useState("");
     const [topSongs, setTopSongs] = useState<{ name: string; artist: string }[]>([]);
     const [songNameInput, setSongNameInput] = useState("");
     const [songArtistInput, setSongArtistInput] = useState("");
+    const [quotes, setQuotes] = useState<{ quote: string }[]>([]);
+    const [quoteInput, setQuoteInput] = useState("");
+    const [movieGenres, setMovieGenres] = useState<{ genre: string }[]>([]);
+    const [movieGenreInput, setMovieGenreInput] = useState("");
+    const [bookGenres, setBookGenres] = useState<{ genre: string }[]>([]);
+    const [bookGenreInput, setBookGenreInput] = useState("");
+    const [hangoutPlaces, setHangoutPlaces] = useState<{ place: string }[]>([]);
+    const [hangoutPlaceInput, setHangoutPlaceInput] = useState("");
+    const [foodRestrictions, setFoodRestrictions] = useState<{ restriction: string }[]>([]);
+    const [foodRestrictionInput, setFoodRestrictionInput] = useState("");
+    const [politicalViews, setPoliticalViews] = useState<{ view: string }[]>([]);
+    const [politicalViewInput, setPoliticalViewInput] = useState("");
 
-    const addItem = (value: string, setter: (items: string[]) => void, items: string[], inputSetter: (val: string) => void) => {
-        if (value.trim()) {
-            setter([...items, value.trim()]);
-            inputSetter("");
-        }
-    };
+    // Helper functions for lists
+    const addItem = (value: string, setter: any, list: any[], inputSetter: any) => {
+        if (!value.trim()) return;
+        if (setter === setTags) setter([...list, { tag: value }]);
+        else if (setter === setQuotes) setter([...list, { quote: value }]);
+        else if (setter === setMovieGenres) setter([...list, { genre: value }]);
+        else if (setter === setBookGenres) setter([...list, { genre: value }]);
+        else if (setter === setHangoutPlaces) setter([...list, { place: value }]);
+        else if (setter === setFoodRestrictions) setter([...list, { restriction: value }]);
+        else if (setter === setPoliticalViews) setter([...list, { view: value }]);
 
-    const removeItem = (index: number, setter: (items: string[]) => void, items: string[]) => {
-        setter(items.filter((_, i) => i !== index));
+        inputSetter("");
     };
 
     const addSong = () => {
-        if (songNameInput.trim() && songArtistInput.trim() && topSongs.length < 3) {
-            setTopSongs([...topSongs, { name: songNameInput.trim(), artist: songArtistInput.trim() }]);
-            setSongNameInput("");
-            setSongArtistInput("");
-        }
+        if (!songNameInput.trim() || !songArtistInput.trim()) return;
+        setTopSongs([...topSongs, { name: songNameInput, artist: songArtistInput }]);
+        setSongNameInput("");
+        setSongArtistInput("");
     };
 
-    const removeSong = (index: number) => {
-        setTopSongs(topSongs.filter((_, i) => i !== index));
+    const removeItem = (index: number, setter: any, list: any[]) => {
+        const newList = [...list];
+        newList.splice(index, 1);
+        setter(newList);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async () => {
         setIsLoading(true);
-
         try {
-            const payload: any = {
-                full_name: fullName,
-                relationship_type: relationshipType,
+            const payload = {
+                ...formData,
+                tags,
+                top_songs: topSongs,
+                quotes,
+                movie_genres: movieGenres,
+                book_genres: bookGenres,
+                hangout_places: hangoutPlaces,
+                food_restrictions: foodRestrictions,
+                political_views: politicalViews,
+                associated_song: formData.associated_song_name ? {
+                    name: formData.associated_song_name,
+                    artist: formData.associated_song_artist
+                } : null
             };
-
-            if (bio) payload.bio = bio;
-            if (profession) payload.profession = profession;
-            if (longTermGoals) payload.long_term_goals = longTermGoals;
-            if (birthday) payload.birthday = birthday;
-            if (musicPreference) payload.music_preference = musicPreference;
-            if (favoriteMovie) payload.favorite_movie = favoriteMovie;
-            if (favoriteBook) payload.favorite_book = favoriteBook;
-            if (favoriteMemory) payload.favorite_memory = favoriteMemory;
-
-            if (tags.length > 0) payload.tags = tags.map(tag => ({ tag }));
-            if (politicalViews.length > 0) payload.political_views = politicalViews.map(view => ({ view }));
-            if (foodRestrictions.length > 0) payload.food_restrictions = foodRestrictions.map(restriction => ({ restriction }));
-            if (movieGenres.length > 0) payload.movie_genres = movieGenres.map(genre => ({ genre }));
-            if (bookGenres.length > 0) payload.book_genres = bookGenres.map(genre => ({ genre }));
-            if (hangoutPlaces.length > 0) payload.hangout_places = hangoutPlaces.map(place => ({ place }));
-            if (quotes.length > 0) payload.quotes = quotes.map(quote => ({ quote }));
-            if (topSongs.length > 0) payload.top_songs = topSongs;
-            if (associatedSongName && associatedSongArtist) {
-                payload.associated_song = { name: associatedSongName, artist: associatedSongArtist };
-            }
 
             await api.post("/profiles", payload);
             router.push("/profiles");
         } catch (error) {
             console.error("Failed to create profile:", error);
-            alert("Failed to create profile. Please try again.");
+            alert("Failed to create profile");
         } finally {
             setIsLoading(false);
         }
     };
 
-    const SectionWrapper = ({ title, children, color = "maroon" }: { title: string; children: React.ReactNode; color?: string }) => {
-        const borderColors = {
-            maroon: "border-[var(--color-accent)]",
-            blue: "border-[var(--color-blue-accent)]",
-            purple: "border-[var(--color-purple-accent)]",
-            teal: "border-[var(--color-teal-accent)]",
-        };
-
-        return (
-            <div className={`bg-[var(--color-surface)] rounded-2xl p-6 border-l-4 ${borderColors[color as keyof typeof borderColors]} border-t border-r border-b border-[var(--color-border-subtle)]`}>
-                <h2 className="text-2xl font-semibold mb-6">{title}</h2>
-                {children}
-            </div>
-        );
-    };
-
     return (
         <ProtectedRoute>
-            <div className="min-h-screen">
+            <div className="min-h-screen bg-[var(--color-bg)] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-900 to-slate-900">
                 <Navbar />
 
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <button
-                        onClick={() => router.back()}
-                        className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] mb-6 transition-colors"
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center justify-between mb-12"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back
-                    </button>
-
-                    <h1 className="text-4xl font-bold mb-8">Add to Nexia</h1>
-
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Basic Info */}
-                        <SectionWrapper title="Basic Info" color="maroon">
-                            <div className="space-y-4">
-                                <Input label="Full Name *" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Enter their name" />
-
-                                <div>
-                                    <label className="text-sm font-medium text-[var(--color-text-primary)] mb-2 block">Relationship Type *</label>
-                                    <select
-                                        value={relationshipType}
-                                        onChange={(e) => setRelationshipType(e.target.value)}
-                                        className="w-full bg-[var(--color-bg)] text-[var(--color-text-primary)] px-4 py-3 rounded-xl border border-[var(--color-border-subtle)] focus:border-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-opacity-20 transition-all duration-200"
-                                    >
-                                        <option value="Friend">Friend</option>
-                                        <option value="Family">Family</option>
-                                        <option value="Colleague">Colleague</option>
-                                        <option value="Classmate">Classmate</option>
-                                        <option value="Crush">Crush</option>
-                                        <option value="Ex">Ex</option>
-                                        <option value="Mentor">Mentor</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-
-                                <Input label="Birthday" value={birthday} onChange={(e) => setBirthday(e.target.value)} type="date" />
-                                <Textarea label="Bio" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="A short description about them..." rows={3} />
-                                <Input label="Profession" value={profession} onChange={(e) => setProfession(e.target.value)} placeholder="What do they do?" />
-                                <Textarea label="Long Term Goals" value={longTermGoals} onChange={(e) => setLongTermGoals(e.target.value)} placeholder="Their aspirations and dreams..." rows={3} />
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Tags */}
-                        <SectionWrapper title="Tags" color="purple">
-                            <div className="space-y-4">
-                                <div className="flex gap-2">
-                                    <Input value={tagInput} onChange={(e) => setTagInput(e.target.value)} placeholder="Add a tag..." />
-                                    <button type="button" onClick={() => addItem(tagInput, setTags, tags, setTagInput)} className="px-4 bg-[var(--color-purple-accent)] hover:bg-[#7c3aed] rounded-xl transition-colors">
-                                        <Plus className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {tags.map((tag, i) => (<Chip key={i} label={tag} onDelete={() => removeItem(i, setTags, tags)} />))}
-                                </div>
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Political Views */}
-                        <SectionWrapper title="Political Views" color="teal">
-                            <div className="space-y-4">
-                                <div className="flex gap-2">
-                                    <Input value={politicalViewInput} onChange={(e) => setPoliticalViewInput(e.target.value)} placeholder="Add a political view..." />
-                                    <button type="button" onClick={() => addItem(politicalViewInput, setPoliticalViews, politicalViews, setPoliticalViewInput)} className="px-4 bg-[var(--color-teal-accent)] hover:bg-[#0d9488] rounded-xl transition-colors">
-                                        <Plus className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {politicalViews.map((view, i) => (<Chip key={i} label={view} onDelete={() => removeItem(i, setPoliticalViews, politicalViews)} />))}
-                                </div>
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Food Restrictions */}
-                        <SectionWrapper title="Food Restrictions" color="blue">
-                            <div className="space-y-4">
-                                <div className="flex gap-2">
-                                    <Input value={foodRestrictionInput} onChange={(e) => setFoodRestrictionInput(e.target.value)} placeholder="Add a food restriction..." />
-                                    <button type="button" onClick={() => addItem(foodRestrictionInput, setFoodRestrictions, foodRestrictions, setFoodRestrictionInput)} className="px-4 bg-[var(--color-blue-accent)] hover:bg-[#357abd] rounded-xl transition-colors">
-                                        <Plus className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {foodRestrictions.map((restriction, i) => (<Chip key={i} label={restriction} onDelete={() => removeItem(i, setFoodRestrictions, foodRestrictions)} />))}
-                                </div>
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Movie Genres */}
-                        <SectionWrapper title="Favorite Movie Genres" color="purple">
-                            <div className="space-y-4">
-                                <div className="flex gap-2">
-                                    <Input value={movieGenreInput} onChange={(e) => setMovieGenreInput(e.target.value)} placeholder="Add a movie genre..." />
-                                    <button type="button" onClick={() => addItem(movieGenreInput, setMovieGenres, movieGenres, setMovieGenreInput)} className="px-4 bg-[var(--color-purple-accent)] hover:bg-[#7c3aed] rounded-xl transition-colors">
-                                        <Plus className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {movieGenres.map((genre, i) => (<Chip key={i} label={genre} onDelete={() => removeItem(i, setMovieGenres, movieGenres)} />))}
-                                </div>
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Book Genres */}
-                        <SectionWrapper title="Favorite Book Genres" color="teal">
-                            <div className="space-y-4">
-                                <div className="flex gap-2">
-                                    <Input value={bookGenreInput} onChange={(e) => setBookGenreInput(e.target.value)} placeholder="Add a book genre..." />
-                                    <button type="button" onClick={() => addItem(bookGenreInput, setBookGenres, bookGenres, setBookGenreInput)} className="px-4 bg-[var(--color-teal-accent)] hover:bg-[#0d9488] rounded-xl transition-colors">
-                                        <Plus className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {bookGenres.map((genre, i) => (<Chip key={i} label={genre} onDelete={() => removeItem(i, setBookGenres, bookGenres)} />))}
-                                </div>
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Hangout Places */}
-                        <SectionWrapper title="Favorite Hangout Places" color="blue">
-                            <div className="space-y-4">
-                                <div className="flex gap-2">
-                                    <Input value={hangoutPlaceInput} onChange={(e) => setHangoutPlaceInput(e.target.value)} placeholder="Add a hangout place..." />
-                                    <button type="button" onClick={() => addItem(hangoutPlaceInput, setHangoutPlaces, hangoutPlaces, setHangoutPlaceInput)} className="px-4 bg-[var(--color-blue-accent)] hover:bg-[#357abd] rounded-xl transition-colors">
-                                        <Plus className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {hangoutPlaces.map((place, i) => (<Chip key={i} label={place} onDelete={() => removeItem(i, setHangoutPlaces, hangoutPlaces)} />))}
-                                </div>
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Music Preference */}
-                        <SectionWrapper title="Music Preference" color="maroon">
-                            <Textarea value={musicPreference} onChange={(e) => setMusicPreference(e.target.value)} placeholder="What kind of music do they enjoy?" rows={3} />
-                        </SectionWrapper>
-
-                        {/* Favorite Movie */}
-                        <SectionWrapper title="Favorite Movie" color="purple">
-                            <Input value={favoriteMovie} onChange={(e) => setFavoriteMovie(e.target.value)} placeholder="Their all-time favorite movie" />
-                        </SectionWrapper>
-
-                        {/* Favorite Book */}
-                        <SectionWrapper title="Favorite Book" color="teal">
-                            <Input value={favoriteBook} onChange={(e) => setFavoriteBook(e.target.value)} placeholder="Their all-time favorite book" />
-                        </SectionWrapper>
-
-                        {/* Song I Associate With Them */}
-                        <SectionWrapper title="Song I Associate With Them" color="blue">
-                            <div className="space-y-4">
-                                <Input label="Song Name" value={associatedSongName} onChange={(e) => setAssociatedSongName(e.target.value)} placeholder="Song that reminds you of them" />
-                                <Input label="Artist" value={associatedSongArtist} onChange={(e) => setAssociatedSongArtist(e.target.value)} placeholder="Artist name" />
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Their Top Songs */}
-                        <SectionWrapper title="Their Top Songs (Max 3)" color="purple">
-                            <div className="space-y-4">
-                                <div className="flex gap-2">
-                                    <Input value={songNameInput} onChange={(e) => setSongNameInput(e.target.value)} placeholder="Song name" />
-                                    <Input value={songArtistInput} onChange={(e) => setSongArtistInput(e.target.value)} placeholder="Artist" />
-                                    <button type="button" onClick={addSong} disabled={topSongs.length >= 3} className="px-4 bg-[var(--color-purple-accent)] hover:bg-[#7c3aed] rounded-xl transition-colors disabled:opacity-50">
-                                        <Plus className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="space-y-2">
-                                    {topSongs.map((song, i) => (
-                                        <div key={i} className="flex justify-between items-center bg-[var(--color-bg)] px-4 py-3 rounded-lg">
-                                            <span>{song.name} - {song.artist}</span>
-                                            <button type="button" onClick={() => removeSong(i)} className="text-red-500 hover:text-red-400">Remove</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Words They Said (Quotes) */}
-                        <SectionWrapper title="Words They Said" color="teal">
-                            <div className="space-y-4">
-                                <Textarea value={quoteInput} onChange={(e) => setQuoteInput(e.target.value)} placeholder="A memorable quote from them..." rows={3} />
-                                <button type="button" onClick={() => addItem(quoteInput, setQuotes, quotes, setQuoteInput)} className="w-full bg-[var(--color-teal-accent)] hover:bg-[#0d9488] text-white px-4 py-2 rounded-xl transition-colors">
-                                    Add Quote
-                                </button>
-                                <div className="space-y-2">
-                                    {quotes.map((quote, i) => (
-                                        <div key={i} className="flex justify-between items-start bg-[var(--color-bg)] px-4 py-3 rounded-lg">
-                                            <p className="font-serif italic text-sm flex-1">&ldquo;{quote.length > 100 ? quote.substring(0, 100) + '...' : quote}&rdquo;</p>
-                                            <button type="button" onClick={() => removeItem(i, setQuotes, quotes)} className="text-red-500 hover:text-red-400 ml-4">Remove</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </SectionWrapper>
-
-                        {/* Favorite Memory */}
-                        <SectionWrapper title="Favorite Memory" color="maroon">
-                            <Textarea value={favoriteMemory} onChange={(e) => setFavoriteMemory(e.target.value)} placeholder="A cherished moment with them..." rows={5} />
-                        </SectionWrapper>
-
-                        {/* Submit */}
-                        <Button type="submit" isLoading={isLoading} variant="primary" className="w-full text-lg py-4">
-                            Save to Nexia
+                        <button
+                            onClick={() => router.push("/profiles")}
+                            className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors group"
+                        >
+                            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-lg">Back to Universe</span>
+                        </button>
+                        <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                            Create New Profile
+                        </h1>
+                        <Button onClick={handleSubmit} isLoading={isLoading} className="!px-8">
+                            <Save className="w-4 h-4 mr-2" /> Save Profile
                         </Button>
-                    </form>
+                    </motion.div>
+
+                    <div className="space-y-10">
+                        {/* Basic Info */}
+                        <FormSection id="basic" title="Basic Information" icon={User}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Input
+                                    label="Full Name"
+                                    value={formData.full_name}
+                                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                                    placeholder="e.g. Jane Doe"
+                                />
+                                <Input
+                                    label="Relationship Type"
+                                    value={formData.relationship_type}
+                                    onChange={(e) => setFormData({ ...formData, relationship_type: e.target.value })}
+                                    placeholder="e.g. Best Friend, Sister"
+                                />
+                                <Input
+                                    label="Birthday"
+                                    type="date"
+                                    value={formData.birthday}
+                                    onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
+                                />
+                                <Input
+                                    label="Zodiac Sign"
+                                    value={formData.zodiac_sign}
+                                    onChange={(e) => setFormData({ ...formData, zodiac_sign: e.target.value })}
+                                    placeholder="e.g. Leo"
+                                />
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Bio</label>
+                                    <textarea
+                                        value={formData.bio}
+                                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                                        className="w-full h-32 rounded-xl glass-input p-4 focus:outline-none resize-none"
+                                        placeholder="A short bio about them..."
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Tags</label>
+                                    <div className="flex gap-2 mb-2 flex-wrap">
+                                        {tags.map((tag, i) => (
+                                            <span key={i} className="flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-sm border border-indigo-500/30">
+                                                #{tag.tag}
+                                                <button onClick={() => removeItem(i, setTags, tags)} className="hover:text-white"><X className="w-3 h-3" /></button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        value={tagInput}
+                                        onChange={(e) => setTagInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addItem(tagInput, setTags, tags, setTagInput)}
+                                        placeholder="Type tag and press Enter..."
+                                    />
+                                </div>
+                            </div>
+                        </FormSection>
+
+                        {/* Interests */}
+                        <FormSection id="interests" title="Interests & Favorites" icon={Star}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <Input
+                                    label="Profession"
+                                    value={formData.profession}
+                                    onChange={(e) => setFormData({ ...formData, profession: e.target.value })}
+                                />
+                                <Input
+                                    label="Music Preference"
+                                    value={formData.music_preference}
+                                    onChange={(e) => setFormData({ ...formData, music_preference: e.target.value })}
+                                />
+                                <Input
+                                    label="Favorite Movie"
+                                    value={formData.favorite_movie}
+                                    onChange={(e) => setFormData({ ...formData, favorite_movie: e.target.value })}
+                                />
+                                <Input
+                                    label="Favorite Book"
+                                    value={formData.favorite_book}
+                                    onChange={(e) => setFormData({ ...formData, favorite_book: e.target.value })}
+                                />
+
+                                <div className="md:col-span-2 p-4 bg-white/5 rounded-xl border border-white/10">
+                                    <h3 className="text-lg font-medium mb-4 flex items-center gap-2"><Heart className="w-4 h-4 text-rose-400" /> Song Association</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <Input
+                                            placeholder="Song Name"
+                                            value={formData.associated_song_name}
+                                            onChange={(e) => setFormData({ ...formData, associated_song_name: e.target.value })}
+                                        />
+                                        <Input
+                                            placeholder="Artist"
+                                            value={formData.associated_song_artist}
+                                            onChange={(e) => setFormData({ ...formData, associated_song_artist: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Top Songs</label>
+                                    <div className="space-y-2 mb-3">
+                                        {topSongs.map((song, i) => (
+                                            <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                                                <div>
+                                                    <div className="font-medium">{song.name}</div>
+                                                    <div className="text-xs text-[var(--color-text-secondary)]">{song.artist}</div>
+                                                </div>
+                                                <button onClick={() => removeItem(i, setTopSongs, topSongs)} className="text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Song Name"
+                                            value={songNameInput}
+                                            onChange={(e) => setSongNameInput(e.target.value)}
+                                            className="flex-1"
+                                        />
+                                        <Input
+                                            placeholder="Artist"
+                                            value={songArtistInput}
+                                            onChange={(e) => setSongArtistInput(e.target.value)}
+                                            className="flex-1"
+                                        />
+                                        <Button onClick={addSong} variant="secondary" className="!px-3"><Plus className="w-5 h-5" /></Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </FormSection>
+
+                        {/* Lifestyle */}
+                        <FormSection id="lifestyle" title="Lifestyle" icon={Coffee}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Hangout Places</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {hangoutPlaces.map((p, i) => (
+                                            <span key={i} className="bg-white/10 px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+                                                {p.place} <button onClick={() => removeItem(i, setHangoutPlaces, hangoutPlaces)}><X className="w-3 h-3" /></button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        value={hangoutPlaceInput}
+                                        onChange={(e) => setHangoutPlaceInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addItem(hangoutPlaceInput, setHangoutPlaces, hangoutPlaces, setHangoutPlaceInput)}
+                                        placeholder="Add place..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Food Restrictions</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {foodRestrictions.map((r, i) => (
+                                            <span key={i} className="bg-rose-500/10 text-rose-300 border border-rose-500/20 px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+                                                {r.restriction} <button onClick={() => removeItem(i, setFoodRestrictions, foodRestrictions)}><X className="w-3 h-3" /></button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        value={foodRestrictionInput}
+                                        onChange={(e) => setFoodRestrictionInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addItem(foodRestrictionInput, setFoodRestrictions, foodRestrictions, setFoodRestrictionInput)}
+                                        placeholder="Add restriction..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Movie Genres</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {movieGenres.map((g, i) => (
+                                            <span key={i} className="bg-white/10 px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+                                                {g.genre} <button onClick={() => removeItem(i, setMovieGenres, movieGenres)}><X className="w-3 h-3" /></button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        value={movieGenreInput}
+                                        onChange={(e) => setMovieGenreInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addItem(movieGenreInput, setMovieGenres, movieGenres, setMovieGenreInput)}
+                                        placeholder="Add genre..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Book Genres</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        {bookGenres.map((g, i) => (
+                                            <span key={i} className="bg-white/10 px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+                                                {g.genre} <button onClick={() => removeItem(i, setBookGenres, bookGenres)}><X className="w-3 h-3" /></button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <Input
+                                        value={bookGenreInput}
+                                        onChange={(e) => setBookGenreInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addItem(bookGenreInput, setBookGenres, bookGenres, setBookGenreInput)}
+                                        placeholder="Add genre..."
+                                    />
+                                </div>
+                            </div>
+                        </FormSection>
+
+                        {/* Deep Dive */}
+                        <FormSection id="deep" title="Deep Dive" icon={MessageSquare}>
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Long Term Goals</label>
+                                    <textarea
+                                        value={formData.long_term_goals}
+                                        onChange={(e) => setFormData({ ...formData, long_term_goals: e.target.value })}
+                                        className="w-full h-24 rounded-xl glass-input p-4 focus:outline-none resize-none"
+                                        placeholder="What are their big dreams?"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Favorite Memory</label>
+                                    <textarea
+                                        value={formData.favorite_memory}
+                                        onChange={(e) => setFormData({ ...formData, favorite_memory: e.target.value })}
+                                        className="w-full h-32 rounded-xl glass-input p-4 focus:outline-none resize-none font-serif text-lg"
+                                        placeholder="Describe a favorite memory with them..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Words They Said (Quotes)</label>
+                                    <div className="space-y-3 mb-3">
+                                        {quotes.map((q, i) => (
+                                            <div key={i} className="p-4 bg-white/5 rounded-xl border border-white/10 relative group">
+                                                <p className="font-serif italic text-lg text-slate-300">"{q.quote}"</p>
+                                                <button onClick={() => removeItem(i, setQuotes, quotes)} className="absolute top-2 right-2 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            value={quoteInput}
+                                            onChange={(e) => setQuoteInput(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && addItem(quoteInput, setQuotes, quotes, setQuoteInput)}
+                                            placeholder="Add a quote..."
+                                            className="flex-1"
+                                        />
+                                        <Button onClick={() => addItem(quoteInput, setQuotes, quotes, setQuoteInput)} variant="secondary"><Plus className="w-5 h-5" /></Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </FormSection>
+                    </div>
                 </div>
             </div>
         </ProtectedRoute>
