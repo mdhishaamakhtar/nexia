@@ -1,53 +1,24 @@
-export default function Textarea({
-    label,
-    value,
-    onChange,
-    placeholder,
-    error,
-    rows = 4,
-    className = "",
-}: {
+import React from "react";
+
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
     label?: string;
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    placeholder?: string;
     error?: string;
-    rows?: number;
-    className?: string;
-}) {
+}
+
+export default function Textarea({ label, error, className, ...props }: TextareaProps) {
     return (
-        <div className={`flex flex-col gap-2 ${className}`}>
+        <div className="w-full">
             {label && (
-                <label className="text-sm font-medium text-[var(--color-text-primary)]">
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2 ml-1">
                     {label}
                 </label>
             )}
             <textarea
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                rows={rows}
-                className={`
-          bg-[var(--color-surface)] 
-          text-[var(--color-text-primary)] 
-          px-4 py-3 
-          rounded-xl 
-          border 
-          ${error ? 'border-red-500' : 'border-[var(--color-border-subtle)]'}
-          focus:border-[var(--color-accent)] 
-          focus:outline-none 
-          focus:ring-2 
-          focus:ring-[var(--color-accent)] 
-          focus:ring-opacity-20
-          transition-all 
-          duration-200
-          placeholder:text-[var(--color-text-secondary)]
-          resize-none
-        `}
+                className={`w-full glass-input px-4 py-3 rounded-xl focus:outline-none transition-all duration-200 placeholder:text-slate-600 resize-none ${error ? "border-red-500/50 focus:border-red-500" : ""
+                    } ${className}`}
+                {...props}
             />
-            {error && (
-                <span className="text-sm text-red-500">{error}</span>
-            )}
+            {error && <p className="mt-1 text-sm text-red-400 ml-1">{error}</p>}
         </div>
     );
 }

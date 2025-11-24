@@ -1,65 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Lora", Georgia, "Times New Roman", Times, serif;
 
-  --color-bg: #1A1A1D;
-  --color-surface: #3B1C32;
-  --color-accent: #6A1E55;
-  --color-accent-cta: #A64D79;
-  --color-text-primary: #EEEEEE;
-  --color-text-secondary: #C7C7C9;
-  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  /* Modern "Midnight Glass" Palette */
+  --color-bg: #0f172a;
+  /* Slate 900 - Deep rich blue-black */
+  --color-surface: rgba(30, 41, 59, 0.7);
+  /* Slate 800 with opacity for glass effect */
+  --color-surface-highlight: rgba(51, 65, 85, 0.5);
+  /* Slate 700 for hover states */
 
-  /* New accent colors for variety */
-  --color-blue-accent: #4a90e2;
-  --color-purple-accent: #8b5cf6;
-  --color-teal-accent: #14b8a6;
+  /* Primary Brand Gradient Colors */
+  --color-primary-from: #6366f1;
+  /* Indigo 500 */
+  --color-primary-to: #a855f7;
+  /* Purple 500 */
 
-  --animate-hover-pop: hover-pop 0.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  --animate-press-shrink: press-shrink 0.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  --animate-fade-in: fade-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  --animate-shimmer: shimmer 2s linear infinite;
+  /* Functional Colors */
+  --color-text-primary: #f8fafc;
+  /* Slate 50 */
+  --color-text-secondary: #94a3b8;
+  /* Slate 400 */
+  --color-border-subtle: rgba(148, 163, 184, 0.1);
+  /* Slate 400 at 10% */
+  --color-border-highlight: rgba(148, 163, 184, 0.2);
+  /* Slate 400 at 20% */
 
-  @keyframes hover-pop {
-    0% {
-      transform: scale(1);
-    }
+  /* Accent Gradients for Sections */
+  --gradient-maroon: linear-gradient(135deg, #be123c, #fb7185);
+  /* Rose 700 -> Rose 400 */
+  --gradient-blue: linear-gradient(135deg, #2563eb, #60a5fa);
+  /* Blue 600 -> Blue 400 */
+  --gradient-purple: linear-gradient(135deg, #7c3aed, #c084fc);
+  /* Violet 600 -> Violet 400 */
+  --gradient-teal: linear-gradient(135deg, #0d9488, #2dd4bf);
+  /* Teal 600 -> Teal 400 */
 
+  /* Animations */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes float {
+
+    0%,
     100% {
-      transform: scale(1.02);
-    }
-  }
-
-  @keyframes press-shrink {
-    0% {
-      transform: scale(1);
-    }
-
-    100% {
-      transform: scale(0.97);
-    }
-  }
-
-  @keyframes fade-in {
-    0% {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-
-    100% {
-      opacity: 1;
       transform: translateY(0);
     }
+
+    50% {
+      transform: translateY(-10px);
+    }
   }
 
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
+  @keyframes pulse-slow {
+
+    0%,
+    100% {
+      opacity: 1;
     }
 
-    100% {
-      background-position: 200% 0;
+    50% {
+      opacity: 0.5;
     }
   }
 }
@@ -67,18 +71,62 @@
 /* Base Styles */
 body {
   background-color: var(--color-bg);
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08) 0%, transparent 25%);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-/* Utility for shimmer background */
-.shimmer-bg {
-  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-border-subtle) 50%, var(--color-surface) 75%);
-  background-size: 200% 100%;
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.glass-input {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  border-color: var(--color-primary-from);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  background: rgba(15, 23, 42, 0.8);
 }
 
 /* Serif font for quotes */
 .font-serif {
-  font-family: Georgia, 'Times New Roman', Times, serif;
+  font-family: 'Lora', Georgia, 'Times New Roman', Times, serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-highlight);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Date Picker Icon Invert */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
 }

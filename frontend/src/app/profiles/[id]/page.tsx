@@ -1,46 +1,66 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Edit, Trash2, Heart, Music, MessageSquare, Film, Book, MapPin, Utensils, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, User, Heart, Star, Coffee, MessageSquare, Edit, Trash2, Calendar, Music, Book, Film, MapPin, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import ProtectedRoute from "@/components/guards/ProtectedRoute";
 import Navbar from "@/components/molecules/Navbar";
 import Button from "@/components/atoms/Button";
 import QuoteModal from "@/components/molecules/QuoteModal";
 import api from "@/lib/api";
 
-interface Profile {
-    id: number;
-    full_name: string;
-    bio?: string;
-    profession?: string;
-    long_term_goals?: string;
-    relationship_type: string;
-    birthday?: string;
-    zodiac_sign?: string;
-    music_preference?: string;
-    favorite_movie?: string;
-    favorite_book?: string;
-    favorite_memory?: string;
-    tags?: { tag: string }[];
-    political_views?: { view: string }[];
-    food_restrictions?: { restriction: string }[];
-    movie_genres?: { genre: string }[];
-    book_genres?: { genre: string }[];
-    hangout_places?: { place: string }[];
-    quotes?: { quote: string }[];
-    top_songs?: { name: string; artist: string }[];
-    associated_song?: { name: string; artist: string };
-}
+// Section Component for cleaner code
+const DetailSection = ({ id, title, icon: Icon, children }: { id: string, title: string, icon: any, children: React.ReactNode }) => (
+    <div id={id} className="scroll-mt-24">
+        <div className="glass-panel rounded-2xl p-8 border-t border-white/10">
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
+                <div className="p-2 bg-[var(--color-primary-from)]/10 rounded-lg text-[var(--color-primary-from)]">
+                    <Icon className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{title}</h2>
+            </div>
+            <div className="space-y-6">
+                {children}
+            </div>
+        </div>
+    </div>
+);
+
+// Helper component for displaying a field
+const Field = ({ label, value, icon: Icon }: { label: string, value: string | undefined | null, icon?: any }) => {
+    if (!value) return null;
+    return (
+        <div className="mb-4">
+            <div className="text-sm text-[var(--color-text-secondary)] mb-1 flex items-center gap-2">
+                {Icon && <Icon className="w-3 h-3" />}
+                {label}
+            </div>
+            <div className="text-lg font-medium text-[var(--color-text-primary)]">{value}</div>
+        </div>
+    );
+};
+
+// Helper for tags/pills
+const PillList = ({ items, colorClass = "bg-white/10" }: { items: string[], colorClass?: string }) => {
+    if (!items || items.length === 0) return null;
+    return (
+        <div className="flex flex-wrap gap-2">
+            {items.map((item, i) => (
+                <span key={i} className={`${colorClass} px-3 py-1 rounded-full text-sm`}>
+                    {item}
+                </span>
+            ))}
+        </div>
+    );
+};
 
 export default function ProfileDetailPage() {
-    const router = useRouter();
     const params = useParams();
+    const router = useRouter();
     const id = params?.id as string;
-
-    const [profile, setProfile] = useState<Profile | null>(null);
+    const [profile, setProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
 
     useEffect(() => {
@@ -62,6 +82,7 @@ export default function ProfileDetailPage() {
     };
 
     const handleDelete = async () => {
+        if (!confirm("Are you sure you want to delete this profile? This cannot be undone.")) return;
         try {
             await api.delete(`/profiles/${id}`);
             router.push("/profiles");
@@ -74,10 +95,10 @@ export default function ProfileDetailPage() {
     if (isLoading) {
         return (
             <ProtectedRoute>
-                <div className="min-h-screen">
+                <div className="min-h-screen bg-[var(--color-bg)]">
                     <Navbar />
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        <div className="shimmer-bg h-64 rounded-2xl animate-[shimmer_2s_linear_infinite]" />
+                    <div className="max-w-4xl mx-auto px-4 py-12">
+                        <div className="glass-panel h-96 rounded-3xl animate-pulse bg-[var(--color-surface-highlight)]" />
                     </div>
                 </div>
             </ProtectedRoute>
@@ -86,273 +107,219 @@ export default function ProfileDetailPage() {
 
     if (!profile) return null;
 
-    const SectionCard = ({ title, children, icon, color = "maroon" }: { title: string; children: React.ReactNode; icon?: React.ReactNode; color?: string }) => {
-        const borderColors = {
-            maroon: "border-[var(--color-accent)]",
-            blue: "border-[var(--color-blue-accent)]",
-            purple: "border-[var(--color-purple-accent)]",
-            teal: "border-[var(--color-teal-accent)]",
-        };
-
-        return (
-            <div className={`bg-[var(--color-surface)] rounded-xl p-6 border-l-4 ${borderColors[color as keyof typeof borderColors]} border-t border-r border-b border-[var(--color-border-subtle)]`}>
-                <div className="flex items-center gap-2 mb-4">
-                    {icon}
-                    <h3 className="text-lg font-semibold">{title}</h3>
-                </div>
-                {children}
-            </div>
-        );
-    };
-
     return (
         <ProtectedRoute>
-            <div className="min-h-screen">
+            <div className="min-h-screen bg-[var(--color-bg)] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-900 to-slate-900">
                 <Navbar />
 
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <button
-                        onClick={() => router.push("/profiles")}
-                        className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] mb-6 transition-colors"
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                    {/* Header */}
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center justify-between mb-12"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to profiles
-                    </button>
+                        <button
+                            onClick={() => router.push("/profiles")}
+                            className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors group"
+                        >
+                            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-lg">Back to Universe</span>
+                        </button>
 
-                    {/* Hero Section */}
-                    <div className="bg-gradient-to-br from-[var(--color-accent)]/20 to-[var(--color-surface)] rounded-2xl p-8 mb-8 border border-[var(--color-border-subtle)]">
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <h1 className="text-4xl font-bold mb-2">{profile.full_name}</h1>
-                                <div className="flex items-center gap-3 text-[var(--color-text-secondary)]">
-                                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-accent)]/30 rounded-lg">
-                                        <Heart className="w-4 h-4" />
-                                        {profile.relationship_type}
-                                    </span>
-                                    {profile.zodiac_sign && (
-                                        <span className="px-3 py-1.5 bg-[var(--color-bg)]/50 rounded-lg">
-                                            {profile.zodiac_sign}
+                        <div className="flex gap-3">
+                            <Button onClick={() => router.push(`/profiles/${id}/edit`)} variant="secondary">
+                                <Edit className="w-4 h-4 mr-2" /> Edit
+                            </Button>
+                            <Button onClick={handleDelete} variant="destructive" className="!px-3">
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    </motion.div>
+
+                    {/* Profile Header Card */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="glass-panel rounded-3xl p-8 mb-12 border-t border-white/10 bg-gradient-to-br from-white/5 to-transparent"
+                    >
+                        <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-4xl font-bold text-white shadow-lg shadow-indigo-500/20">
+                                {profile.full_name?.charAt(0) || "?"}
+                            </div>
+                            <div className="flex-1">
+                                <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">{profile.full_name}</h1>
+                                <div className="flex flex-wrap gap-4 text-[var(--color-text-secondary)]">
+                                    {profile.relationship_type && (
+                                        <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm">
+                                            {profile.relationship_type}
                                         </span>
                                     )}
                                     {profile.birthday && (
-                                        <span className="px-3 py-1.5 bg-[var(--color-blue-accent)]/20 rounded-lg text-sm">
-                                            {new Date(profile.birthday).toLocaleDateString()}
+                                        <span className="flex items-center gap-2 text-sm">
+                                            <Calendar className="w-4 h-4" />
+                                            {new Date(profile.birthday).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
+                                        </span>
+                                    )}
+                                    {profile.zodiac_sign && (
+                                        <span className="flex items-center gap-2 text-sm">
+                                            <Star className="w-4 h-4" />
+                                            {profile.zodiac_sign}
                                         </span>
                                     )}
                                 </div>
                             </div>
-
-                            <div className="flex gap-2">
-                                <Button variant="secondary" onClick={() => router.push(`/profiles/${id}/edit`)} className="!px-4 !py-2">
-                                    <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)} className="!px-4 !py-2">
-                                    <Trash2 className="w-4 h-4" />
-                                </Button>
-                            </div>
                         </div>
-
                         {profile.bio && (
-                            <p className="text-[var(--color-text-secondary)] mt-4">{profile.bio}</p>
-                        )}
-                    </div>
-
-                    {/* Content Grid */}
-                    <div className="space-y-4">
-                        {/* Tags */}
-                        {profile.tags && profile.tags.length > 0 && (
-                            <SectionCard title="Tags" icon={<Sparkles className="w-5 h-5 text-[var(--color-purple-accent)]" />} color="purple">
-                                <div className="flex flex-wrap gap-2">
-                                    {profile.tags.map((tag, i) => (
-                                        <span key={i} className="px-3 py-1.5 bg-[var(--color-purple-accent)]/20 text-[var(--color-text-primary)] text-sm rounded-lg border border-[var(--color-purple-accent)]/30">
-                                            {tag.tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Profession */}
-                        {profile.profession && (
-                            <SectionCard title="Profession" color="blue">
-                                <p className="text-[var(--color-text-primary)]">{profile.profession}</p>
-                            </SectionCard>
-                        )}
-
-                        {/* Long Term Goals */}
-                        {profile.long_term_goals && (
-                            <SectionCard title="Long Term Goals" color="teal">
-                                <p className="text-[var(--color-text-primary)] leading-relaxed">{profile.long_term_goals}</p>
-                            </SectionCard>
-                        )}
-
-                        {/* Political Views */}
-                        {profile.political_views && profile.political_views.length > 0 && (
-                            <SectionCard title="Political Views" color="teal">
-                                <div className="flex flex-wrap gap-2">
-                                    {profile.political_views.map((view, i) => (
-                                        <span key={i} className="px-3 py-1.5 bg-[var(--color-teal-accent)]/20 rounded-lg text-sm">
-                                            {view.view}
-                                        </span>
-                                    ))}
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Food Restrictions */}
-                        {profile.food_restrictions && profile.food_restrictions.length > 0 && (
-                            <SectionCard title="Food Restrictions" icon={<Utensils className="w-5 h-5 text-[var(--color-blue-accent)]" />} color="blue">
-                                <div className="flex flex-wrap gap-2">
-                                    {profile.food_restrictions.map((restriction, i) => (
-                                        <span key={i} className="px-3 py-1.5 bg-[var(--color-blue-accent)]/20 rounded-lg text-sm">
-                                            {restriction.restriction}
-                                        </span>
-                                    ))}
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Movie Genres */}
-                        {profile.movie_genres && profile.movie_genres.length > 0 && (
-                            <SectionCard title="Favorite Movie Genres" icon={<Film className="w-5 h-5 text-[var(--color-purple-accent)]" />} color="purple">
-                                <div className="flex flex-wrap gap-2">
-                                    {profile.movie_genres.map((genre, i) => (
-                                        <span key={i} className="px-3 py-1.5 bg-[var(--color-purple-accent)]/20 rounded-lg text-sm">
-                                            {genre.genre}
-                                        </span>
-                                    ))}
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Book Genres */}
-                        {profile.book_genres && profile.book_genres.length > 0 && (
-                            <SectionCard title="Favorite Book Genres" icon={<Book className="w-5 h-5 text-[var(--color-teal-accent)]" />} color="teal">
-                                <div className="flex flex-wrap gap-2">
-                                    {profile.book_genres.map((genre, i) => (
-                                        <span key={i} className="px-3 py-1.5 bg-[var(--color-teal-accent)]/20 rounded-lg text-sm">
-                                            {genre.genre}
-                                        </span>
-                                    ))}
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Hangout Places */}
-                        {profile.hangout_places && profile.hangout_places.length > 0 && (
-                            <SectionCard title="Favorite Hangout Places" icon={<MapPin className="w-5 h-5 text-[var(--color-blue-accent)]" />} color="blue">
-                                <div className="flex flex-wrap gap-2">
-                                    {profile.hangout_places.map((place, i) => (
-                                        <span key={i} className="px-3 py-1.5 bg-[var(--color-blue-accent)]/20 rounded-lg text-sm">
-                                            {place.place}
-                                        </span>
-                                    ))}
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Music Preference */}
-                        {profile.music_preference && (
-                            <SectionCard title="Music Preference" icon={<Music className="w-5 h-5 text-[var(--color-accent)]" />} color="maroon">
-                                <p className="text-[var(--color-text-primary)] leading-relaxed">{profile.music_preference}</p>
-                            </SectionCard>
-                        )}
-
-                        {/* Favorite Movie */}
-                        {profile.favorite_movie && (
-                            <SectionCard title="Favorite Movie" icon={<Film className="w-5 h-5 text-[var(--color-purple-accent)]" />} color="purple">
-                                <p className="text-[var(--color-text-primary)] text-lg font-medium">{profile.favorite_movie}</p>
-                            </SectionCard>
-                        )}
-
-                        {/* Favorite Book */}
-                        {profile.favorite_book && (
-                            <SectionCard title="Favorite Book" icon={<Book className="w-5 h-5 text-[var(--color-teal-accent)]" />} color="teal">
-                                <p className="text-[var(--color-text-primary)] text-lg font-medium">{profile.favorite_book}</p>
-                            </SectionCard>
-                        )}
-
-                        {/* Associated Song (BEFORE Top Songs) */}
-                        {profile.associated_song && (
-                            <SectionCard title="Song I Associate With Them" icon={<Music className="w-5 h-5 text-[var(--color-blue-accent)]" />} color="blue">
-                                <div className="p-4 bg-[var(--color-bg)] rounded-lg">
-                                    <div className="font-medium text-lg">{profile.associated_song.name}</div>
-                                    <div className="text-sm text-[var(--color-text-secondary)]">{profile.associated_song.artist}</div>
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Top Songs */}
-                        {profile.top_songs && profile.top_songs.length > 0 && (
-                            <SectionCard title="Their Top Songs" icon={<Music className="w-5 h-5 text-[var(--color-purple-accent)]" />} color="purple">
-                                <div className="space-y-2">
-                                    {profile.top_songs.map((song, i) => (
-                                        <div key={i} className="flex items-center gap-3 p-3 bg-[var(--color-bg)] rounded-lg">
-                                            <span className="text-[var(--color-purple-accent)] font-semibold text-lg w-6">{i + 1}</span>
-                                            <div>
-                                                <div className="font-medium">{song.name}</div>
-                                                <div className="text-sm text-[var(--color-text-secondary)]">{song.artist}</div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Quotes with Modal */}
-                        {profile.quotes && profile.quotes.length > 0 && (
-                            <SectionCard title="Words They Said" icon={<MessageSquare className="w-5 h-5 text-[var(--color-teal-accent)]" />} color="teal">
-                                <div className="space-y-3">
-                                    {profile.quotes.map((quote, i) => (
-                                        <div
-                                            key={i}
-                                            onClick={() => setSelectedQuote(quote.quote)}
-                                            className="cursor-pointer hover:bg-[var(--color-bg)]/50 p-3 rounded-lg transition-colors"
-                                        >
-                                            <blockquote className="font-serif italic text-[var(--color-text-secondary)] border-l-4 border-[var(--color-teal-accent)] pl-4">
-                                                &ldquo;{quote.quote.length > 150 ? quote.quote.substring(0, 150) + '...' : quote.quote}&rdquo;
-                                            </blockquote>
-                                            {quote.quote.length > 150 && (
-                                                <span className="text-xs text-[var(--color-teal-accent)] mt-2 block">Click to read full quote</span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </SectionCard>
-                        )}
-
-                        {/* Favorite Memory */}
-                        {profile.favorite_memory && (
-                            <SectionCard title="Favorite Memory" color="maroon">
-                                <p className="text-lg text-[var(--color-text-primary)] leading-relaxed">
-                                    {profile.favorite_memory}
+                            <div className="mt-8 p-6 bg-white/5 rounded-2xl border border-white/5">
+                                <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed">
+                                    {profile.bio}
                                 </p>
-                            </SectionCard>
+                            </div>
                         )}
+                        {profile.tags && profile.tags.length > 0 && (
+                            <div className="mt-6 flex flex-wrap gap-2">
+                                {profile.tags.map((t: any, i: number) => (
+                                    <span key={i} className="text-indigo-300 text-sm">#{t.tag}</span>
+                                ))}
+                            </div>
+                        )}
+                    </motion.div>
+
+                    <div className="space-y-10">
+                        {/* Overview / Basic Info */}
+                        <DetailSection id="overview" title="Overview" icon={User}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <Field label="Profession" value={profile.profession} />
+                                <Field label="Relationship" value={profile.relationship_type} />
+                                <Field label="Birthday" value={profile.birthday ? new Date(profile.birthday).toLocaleDateString() : null} />
+                                <Field label="Zodiac" value={profile.zodiac_sign} />
+                            </div>
+                        </DetailSection>
+
+                        {/* Favorites & Interests */}
+                        <DetailSection id="favorites" title="Favorites & Interests" icon={Star}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <Field label="Favorite Movie" value={profile.favorite_movie} icon={Film} />
+                                <Field label="Favorite Book" value={profile.favorite_book} icon={Book} />
+                                <Field label="Music Preference" value={profile.music_preference} icon={Music} />
+
+                                {profile.associated_song && (
+                                    <div className="md:col-span-2 p-4 bg-white/5 rounded-xl border border-white/10 flex items-center gap-4">
+                                        <div className="p-3 bg-rose-500/20 rounded-full text-rose-300">
+                                            <Music className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">Associated Song</div>
+                                            <div className="font-medium text-lg">{profile.associated_song.name}</div>
+                                            <div className="text-sm text-[var(--color-text-secondary)]">{profile.associated_song.artist}</div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {profile.top_songs && profile.top_songs.length > 0 && (
+                                    <div className="md:col-span-2">
+                                        <div className="text-sm text-[var(--color-text-secondary)] mb-3 flex items-center gap-2">
+                                            <Music className="w-3 h-3" /> Top Songs
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {profile.top_songs.map((song: any, i: number) => (
+                                                <div key={i} className="p-3 bg-white/5 rounded-lg border border-white/5 flex flex-col">
+                                                    <span className="font-medium">{song.name}</span>
+                                                    <span className="text-xs text-[var(--color-text-secondary)]">{song.artist}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </DetailSection>
+
+                        {/* Lifestyle */}
+                        <DetailSection id="lifestyle" title="Lifestyle" icon={Coffee}>
+                            <div className="space-y-6">
+                                {profile.hangout_places && profile.hangout_places.length > 0 && (
+                                    <div>
+                                        <div className="text-sm text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
+                                            <MapPin className="w-3 h-3" /> Hangout Places
+                                        </div>
+                                        <PillList items={profile.hangout_places.map((p: any) => p.place)} />
+                                    </div>
+                                )}
+
+                                {profile.food_restrictions && profile.food_restrictions.length > 0 && (
+                                    <div>
+                                        <div className="text-sm text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
+                                            <AlertCircle className="w-3 h-3" /> Food Restrictions
+                                        </div>
+                                        <PillList items={profile.food_restrictions.map((r: any) => r.restriction)} colorClass="bg-rose-500/10 text-rose-300 border border-rose-500/20" />
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {profile.movie_genres && profile.movie_genres.length > 0 && (
+                                        <div>
+                                            <div className="text-sm text-[var(--color-text-secondary)] mb-2">Movie Genres</div>
+                                            <PillList items={profile.movie_genres.map((g: any) => g.genre)} />
+                                        </div>
+                                    )}
+                                    {profile.book_genres && profile.book_genres.length > 0 && (
+                                        <div>
+                                            <div className="text-sm text-[var(--color-text-secondary)] mb-2">Book Genres</div>
+                                            <PillList items={profile.book_genres.map((g: any) => g.genre)} />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </DetailSection>
+
+                        {/* Deep Dive */}
+                        <DetailSection id="deep" title="Deep Dive" icon={MessageSquare}>
+                            <div className="space-y-8">
+                                {profile.long_term_goals && (
+                                    <div>
+                                        <div className="text-sm text-[var(--color-text-secondary)] mb-2 uppercase tracking-wider">Long Term Goals</div>
+                                        <p className="text-lg leading-relaxed">{profile.long_term_goals}</p>
+                                    </div>
+                                )}
+
+                                {profile.favorite_memory && (
+                                    <div className="p-6 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+                                        <div className="text-sm text-indigo-300 mb-2 uppercase tracking-wider flex items-center gap-2">
+                                            <Heart className="w-4 h-4" /> Favorite Memory
+                                        </div>
+                                        <p className="text-lg font-serif italic text-indigo-100 leading-relaxed">
+                                            "{profile.favorite_memory}"
+                                        </p>
+                                    </div>
+                                )}
+
+                                {profile.quotes && profile.quotes.length > 0 && (
+                                    <div>
+                                        <div className="text-sm text-[var(--color-text-secondary)] mb-4 uppercase tracking-wider">Words They Said</div>
+                                        <div className="columns-1 md:columns-2 gap-6 space-y-6">
+                                            {profile.quotes.map((q: any, i: number) => (
+                                                <motion.div
+                                                    key={i}
+                                                    whileHover={{ scale: 1.02, y: -5 }}
+                                                    onClick={() => setSelectedQuote(q.quote)}
+                                                    className="p-6 bg-white/5 rounded-xl border-l-4 border-indigo-400 break-inside-avoid cursor-pointer hover:shadow-lg hover:shadow-indigo-500/10 transition-all"
+                                                >
+                                                    <p className="text-xl font-serif text-slate-300 line-clamp-1">"{q.quote}"</p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </DetailSection>
                     </div>
                 </div>
+
+                {selectedQuote && (
+                    <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />
+                )}
             </div>
-
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-[var(--color-surface)] rounded-2xl p-6 max-w-md w-full border border-[var(--color-border-subtle)]">
-                        <h3 className="text-xl font-semibold mb-4">Delete Profile?</h3>
-                        <p className="text-[var(--color-text-secondary)] mb-6">
-                            Are you sure you want to delete {profile.full_name}'s profile? This action cannot be undone.
-                        </p>
-                        <div className="flex gap-3">
-                            <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)} className="flex-1">Cancel</Button>
-                            <Button variant="destructive" onClick={handleDelete} className="flex-1">Delete</Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Quote Modal */}
-            {selectedQuote && (
-                <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />
-            )}
         </ProtectedRoute>
     );
 }

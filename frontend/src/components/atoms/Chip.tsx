@@ -1,22 +1,29 @@
 import { X } from "lucide-react";
+import { motion } from "framer-motion";
 
-export default function Chip({
-    label,
-    onDelete
-}: {
+interface ChipProps {
     label: string;
-    onDelete: () => void;
-}) {
+    onDelete?: () => void;
+}
+
+export default function Chip({ label, onDelete }: ChipProps) {
     return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[var(--color-accent)]/20 text-[var(--color-text-primary)] text-sm rounded-lg border border-[var(--color-accent)]/30 group animate-[fade-in_0.2s_ease-out]">
-            {label}
-            <button
-                type="button"
-                onClick={onDelete}
-                className="hover:bg-[var(--color-accent)]/30 rounded p-0.5 transition-colors duration-150"
-            >
-                <X className="w-3.5 h-3.5" />
-            </button>
-        </span>
+        <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border-subtle)] rounded-full text-sm text-[var(--color-text-primary)] shadow-sm hover:border-[var(--color-primary-from)] transition-colors"
+        >
+            <span>{label}</span>
+            {onDelete && (
+                <button
+                    type="button"
+                    onClick={onDelete}
+                    className="p-0.5 hover:bg-white/10 rounded-full transition-colors"
+                >
+                    <X className="w-3 h-3" />
+                </button>
+            )}
+        </motion.div>
     );
 }
