@@ -1,8 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-serif: "Lora", Georgia, "Times New Roman", Times, serif;
 
   /* Modern "Midnight Glass" Palette */
@@ -44,7 +46,6 @@
   --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
   @keyframes float {
-
     0%,
     100% {
       transform: translateY(0);
@@ -56,7 +57,6 @@
   }
 
   @keyframes pulse-slow {
-
     0%,
     100% {
       opacity: 1;
@@ -86,7 +86,9 @@ body {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-border-subtle);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .glass-input {
@@ -104,7 +106,7 @@ body {
 
 /* Serif font for quotes */
 .font-serif {
-  font-family: 'Lora', Georgia, 'Times New Roman', Times, serif;
+  font-family: "Lora", Georgia, "Times New Roman", Times, serif;
 }
 
 /* Scrollbar */

@@ -10,6 +10,7 @@ This is the frontend client for the Nexia application, a personal digital slambo
 ## Setup & Installation
 
 1. Navigate to the frontend directory:
+
    ```bash
    cd frontend
    ```
