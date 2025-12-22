@@ -41,30 +41,40 @@ go run cmd/server/main.go
 
 The server will start on port `8080`.
 
-### Production Mode
+### Run the Application
 
-To run in production mode (Release Mode), set the `APP_ENV` environment variable to `prod`.
-
+#### 1. Start Infrastructure (RAG Support)
+Nexia now uses **Qdrant** (Vector DB) and **Redis** (Task Queue) for AI features.
 ```bash
-APP_ENV=prod go run cmd/server/main.go
+# In project root
+docker-compose up -d
 ```
 
-Or build the binary:
+#### 2. Configuration
+Update `config/local.yaml` or set Environment Variables:
 
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXIA_AI_GEMINI_API_KEY` | **Required** Google Gemini API Key | - |
+| `NEXIA_AI_REDIS_URL` | Redis Connection String | `127.0.0.1:6379` |
+| `NEXIA_AI_QDRANT_HOST` | Qdrant Host | `localhost` |
+| `NEXIA_AI_QDRANT_PORT` | Qdrant Port | `6334` |
+
+#### 3. Run Development Server
 ```bash
-go build -o nexia-backend cmd/server/main.go
-export APP_ENV=prod
-./nexia-backend
+go run cmd/server/main.go
 ```
 
-## API Documentation
+#### 4. Sync Existing Data (First-Time Users)
+If you have existing profiles in your database that hasn't been indexed by the AI yet, run the sync utility:
+```bash
+go run cmd/sync/main.go
+```
+This utility will process all existing profiles and generate embeddings for them in Qdrant.
 
-Swagger UI is available locally at:
-`http://localhost:8080/api/v1/swagger/index.html`
-
-### Generating Documentation
-
-To generate or update the Swagger documentation, run:
+### API Documentation
+Swagger docs available at: `http://localhost:8080/api/v1/swagger/index.html`
+Generate docs: `swag init -g cmd/server/main.go -o docs/swagger` documentation, run:
 
 ```bash
 go run github.com/swaggo/swag/cmd/swag init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal

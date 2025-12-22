@@ -12,3 +12,9 @@ db:
   charset: utf8mb4
   parseTime: True
   loc: Local
+
+ai:
+  gemini_api_key: ""
+  qdrant_host: "localhost"
+  qdrant_port: 6334
+  redis_url: "127.0.0.1:6379"

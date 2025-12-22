@@ -12,7 +12,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-func SetupRouter(profileController *controllers.ProfileController, authController *controllers.AuthController, cfg *config.Config) *gin.Engine {
+func SetupRouter(profileController *controllers.ProfileController, authController *controllers.AuthController, chatController *controllers.ChatController, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
 	// CORS Middleware
@@ -29,6 +29,9 @@ func SetupRouter(profileController *controllers.ProfileController, authControlle
 	{
 		// Auth
 		v1.POST("/auth", authController.LoginOrSignup)
+
+		// Chat (Protected)
+		v1.POST("/chat", middleware.AuthMiddleware(cfg), chatController.Chat)
 
 		// Profiles (Protected)
 		profiles := v1.Group("/profiles")

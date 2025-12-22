@@ -10,6 +10,14 @@ import (
 type Config struct {
 	Server ServerConfig `mapstructure:"server"`
 	DB     DBConfig     `mapstructure:"db"`
+	AI     AIConfig     `mapstructure:"ai"`
+}
+
+type AIConfig struct {
+	GeminiAPIKey string `mapstructure:"gemini_api_key"`
+	QdrantHost   string `mapstructure:"qdrant_host"`
+	QdrantPort   int    `mapstructure:"qdrant_port"`
+	RedisURL     string `mapstructure:"redis_url"`
 }
 
 type ServerConfig struct {

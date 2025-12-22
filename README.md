@@ -44,21 +44,38 @@ The project demonstrates expertise in:
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Framer Motion](https://img.shields.io/badge/Framer_Motion-10-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
 
-## Quick Start
+## 🚀 Quick Start
 
-### Backend
-Navigate to the `backend` directory to set up the API server.
-```bash
-cd backend
-# detailed instructions in backend/README.md
-```
+### Prerequisites
+- **Go 1.25+**
+- **Node.js 18+**
+- **Docker & Docker Compose** (For Vector DB & Queue)
+- **MySQL**
+- **Gemini API Key**
 
-### Frontend
-Navigate to the `frontend` directory to launch the user interface.
-```bash
-cd frontend
-# detailed instructions in frontend/README.md
-```
+### Installation
+
+1. **Start Infrastructure**
+   ```bash
+   docker-compose up -d
+   ```
+
+2.  **Backend Setup**
+    ```bash
+    cd backend
+    # Configure config/local.yaml with DB credentials & Gemini Key
+    go mod download
+    go run cmd/server/main.go
+    ```
+
+3.  **Frontend Setup**
+    ```bash
+    cd frontend
+    npm install
+    npm run dev
+    ```
+
+4.  **Visit App**: Open [http://localhost:3000](http://localhost:3000)
 
 ## Contributors
 
