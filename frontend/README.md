@@ -30,6 +30,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### ✨ Features
+
+- **Profile Management**: Create, view, update, and delete friend profiles.
+- **AI Chat**: Chat with your friends' profiles using Gemini AI + RAG.
+- **Modern UI**: Built with Tailwind CSS, Framer Motion, and Glassmorphism.
+- **Authentication**: Secure Login/Signup flow.
+- **Responsive Design**: Mobile-first architecture.
+
 ## Scripts
 
 - `npm run dev`: Runs the app in development mode.

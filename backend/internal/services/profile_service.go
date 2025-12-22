@@ -5,15 +5,17 @@ import (
 	"time"
 
 	"nexia-backend/internal/models"
+	"nexia-backend/internal/queue"
 	"nexia-backend/internal/repositories"
 )
 
 type ProfileService struct {
-	Repo *repositories.ProfileRepository
+	Repo  *repositories.ProfileRepository
+	Queue *queue.QueueClient
 }
 
-func NewProfileService(repo *repositories.ProfileRepository) *ProfileService {
-	return &ProfileService{Repo: repo}
+func NewProfileService(repo *repositories.ProfileRepository, queue *queue.QueueClient) *ProfileService {
+	return &ProfileService{Repo: repo, Queue: queue}
 }
 
 func (s *ProfileService) CreateProfile(profile *models.Profile, userID uint64) error {
@@ -29,7 +31,16 @@ func (s *ProfileService) CreateProfile(profile *models.Profile, userID uint64) e
 		profile.ZodiacSign = DeriveZodiac(time.Time(*profile.Birthday))
 	}
 
-	return s.Repo.Create(profile)
+	if err := s.Repo.Create(profile); err != nil {
+		return err
+	}
+
+	// Async Embedding
+	if s.Queue != nil {
+		_ = s.Queue.EnqueueEmbeddingTask(uint(profile.ID))
+	}
+
+	return nil
 }
 
 func (s *ProfileService) GetProfile(id uint64, userID uint64) (*models.Profile, error) {
@@ -61,7 +72,16 @@ func (s *ProfileService) UpdateProfile(id uint64, profile *models.Profile, userI
 		profile.ZodiacSign = DeriveZodiac(time.Time(*profile.Birthday))
 	}
 
-	return s.Repo.Update(profile)
+	if err := s.Repo.Update(profile); err != nil {
+		return err
+	}
+
+	// Async Embedding
+	if s.Queue != nil {
+		_ = s.Queue.EnqueueEmbeddingTask(uint(profile.ID))
+	}
+
+	return nil
 }
 
 func (s *ProfileService) DeleteProfile(id uint64, userID uint64) error {

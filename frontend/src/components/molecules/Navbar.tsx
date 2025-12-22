@@ -30,13 +30,23 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-surface-highlight)]"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </button>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/chat"
+              className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-surface-highlight)]"
+            >
+              <Sparkles className="w-4 h-4" />
+              Ask AI
+            </Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-surface-highlight)]"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
     </motion.nav>
