@@ -33,7 +33,12 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -171,37 +176,37 @@ export default function ChatPage() {
               >
                 {/* Avatar */}
                 <div
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
-                    msg.role === "user"
-                      ? "bg-slate-700 text-slate-200"
-                      : "bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] text-white"
-                  }`}
+                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${msg.role === "user"
+                    ? "bg-slate-700 text-slate-200"
+                    : "bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] text-white"
+                    }`}
                 >
                   {msg.role === "user" ? <User size={18} /> : <Sparkles size={18} />}
                 </div>
 
-                {/* Bubble */}
                 <div
-                  className={`max-w-[75%] px-5 py-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                    msg.role === "user"
-                      ? "bg-[var(--color-surface-highlight)] border border-white/10 text-[var(--color-text-primary)] rounded-tr-none"
-                      : "bg-[var(--color-surface)] border border-white/10 text-[var(--color-text-primary)] rounded-tl-none font-medium"
-                  }`}
+                  className={`max-w-[90%] px-8 py-7 rounded-3xl shadow-2xl ${msg.role === "user"
+                    ? "bg-[var(--color-surface-highlight)] border border-white/10 text-[var(--color-text-primary)] rounded-tr-none text-base"
+                    : "bg-[var(--color-surface)] border border-white/10 text-[var(--color-text-primary)] rounded-tl-none text-lg leading-loose"
+                    }`}
                 >
                   <div
-                    className="prose prose-invert prose-sm max-w-none 
-                                        prose-p:leading-relaxed 
-                                        prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10 
-                                        prose-code:text-[var(--color-primary-from)]
-                                        prose-table:border prose-table:border-white/10 prose-table:rounded-lg prose-table:overflow-hidden
-                                        prose-th:bg-white/5 prose-th:px-3 prose-th:py-2 prose-th:text-left
-                                        prose-td:px-3 prose-td:py-2 prose-td:border-t prose-td:border-white/5
-                                        prose-ul:list-disc prose-ol:list-decimal prose-li:my-1"
+                    className="prose prose-invert prose-lg max-w-none 
+                                        prose-p:leading-loose prose-p:my-8
+                                        prose-headings:text-white prose-headings:font-bold prose-headings:my-10
+                                        prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-pre:p-8 prose-pre:rounded-2xl
+                                        prose-code:text-indigo-300 prose-code:bg-indigo-500/10 prose-code:px-2 prose-code:rounded-md
+                                        prose-table:border prose-table:border-white/10 prose-table:rounded-2xl prose-table:overflow-hidden prose-table:my-12
+                                        prose-th:bg-white/10 prose-th:px-6 prose-th:py-4 prose-th:text-white prose-th:text-xl
+                                        prose-td:px-6 prose-td:py-4 prose-td:border-t prose-td:border-white/5 prose-td:text-lg
+                                        prose-ul:list-disc prose-ul:my-10 prose-ul:pl-8 prose-ul:space-y-6
+                                        prose-ol:list-decimal prose-ol:my-10 prose-ol:pl-8 prose-ol:space-y-6
+                                        prose-li:leading-loose"
                   >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                   </div>
-                  <span className="text-[10px] opacity-30 mt-2 block text-right font-light">
-                    {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  <span className="text-[11px] opacity-20 mt-8 block text-right font-sans font-light tracking-[0.2em] uppercase">
+                    {mounted ? msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
                   </span>
                 </div>
               </motion.div>

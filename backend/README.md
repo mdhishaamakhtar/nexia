@@ -1,81 +1,70 @@
-# Nexia Backend
+# 🚀 Nexia Backend
+> The high-performance engine powering Nexia with RAG-based intelligence.
 
-Nexia Backend is a REST API service for a personal digital slambook, built with Go, Gin, and GORM.
+Nexia Backend is a production-grade REST API built using **Go**, **Gin**, and **GORM**. It orchestrates complex AI workflows, manages persistent data in MySQL, and handles background tasks with Redis.
 
-## Features
-- **Profile Management**: CRUD operations for user profiles.
-- **Authentication**: JWT-based secure access.
-- **Zodiac Derivation**: Automatic zodiac calculation.
-- **Database**: MySQL with GORM managed migrations.
+---
 
-## Prerequisites
-- **Go**: Version 1.25 or higher
-- **MySQL**: Version 8.0 or higher
+## 🛠 Tech Stack
 
-## Setup & Configuration
+[![Go](https://img.shields.io/badge/Language-Go_1.25+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
+[![MySQL](https://img.shields.io/badge/Database-MySQL_8.0-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-black?style=flat-square&logo=qdrant&logoColor=white)](https://qdrant.tech/)
+[![Redis](https://img.shields.io/badge/Queue-Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
+[![Google Gemini](https://img.shields.io/badge/AI-Gemini_Pro-8E75C2?style=flat-square&logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 
-1. **Database Setup**:
-   Ensure you have a MySQL server running and create the database:
+---
+
+## ✨ Core Components
+
+### 🧠 RAG Intelligence
+- **Qdrant Integration**: Stores and retrieves profile embeddings for semantic search.
+- **Gemini Pro**: Generates human-like insights and responses based on filtered friend data.
+- **User Scoping**: Implements high-performance filtering at the vector layer to ensure data privacy.
+
+### 👷 Async Workers
+- **Asynq & Redis**: Handles the heavy lifting of generating embeddings in the background.
+- **Task Producer/Consumer**: Profiles are automatically queued for indexing upon creation or update.
+
+### 📋 API Layer
+- **Gin Framework**: Low-latency request routing.
+- **JWT Auth**: Secure middleware for user sessions.
+- **Swagger**: Automated documentation available at `/api/v1/swagger/index.html`.
+
+---
+
+## ⚙️ Setup & Installation
+
+1. **Infrastructure**
+   Ensure Docker is running and launch dependencies:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Configuration**
+   Edit `config/local.yaml`:
+   - Set `gemini_api_key` (Get one from [Google AI Studio](https://aistudio.google.com/)).
+   - Configure MySQL credentials.
+
+3. **Database Setup**
+   Ensure MySQL is running and create the DB:
    ```sql
    CREATE DATABASE nexia_db;
    ```
 
-2. **Configuration**:
-   - The application uses `config/local.yaml` for local development.
-   - You can also configure via environment variables (e.g., `NEXIA_DB_PASSWORD`).
-
-3. **Install Dependencies**:
+4. **Syncing Data**
+   If you have existing profiles that aren't indexed:
    ```bash
-   go mod download
+   go run cmd/sync/main.go
    ```
 
-## Running the Server
+5. **Run Server**
+   ```bash
+   go run cmd/server/main.go
+   ```
 
-### Development Mode
+---
 
-Run the server directly using Go:
-
-```bash
-go run cmd/server/main.go
-```
-
-The server will start on port `8080`.
-
-### Run the Application
-
-#### 1. Start Infrastructure (RAG Support)
-Nexia now uses **Qdrant** (Vector DB) and **Redis** (Task Queue) for AI features.
-```bash
-# In project root
-docker-compose up -d
-```
-
-#### 2. Configuration
-Update `config/local.yaml` or set Environment Variables:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NEXIA_AI_GEMINI_API_KEY` | **Required** Google Gemini API Key | - |
-| `NEXIA_AI_REDIS_URL` | Redis Connection String | `127.0.0.1:6379` |
-| `NEXIA_AI_QDRANT_HOST` | Qdrant Host | `localhost` |
-| `NEXIA_AI_QDRANT_PORT` | Qdrant Port | `6334` |
-
-#### 3. Run Development Server
-```bash
-go run cmd/server/main.go
-```
-
-#### 4. Sync Existing Data (First-Time Users)
-If you have existing profiles in your database that hasn't been indexed by the AI yet, run the sync utility:
-```bash
-go run cmd/sync/main.go
-```
-This utility will process all existing profiles and generate embeddings for them in Qdrant.
-
-### API Documentation
-Swagger docs available at: `http://localhost:8080/api/v1/swagger/index.html`
-Generate docs: `swag init -g cmd/server/main.go -o docs/swagger` documentation, run:
-
-```bash
-go run github.com/swaggo/swag/cmd/swag init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
-```
+## 🔗 Links
+- [Root Project README](../README.md)
+- [Frontend Documentation](../frontend/README.md)

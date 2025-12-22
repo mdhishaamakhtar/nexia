@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"nexia-backend/internal/services"
@@ -43,7 +44,30 @@ func (ctrl *ChatController) Chat(c *gin.Context) {
 		return
 	}
 
-	response, err := ctrl.Service.Chat(c.Request.Context(), req.Message)
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in context"})
+		return
+	}
+
+	fmt.Println("User ID: " + fmt.Sprintf("%v", userID))
+
+	uid, ok := userID.(uint64)
+	if !ok {
+		// Handle case where it might be float64 or int (depends on how it was set/decoded)
+		if fuid, ok := userID.(float64); ok {
+			uid = uint64(fuid)
+		} else if iuid, ok := userID.(int); ok {
+			uid = uint64(iuid)
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid User ID type"})
+			return
+		}
+	}
+
+	fmt.Println("User ID: " + fmt.Sprintf("%v", uid))
+
+	response, err := ctrl.Service.Chat(c.Request.Context(), uid, req.Message)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -21,7 +21,7 @@ func NewChatService(gemini *ai.GeminiClient, qdrant *ai.QdrantClient) *ChatServi
 	return &ChatService{Gemini: gemini, Qdrant: qdrant}
 }
 
-func (s *ChatService) Chat(ctx context.Context, message string) (string, error) {
+func (s *ChatService) Chat(ctx context.Context, userID uint64, message string) (string, error) {
 	// 1. Generate Embedding for query
 	embedding, err := s.Gemini.GenerateEmbedding(ctx, message)
 	if err != nil {
@@ -29,10 +29,12 @@ func (s *ChatService) Chat(ctx context.Context, message string) (string, error) 
 	}
 
 	// 2. Search Qdrant
-	points, err := s.Qdrant.SearchContext(ctx, embedding, 5)
+	points, err := s.Qdrant.SearchContext(ctx, userID, embedding, 5)
 	if err != nil {
 		return "", fmt.Errorf("search failed: %w", err)
 	}
+
+	fmt.Println(points)
 
 	// 3. Construct Context
 	var contextBuilder strings.Builder
@@ -97,12 +99,13 @@ You have access to context about the user's friends provided below.
 Rules:
 - Be helpful, witty, and concise.
 - Use Markdown for all responses.
+- Use DOUBLE LINE BREAKS between paragraphs and sections for maximum vertical whitespace.
 - If comparing multiple friends, use a Markdown Table.
-- If listing facts, use bullet points.
+- If listing facts, use bullet points with extra spacing.
 - If you don't know the answer based on the context, say so politely.
 - Always refer to friends by their full names if available.`
 
 	prompt := fmt.Sprintf("%s\n\nCONTEXT:\n%s\n\nUSER QUESTION: %s\nANSWER:", systemPrompt, finalContext, message)
-
+	fmt.Println(prompt)
 	return s.Gemini.GenerateChatResponse(ctx, []*genai.Content{}, prompt)
 }

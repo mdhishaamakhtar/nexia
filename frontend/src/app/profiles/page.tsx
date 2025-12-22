@@ -104,11 +104,11 @@ export default function ProfilesPage() {
           </motion.div>
 
           {isLoading ? (
-            <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="glass-panel h-64 rounded-2xl animate-pulse bg-[var(--color-surface-highlight)] break-inside-avoid mb-6"
+                  className="glass-panel h-64 rounded-2xl animate-pulse bg-[var(--color-surface-highlight)] mb-6"
                 />
               ))}
             </div>
@@ -133,7 +133,7 @@ export default function ProfilesPage() {
               </button>
             </motion.div>
           ) : (
-            <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {profiles.map((profile, index) => (
                 <CardProfilePreview
                   key={profile.id}

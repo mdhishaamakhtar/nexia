@@ -31,7 +31,7 @@ export default function CardProfilePreview({
         transition: { type: "spring", stiffness: 400, damping: 17 },
       }}
       onClick={onClick}
-      className="glass-panel rounded-2xl p-6 cursor-pointer group hover:border-[var(--color-primary-from)]/50 relative overflow-hidden break-inside-avoid mb-6"
+      className="glass-panel rounded-2xl p-6 cursor-pointer group hover:border-[var(--color-primary-from)]/50 relative overflow-hidden"
     >
       {/* Gradient Blob Background */}
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-[var(--color-primary-from)]/10 rounded-full blur-3xl group-hover:bg-[var(--color-primary-from)]/20 transition-all duration-500" />
