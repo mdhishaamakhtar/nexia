@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/assets/nexia_banner.png" alt="Nexia Banner" width="100%">
+  <img src="frontend/public/assets/nexia_minimal_banner.png" alt="Nexia Banner" width="400">
 </p>
 
 <p align="center">
