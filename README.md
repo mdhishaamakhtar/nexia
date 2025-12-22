@@ -1,88 +1,78 @@
 <p align="center">
-  <h2 align="center">Nexia</h2>
-  <h4 align="center">A high-performance personal digital slambook for preserving digital memories and friendships</h4>
+  <img src="frontend/public/assets/nexia_banner.png" alt="Nexia Banner" width="100%">
 </p>
 
-## Overview
+<p align="center">
+  <img src="https://img.shields.io/badge/Go-1.25%2B-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
+  <img src="https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js">
+  <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
+</p>
 
-Nexia is a sophisticated personal digital slambook application designed to modernize the way we cherish memories and friendships. Built with a robust Go backend and a dynamic Next.js frontend, it offers a distinct platform for users to create, manage, and share their digital profiles.
+<p align="center">
+  <img src="https://img.shields.io/badge/Gemini_AI-Pro-8E75C2?style=for-the-badge&logo=google-gemini&logoColor=white" alt="Gemini">
+  <img src="https://img.shields.io/badge/Qdrant-Vector_DB-black?style=for-the-badge&logo=qdrant&logoColor=white" alt="Qdrant">
+  <img src="https://img.shields.io/badge/Redis-Queue-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
+  <img src="https://img.shields.io/badge/Asynq-Workers-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Asynq">
+</p>
 
-The project demonstrates expertise in:
-- **Modern Web Architecture**: Separation of concerns with a RESTful Go API and a React-based frontend.
-- **Secure Authentication**: JWT-based secure login and signup systems.
-- **Data Persistence**: Efficient MySQL database design with GORM for object-relational mapping.
-- **Scalable Design**: Production-ready configuration and structure.
 
-## Core Features
+## 🌟 Overview
 
-### ✅ Profile Management
-- **Rich User Profiles**: Create and manage detailed profiles with personal preferences, favorites, and more.
-- **Dynamic Updates**: Real-time updates to profile information using a responsive UI.
-- **Friendship Tracking**: Define and manage relationship types (e.g., Friend, Best Friend).
+Nexia is a sophisticated personal digital slambook designed to modernize the way we cherish memories and friendships. Beyond standard storage, Nexia implements a **Retrieval-Augmented Generation (RAG)** pipeline, allowing you to have intelligent, context-aware conversations about your social circle.
 
-### ✅ Intelligent Features
-- **Auto-Zodiac Calculation**: Automatically derives zodiac signs based on user birthdays.
-- **Secure Access**: Protected routes ensuring privacy and data security.
-- **Tagging System**: Organize and categorize entries with custom tags.
+Built with a high-performance **Go** backend and a cinematic **Next.js** frontend, Nexia offers a "Digital Sanctuary" for the people who matter most.
 
-### ✅ Technical Excellence
-- **High Performance**: Go-powered backend for low-latency request handling.
-- **Type Safety**: Full TypeScript implementation in the frontend for robust code.
-- **Automated Migrations**: Seamless database schema updates.
 
-## Core Technologies
+## ✨ Key Features
 
-[![Go](https://img.shields.io/badge/Go-1.21%2B-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
-[![Gin](https://img.shields.io/badge/Gin-1.10.0-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://gin-gonic.com/)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![GORM](https://img.shields.io/badge/GORM-v1-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://gorm.io/)
+- **AI Intel Chat**: Interactive chatbot powered by Google Gemini and Qdrant.
+- **Semantic Retrieval**: Uses vector embeddings to find relevant friend data instantly.
+- **Async Processing**: Background embedding generation via Redis-backed workers.
+- **Smart Derivations**: Automatic zodiac sign calculation and data normalization.
 
-## Frontend & UI
-
-[![Next.js](https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Framer Motion](https://img.shields.io/badge/Framer_Motion-10-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Go 1.25+**
-- **Node.js 18+**
-- **Docker & Docker Compose** (For Vector DB & Queue)
-- **MySQL**
-- **Gemini API Key**
+- **Go 1.25+** | **Node.js 18+** | **Docker Desktop** | **MySQL 8.0**
 
-### Installation
+### 1. Launch Infrastructure
+Start the Vector DB (Qdrant) and Task Queue (Redis):
+```bash
+docker-compose up -d
+```
 
-1. **Start Infrastructure**
-   ```bash
-   docker-compose up -d
-   ```
+### 2. Backend Setup
+```bash
+cd backend
+# 1. Update config/local.yaml with MySQL & Gemini API Key
+# 2. Run the server
+go run cmd/server/main.go
+```
 
-2.  **Backend Setup**
-    ```bash
-    cd backend
-    # Configure config/local.yaml with DB credentials & Gemini Key
-    go mod download
-    go run cmd/server/main.go
-    ```
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-3.  **Frontend Setup**
-    ```bash
-    cd frontend
-    npm install
-    npm run dev
-    ```
+### 4. Backfill Data
+If you have existing profiles, index them into the AI engine:
+```bash
+cd backend
+go run cmd/sync/main.go
+```
 
-4.  **Visit App**: Open [http://localhost:3000](http://localhost:3000)
+## 📖 Deep Dives
+
+- [**Backend Documentation**](./backend/README.md)
+- [**Frontend Documentation**](./frontend/README.md)
 
 ## Contributors
-
-This project was developed by:
-
-- **Md Hishaam Akhtar** 
+- **Md Hishaam Akhtar**
 
 <p align="center">
-	Made with :heart: for Friends
+  Made with ❤️ for Friends
 </p>

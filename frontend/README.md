@@ -1,52 +1,60 @@
-# Nexia Frontend
+# ✨ Nexia Frontend
+> A premium, glassmorphism-inspired "Digital Sanctuary" for your memories.
 
-This is the frontend client for the Nexia application, a personal digital slambook. It is built using Next.js and Tailwind CSS.
+This is the official Nexia client interface, built with **Next.js 15**, **Tailwind CSS**, and **Framer Motion**. It delivers a high-fidelity, cinematic experience for managing and interacting with your social circle.
 
-## Prerequisites
+---
 
-- Node.js (v18 or higher recommended)
-- npm (Node Package Manager)
+## 🎨 Design System
 
-## Setup & Installation
+[![Next.js](https://img.shields.io/badge/Framework-Next.js_15-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind_3.4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Framer Motion](https://img.shields.io/badge/Motion-Framer_10-0055FF?style=flat-square&logo=framer&logoColor=white)](https://www.framer.com/motion/)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-1. Navigate to the frontend directory:
+---
 
-   ```bash
-   cd frontend
-   ```
+## 🔥 Key UI Features
 
-2. Install dependencies:
+- **AI Intel Chat**: A beautifully designed RAG interface with spacious typography and serif-inspired readability.
+- **Glassmorphism Components**: Native-feel blur effects, translucent panels, and vibrant gradient glows.
+- **Perfect Grid Layout**: A 3-column row-based explorer that keeps profile cards perfectly aligned.
+- **Micro-interactions**: Hover effects, smooth route transitions, and interactive loading states.
+- **Responsive Architecture**: Fully optimized for mobile, tablet, and desktop viewports.
+
+---
+
+## 🛠 Prerequisites
+
+- **Node.js**: 18.x or 20.x
+- **npm** or **bun**
+
+---
+
+## ⚙️ Setup & Development
+
+1. **Install Dependencies**
    ```bash
    npm install
    ```
 
-## Running the Application
+2. **Launch Dev Server**
+   ```bash
+   npm run dev
+   ```
+   Visit [http://localhost:3000](http://localhost:3000).
 
-To start the development server:
+---
 
-```bash
-npm run dev
-```
+## 📂 Structure
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `app/`: Next.js 15 App Router pages and simplified hydration logic.
+- `components/`: Atomic UI design (Atoms, Molecules, Organisms).
+- `lib/api.ts`: Centralized API client using Axios.
+- `public/assets/`: Premium assets including the official Nexia banner.
 
-### ✨ Features
+---
 
-- **Profile Management**: Create, view, update, and delete friend profiles.
-- **AI Chat**: Chat with your friends' profiles using Gemini AI + RAG.
-- **Modern UI**: Built with Tailwind CSS, Framer Motion, and Glassmorphism.
-- **Authentication**: Secure Login/Signup flow.
-- **Responsive Design**: Mobile-first architecture.
-
-## Scripts
-
-- `npm run dev`: Runs the app in development mode.
-- `npm run build`: Builds the app for production.
-- `npm run start`: Runs the built app in production mode.
-- `npm run lint`: Lints the codebase using ESLint.
-
-## Project Structure
-
-- `app/`: App router pages and layouts.
-- `components/`: Reusable UI components.
-- `public/`: Static assets.
+## 🔗 Links
+- [Root Project README](../README.md)
+- [Backend Documentation](../backend/README.md)

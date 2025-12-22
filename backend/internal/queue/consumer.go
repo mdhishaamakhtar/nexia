@@ -177,6 +177,6 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 		return fmt.Errorf("qdrant upsert failed: %w", err)
 	}
 
-	log.Printf("✅ Successfully embedded and indexed ProfileID: %d", p.ProfileID)
+	log.Printf("✅ Successfully embedded and indexed ProfileID: %d for UserID: %d", p.ProfileID, profile.UserID)
 	return nil
 }

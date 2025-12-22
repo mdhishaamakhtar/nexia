@@ -35,19 +35,34 @@ func (c *QdrantClient) EnsureCollection(ctx context.Context) error {
 		return err
 	}
 
+	found := false
 	for _, col := range collections {
 		if col == CollectionName {
-			return nil
+			found = true
+			break
 		}
 	}
 
-	// Create collection
-	err = c.client.CreateCollection(ctx, &qdrant.CreateCollection{
+	if !found {
+		// Create collection
+		err = c.client.CreateCollection(ctx, &qdrant.CreateCollection{
+			CollectionName: CollectionName,
+			VectorsConfig: qdrant.NewVectorsConfig(&qdrant.VectorParams{
+				Size:     VectorSize,
+				Distance: qdrant.Distance_Cosine,
+			}),
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Ensure payload index for user_id
+	fieldType := qdrant.FieldType_FieldTypeInteger
+	_, err = c.client.CreateFieldIndex(ctx, &qdrant.CreateFieldIndexCollection{
 		CollectionName: CollectionName,
-		VectorsConfig: qdrant.NewVectorsConfig(&qdrant.VectorParams{
-			Size:     VectorSize,
-			Distance: qdrant.Distance_Cosine,
-		}),
+		FieldName:      "user_id",
+		FieldType:      &fieldType,
 	})
 	return err
 }
@@ -57,11 +72,10 @@ func (c *QdrantClient) UpsertProfile(ctx context.Context, profile *models.Profil
 	var payloadMap map[string]interface{}
 	json.Unmarshal(payloadBytes, &payloadMap)
 
-	// Clean payload for Qdrant (remove complex nested if needed, or keep)
-	// For simplicity, we just store full profile as payload
+	// Explicitly set user_id to ensure it's stored as an integer in Qdrant
+	payloadMap["user_id"] = int64(profile.UserID)
 
 	// Convert ID (uint) to PointID (uint64 or uuid)
-	// We'll use uint64
 	id := uint64(profile.ID)
 
 	// Create vectors struct
@@ -73,7 +87,7 @@ func (c *QdrantClient) UpsertProfile(ctx context.Context, profile *models.Profil
 		},
 	}
 
-	log.Printf("Upserting to Qdrant: ID=%d, Collection=%s", id, CollectionName)
+	log.Printf("Upserting to Qdrant: ID=%d, UserID=%d, Collection=%s", id, profile.UserID, CollectionName)
 	opInfo, err := c.client.Upsert(ctx, &qdrant.UpsertPoints{
 		CollectionName: CollectionName,
 		Points: []*qdrant.PointStruct{
@@ -96,15 +110,17 @@ func (c *QdrantClient) UpsertProfile(ctx context.Context, profile *models.Profil
 	return nil
 }
 
-func (c *QdrantClient) SearchContext(ctx context.Context, queryEmbedding []float32, limit uint64) ([]*qdrant.ScoredPoint, error) {
-	// 5. Use Variadic NewQuery if supported, otherwise manual
-	// Assuming variadic support based on previous error context
-
+func (c *QdrantClient) SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit uint64) ([]*qdrant.ScoredPoint, error) {
 	results, err := c.client.Query(ctx, &qdrant.QueryPoints{
 		CollectionName: CollectionName,
 		Query:          qdrant.NewQuery(queryEmbedding...),
-		Limit:          &limit,
-		WithPayload:    qdrant.NewWithPayload(true),
+		Filter: &qdrant.Filter{
+			Must: []*qdrant.Condition{
+				qdrant.NewMatchInt("user_id", int64(userID)),
+			},
+		},
+		Limit:       &limit,
+		WithPayload: qdrant.NewWithPayload(true),
 	})
 	if err != nil {
 		return nil, err
