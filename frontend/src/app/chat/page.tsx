@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import Navbar from "@/components/molecules/Navbar";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 interface Message {
   id: string;
@@ -105,9 +106,9 @@ export default function ChatPage() {
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)] transition-colors duration-500">
       <Navbar />
 
-      <main className="max-w-5xl mx-auto px-4 py-6 h-[calc(100vh-80px)] flex flex-col gap-6">
+      <main className="max-w-4xl mx-auto px-4 py-4 h-[calc(100vh-84px)] flex flex-col gap-4">
         {/* Header Area */}
-        <div className="flex items-center justify-between glass-panel px-6 py-4 rounded-2xl shadow-xl">
+        <div className="flex items-center justify-between glass-panel px-5 py-2.5 rounded-2xl shadow-xl">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] shadow-lg shadow-indigo-500/20">
               <Bot size={22} className="text-white" />
@@ -132,7 +133,7 @@ export default function ChatPage() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto space-y-8 px-2 py-4 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto space-y-6 px-2 py-4 scrollbar-thin">
           <AnimatePresence initial={false}>
             {messages.length === 1 && (
               <motion.div
@@ -176,7 +177,7 @@ export default function ChatPage() {
               >
                 {/* Avatar */}
                 <div
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${msg.role === "user"
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg ${msg.role === "user"
                     ? "bg-slate-700 text-slate-200"
                     : "bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] text-white"
                     }`}
@@ -185,27 +186,29 @@ export default function ChatPage() {
                 </div>
 
                 <div
-                  className={`max-w-[90%] px-8 py-7 rounded-3xl shadow-2xl ${msg.role === "user"
-                    ? "bg-[var(--color-surface-highlight)] border border-white/10 text-[var(--color-text-primary)] rounded-tr-none text-base"
-                    : "bg-[var(--color-surface)] border border-white/10 text-[var(--color-text-primary)] rounded-tl-none text-lg leading-loose"
+                  className={`max-w-[85%] px-5 py-4 rounded-2xl shadow-lg ${msg.role === "user"
+                    ? "bg-[var(--color-surface-highlight)] border border-white/10 text-[var(--color-text-primary)] rounded-tr-none text-sm"
+                    : "bg-[var(--color-surface)] border border-white/10 text-[var(--color-text-primary)] rounded-tl-none text-sm leading-relaxed"
                     }`}
                 >
                   <div
-                    className="prose prose-invert prose-lg max-w-none 
-                                        prose-p:leading-loose prose-p:my-8
-                                        prose-headings:text-white prose-headings:font-bold prose-headings:my-10
-                                        prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-pre:p-8 prose-pre:rounded-2xl
-                                        prose-code:text-indigo-300 prose-code:bg-indigo-500/10 prose-code:px-2 prose-code:rounded-md
-                                        prose-table:border prose-table:border-white/10 prose-table:rounded-2xl prose-table:overflow-hidden prose-table:my-12
-                                        prose-th:bg-white/10 prose-th:px-6 prose-th:py-4 prose-th:text-white prose-th:text-xl
-                                        prose-td:px-6 prose-td:py-4 prose-td:border-t prose-td:border-white/5 prose-td:text-lg
-                                        prose-ul:list-disc prose-ul:my-10 prose-ul:pl-8 prose-ul:space-y-6
-                                        prose-ol:list-decimal prose-ol:my-10 prose-ol:pl-8 prose-ol:space-y-6
-                                        prose-li:leading-loose"
+                    className="prose prose-invert prose-sm max-w-none 
+                                        prose-p:leading-relaxed prose-p:my-3
+                                        prose-headings:text-white prose-headings:font-bold prose-headings:my-4
+                                        prose-pre:bg-black/50 prose-pre:border prose-pre:border-white/10 prose-pre:p-4 prose-pre:rounded-xl
+                                        prose-code:text-indigo-300 prose-code:bg-indigo-500/10 prose-code:px-1.5 prose-code:rounded-md
+                                        prose-table:border prose-table:border-white/10 prose-table:rounded-xl prose-table:overflow-hidden prose-table:my-6
+                                        prose-th:bg-white/10 prose-th:px-4 prose-th:py-2 prose-th:text-white prose-th:text-sm
+                                        prose-td:px-4 prose-td:py-2 prose-td:border-t prose-td:border-white/5 prose-td:text-sm
+                                        prose-ul:list-disc prose-ul:my-4 prose-ul:pl-6 prose-ul:space-y-2
+                                        prose-ol:list-decimal prose-ol:my-4 prose-ol:pl-6 prose-ol:space-y-2
+                                        prose-li:leading-relaxed"
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                      {msg.content}
+                    </ReactMarkdown>
                   </div>
-                  <span className="text-[11px] opacity-20 mt-8 block text-right font-sans font-light tracking-[0.2em] uppercase">
+                  <span className="text-[10px] opacity-30 mt-3 block text-right font-sans font-light tracking-wider uppercase">
                     {mounted ? msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
                   </span>
                 </div>
@@ -253,7 +256,7 @@ export default function ChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about someone's hobbies, secrets, or zodiac sign..."
-                className="w-full bg-transparent px-5 py-5 text-sm text-[var(--color-text-primary)] placeholder-white/20 focus:outline-none"
+                className="w-full bg-transparent px-5 py-4 text-sm text-[var(--color-text-primary)] placeholder-white/20 focus:outline-none"
                 disabled={isLoading}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {

@@ -92,17 +92,17 @@ func (s *ChatService) Chat(ctx context.Context, userID uint64, message string) (
 
 	// 4. Generate Response
 	// We use a fresh chat session for now, or could pass history if frontend sends it
-	systemPrompt := `You are Nexia Intel, a premium AI assistant that helps users manage and understand their social circle.
+	systemPrompt := `You are Nexia Intel, a premium AI assistant.
 You have access to context about the user's friends provided below.
 Rules:
 - Be helpful, witty, and concise.
-- Use Markdown for all responses.
-- Use DOUBLE LINE BREAKS between paragraphs and sections for maximum vertical whitespace.
-- If comparing multiple friends, use a Markdown Table.
-- If listing facts, use bullet points with extra spacing.
+- Use Markdown for all responses (bolding, lists, tables).
+- Do NOT use HTML tags like <br> or <div>.
+- Do NOT start your response with slashes (/) or use them as bullet points.
+- Use standard Markdown spacing (one empty line between paragraphs).
 - If you don't know the answer based on the context, say so politely.
 - Always refer to friends by their full names if available.`
 
-	prompt := fmt.Sprintf("%s\n\nCONTEXT:\n%s\n\nUSER QUESTION: %s\nANSWER:", systemPrompt, finalContext, message)
+	prompt := fmt.Sprintf("%s\n\nCONTEXT:\n%s\n\nUSER QUESTION: %s\n\n", systemPrompt, finalContext, message)
 	return s.Gemini.GenerateChatResponse(ctx, []*genai.Content{}, prompt)
 }
