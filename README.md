@@ -32,22 +32,42 @@ Built with a high-performance **Go** backend and a cinematic **Next.js** fronten
 - **Smart Derivations**: Automatic zodiac sign calculation and data normalization.
 
 
-## 🚀 Quick Start
+## 🚀 Quick Start (Recommended)
+
+The easiest way to run Nexia is using **Docker Compose**. This starts the frontend, backend, database, and vector engine with a single command.
+
+1. **Set your Gemini API Key**:
+   ```bash
+   export GEMINI_API_KEY=your_key_here
+   ```
+
+2. **Launch everything**:
+   ```bash
+   docker-compose up --build
+   ```
+
+3. **Access Nexia**:
+   - **Frontend**: [http://localhost:3000](http://localhost:3000)
+   - **API Docs**: [http://localhost:3000/api/v1/swagger/index.html](http://localhost:3000/api/v1/swagger/index.html) (Proxied)
+
+---
+
+## 🛠 Manual Development Setup
+
+If you prefer to run services manually for development:
 
 ### Prerequisites
-- **Go 1.25+** | **Node.js 18+** | **Docker Desktop** | **MySQL 8.0**
+- **Go 1.25+** | **Node.js 20+** | **Docker Desktop** (for DBs)
 
-### 1. Launch Infrastructure
-Start the Vector DB (Qdrant) and Task Queue (Redis):
+### 1. Launch DB Infrastructure
 ```bash
-docker-compose up -d
+docker-compose up -d mysql redis qdrant
 ```
 
 ### 2. Backend Setup
 ```bash
 cd backend
-# 1. Update config/local.yaml with MySQL & Gemini API Key
-# 2. Run the server
+# Update config/local.yaml with your credentials
 go run cmd/server/main.go
 ```
 
