@@ -34,8 +34,6 @@ func (s *ChatService) Chat(ctx context.Context, userID uint64, message string) (
 		return "", fmt.Errorf("search failed: %w", err)
 	}
 
-	fmt.Println(points)
-
 	// 3. Construct Context
 	var contextBuilder strings.Builder
 	contextBuilder.WriteString("Context from my friends:\n")
@@ -106,6 +104,5 @@ Rules:
 - Always refer to friends by their full names if available.`
 
 	prompt := fmt.Sprintf("%s\n\nCONTEXT:\n%s\n\nUSER QUESTION: %s\nANSWER:", systemPrompt, finalContext, message)
-	fmt.Println(prompt)
 	return s.Gemini.GenerateChatResponse(ctx, []*genai.Content{}, prompt)
 }

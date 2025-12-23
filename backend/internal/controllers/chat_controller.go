@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"nexia-backend/internal/services"
@@ -50,8 +49,6 @@ func (ctrl *ChatController) Chat(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("User ID: " + fmt.Sprintf("%v", userID))
-
 	uid, ok := userID.(uint64)
 	if !ok {
 		// Handle case where it might be float64 or int (depends on how it was set/decoded)
@@ -64,8 +61,6 @@ func (ctrl *ChatController) Chat(c *gin.Context) {
 			return
 		}
 	}
-
-	fmt.Println("User ID: " + fmt.Sprintf("%v", uid))
 
 	response, err := ctrl.Service.Chat(c.Request.Context(), uid, req.Message)
 	if err != nil {
