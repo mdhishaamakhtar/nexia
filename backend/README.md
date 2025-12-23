@@ -35,30 +35,32 @@ Nexia Backend is a production-grade REST API built using **Go**, **Gin**, and **
 
 ## ⚙️ Setup & Installation
 
-1. **Infrastructure**
+### Option A: Full Docker (Recommended)
+From the root directory, you can run the entire stack:
+```bash
+export GEMINI_API_KEY=your_key_here
+docker-compose up --build
+```
+
+### Option B: Manual Development
+1. **Infrastructure**:
    Ensure Docker is running and launch dependencies:
    ```bash
-   docker-compose up -d
+   docker-compose up -d mysql redis qdrant
    ```
 
-2. **Configuration**
+2. **Configuration**:
    Edit `config/local.yaml`:
-   - Set `gemini_api_key` (Get one from [Google AI Studio](https://aistudio.google.com/)).
-   - Configure MySQL credentials.
+   - Set `gemini_api_key`.
+   - Backend will use `localhost` by default for infrastructure if running manually.
 
-3. **Database Setup**
-   Ensure MySQL is running and create the DB:
+3. **Database Setup**:
+   The backend will automatically try to create the database if it doesn't exist, but you can manually create it:
    ```sql
    CREATE DATABASE nexia_db;
    ```
 
-4. **Syncing Data**
-   If you have existing profiles that aren't indexed:
-   ```bash
-   go run cmd/sync/main.go
-   ```
-
-5. **Run Server**
+4. **Run Server**:
    ```bash
    go run cmd/server/main.go
    ```

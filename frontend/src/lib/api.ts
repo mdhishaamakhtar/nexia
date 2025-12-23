@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create Axios instance
 const api = axios.create({
-  baseURL: "http://localhost:8080/api/v1", // Adjust if backend runs on different port
+  baseURL: "/api/v1", // Proxied in next.config.ts
   headers: {
     "Content-Type": "application/json",
   },

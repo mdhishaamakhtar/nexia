@@ -1,22 +1,62 @@
 services:
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: nexia-qdrant
-    ports:
-      - "6333:6333"
-      - "6334:6334"
+  mysql:
+    image: mysql:8
+    container_name: nexia-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: nexia_db
     volumes:
-      - ./qdrant_storage:/qdrant/storage
-    restart: always
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     container_name: nexia-redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     restart: always
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: nexia-qdrant
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    restart: always
+
+  backend:
+    build: ./backend
+    container_name: nexia-backend
+    environment:
+      - APP_ENV=prod
+      - NEXIA_DB_HOST=mysql
+      - NEXIA_DB_PORT=3306
+      - NEXIA_DB_USER=root
+      - NEXIA_DB_PASSWORD=password
+      - NEXIA_DB_NAME=nexia_db
+      - NEXIA_AI_REDIS_URL=redis:6379
+      - NEXIA_AI_QDRANT_HOST=qdrant
+      - NEXIA_AI_QDRANT_PORT=6334
+      - NEXIA_AI_GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      qdrant:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    container_name: nexia-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
 volumes:
+  mysql_data:
   redis_data:
