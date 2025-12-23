@@ -1,4 +1,5 @@
 # ✨ Nexia Frontend
+
 > A premium, glassmorphism-inspired "Digital Sanctuary" for your memories.
 
 This is the official Nexia client interface, built with **Next.js 15**, **Tailwind CSS**, and **Framer Motion**. It delivers a high-fidelity, cinematic experience for managing and interacting with your social circle.
@@ -34,6 +35,7 @@ This is the official Nexia client interface, built with **Next.js 15**, **Tailwi
 ## ⚙️ Setup & Development
 
 1. **Install Dependencies**
+
    ```bash
    npm install
    ```
@@ -56,5 +58,6 @@ This is the official Nexia client interface, built with **Next.js 15**, **Tailwi
 ---
 
 ## 🔗 Links
+
 - [Root Project README](../README.md)
 - [Backend Documentation](../backend/README.md)

@@ -177,19 +177,21 @@ export default function ChatPage() {
               >
                 {/* Avatar */}
                 <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg ${msg.role === "user"
-                    ? "bg-slate-700 text-slate-200"
-                    : "bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] text-white"
-                    }`}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg ${
+                    msg.role === "user"
+                      ? "bg-slate-700 text-slate-200"
+                      : "bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] text-white"
+                  }`}
                 >
                   {msg.role === "user" ? <User size={18} /> : <Sparkles size={18} />}
                 </div>
 
                 <div
-                  className={`max-w-[85%] px-5 py-4 rounded-2xl shadow-lg ${msg.role === "user"
-                    ? "bg-[var(--color-surface-highlight)] border border-white/10 text-[var(--color-text-primary)] rounded-tr-none text-sm"
-                    : "bg-[var(--color-surface)] border border-white/10 text-[var(--color-text-primary)] rounded-tl-none text-sm leading-relaxed"
-                    }`}
+                  className={`max-w-[85%] px-5 py-4 rounded-2xl shadow-lg ${
+                    msg.role === "user"
+                      ? "bg-[var(--color-surface-highlight)] border border-white/10 text-[var(--color-text-primary)] rounded-tr-none text-sm"
+                      : "bg-[var(--color-surface)] border border-white/10 text-[var(--color-text-primary)] rounded-tl-none text-sm leading-relaxed"
+                  }`}
                 >
                   <div
                     className="prose prose-invert prose-sm max-w-none 
@@ -209,7 +211,9 @@ export default function ChatPage() {
                     </ReactMarkdown>
                   </div>
                   <span className="text-[10px] opacity-30 mt-3 block text-right font-sans font-light tracking-wider uppercase">
-                    {mounted ? msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                    {mounted
+                      ? msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      : ""}
                   </span>
                 </div>
               </motion.div>
