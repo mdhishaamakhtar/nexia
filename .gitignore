@@ -33,3 +33,5 @@ go.work.sum
 
 # Qdrant storage
 qdrant_storage/
+
+.DS_Store
