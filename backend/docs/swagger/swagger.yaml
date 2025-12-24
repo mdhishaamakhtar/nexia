@@ -10,6 +10,18 @@ definitions:
     - password
     - username
     type: object
+  internal_controllers.ChatRequest:
+    properties:
+      message:
+        type: string
+    required:
+    - message
+    type: object
+  internal_controllers.ChatResponse:
+    properties:
+      response:
+        type: string
+    type: object
   nexia-backend_internal_models.AssociatedSong:
     properties:
       artist:
@@ -264,6 +276,42 @@ paths:
       summary: Login or Signup
       tags:
       - auth
+  /chat:
+    post:
+      consumes:
+      - application/json
+      description: Ask questions about your friends using RAG
+      parameters:
+      - description: Chat Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controllers.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controllers.ChatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Chat with your friends' profiles
+      tags:
+      - chat
   /profiles:
     get:
       consumes:
