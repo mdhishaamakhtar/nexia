@@ -24,7 +24,7 @@ services:
     image: qdrant/qdrant:latest
     container_name: nexia-qdrant
     volumes:
-      - ./qdrant_storage:/qdrant/storage
+      - qdrant_data:/qdrant/storage
     restart: always
 
   backend:
@@ -60,3 +60,4 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  qdrant_data:
