@@ -65,6 +65,15 @@ docker-compose up --build
    go run cmd/server/main.go
    ```
 
+### 📖 API Documentation
+Swagger UI is available locally at:
+`http://localhost:8080/api/v1/swagger/index.html`
+
+To regenerate or update the Swagger documentation, run:
+```bash
+go run github.com/swaggo/swag/cmd/swag init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
+```
+
 ---
 
 ## 🔗 Links
