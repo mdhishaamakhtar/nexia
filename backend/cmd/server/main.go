@@ -87,6 +87,7 @@ func main() {
 
 			mux := asynq.NewServeMux()
 			mux.HandleFunc(queue.TypeEmbeddingTask, taskHandler.HandleEmbeddingTask)
+			mux.HandleFunc(queue.TypeDeletionTask, taskHandler.HandleDeletionTask)
 
 			go func() {
 				log.Println("Starting Queue Worker...")

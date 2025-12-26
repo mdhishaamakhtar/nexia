@@ -110,6 +110,30 @@ func (c *QdrantClient) UpsertProfile(ctx context.Context, profile *models.Profil
 	return nil
 }
 
+func (c *QdrantClient) DeleteProfile(ctx context.Context, profileID uint64) error {
+	opInfo, err := c.client.Delete(ctx, &qdrant.DeletePoints{
+		CollectionName: CollectionName,
+		Points: &qdrant.PointsSelector{
+			PointsSelectorOneOf: &qdrant.PointsSelector_Points{
+				Points: &qdrant.PointsIdsList{
+					Ids: []*qdrant.PointId{qdrant.NewIDNum(profileID)},
+				},
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("Qdrant Delete Error (ProfileID=%d): %v", profileID, err)
+		return err
+	}
+
+	if opInfo.Status != qdrant.UpdateStatus_Completed && opInfo.Status != qdrant.UpdateStatus_Acknowledged {
+		return fmt.Errorf("delete status: %v", opInfo.Status)
+	}
+
+	log.Printf("Deleted profile from Qdrant: ProfileID=%d", profileID)
+	return nil
+}
+
 func (c *QdrantClient) SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit uint64) ([]*qdrant.ScoredPoint, error) {
 	results, err := c.client.Query(ctx, &qdrant.QueryPoints{
 		CollectionName: CollectionName,
