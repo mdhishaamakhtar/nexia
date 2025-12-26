@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"nexia-backend/internal/models"
@@ -85,7 +86,20 @@ func (s *ProfileService) UpdateProfile(id uint64, profile *models.Profile, userI
 }
 
 func (s *ProfileService) DeleteProfile(id uint64, userID uint64) error {
-	return s.Repo.Delete(id, userID)
+	// Delete from database first
+	if err := s.Repo.Delete(id, userID); err != nil {
+		return err
+	}
+
+	// Async deletion from Qdrant (vectorDB) via queue
+	if s.Queue != nil {
+		if err := s.Queue.EnqueueDeletionTask(id); err != nil {
+			// Log the error but don't fail the request since DB delete succeeded
+			log.Printf("Warning: Failed to enqueue deletion task for profile %d: %v", id, err)
+		}
+	}
+
+	return nil
 }
 
 func DeriveZodiac(date time.Time) models.ZodiacSign {

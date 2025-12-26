@@ -180,3 +180,20 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 	log.Printf("✅ Successfully embedded and indexed ProfileID: %d for UserID: %d", p.ProfileID, profile.UserID)
 	return nil
 }
+
+func (h *TaskHandler) HandleDeletionTask(ctx context.Context, t *asynq.Task) error {
+	var p DeletionPayload
+	if err := json.Unmarshal(t.Payload(), &p); err != nil {
+		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
+	}
+
+	log.Printf("Processing deletion task for ProfileID: %d", p.ProfileID)
+
+	if err := h.qdrant.DeleteProfile(ctx, p.ProfileID); err != nil {
+		log.Printf("ERROR: Qdrant deletion failed for ProfileID %d: %v", p.ProfileID, err)
+		return fmt.Errorf("qdrant deletion failed: %w", err)
+	}
+
+	log.Printf("✅ Successfully deleted ProfileID: %d from Qdrant", p.ProfileID)
+	return nil
+}
