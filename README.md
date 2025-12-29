@@ -92,6 +92,7 @@ go run cmd/sync/main.go
 
 ## Contributors
 - **Md Hishaam Akhtar**
+- **Apoorva Thakurta**
 
 <p align="center">
   Made with ❤️ for Friends
