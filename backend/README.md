@@ -7,11 +7,11 @@ Nexia Backend is a production-grade REST API built using **Go**, **Gin**, and **
 
 ## 🛠 Tech Stack
 
-[![Go](https://img.shields.io/badge/Language-Go_1.25+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
-[![MySQL](https://img.shields.io/badge/Database-MySQL_8.0-4479A1?style=flat-square&logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-black?style=flat-square&logo=qdrant&logoColor=white)](https://qdrant.tech/)
-[![Redis](https://img.shields.io/badge/Queue-Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
-[![Google Gemini](https://img.shields.io/badge/AI-Gemini_Pro-8E75C2?style=flat-square&logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Go](https://img.shields.io/badge/Language-Go_1.25+-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![MySQL](https://img.shields.io/badge/Database-MySQL_8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![Qdrant](https://img.shields.io/badge/Vector_DB-Qdrant-black?style=for-the-badge&logo=qdrant&logoColor=white)](https://qdrant.tech/)
+[![Redis](https://img.shields.io/badge/Queue-Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Google Gemini](https://img.shields.io/badge/AI-Gemini_Pro-8E75C2?style=for-the-badge&logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
 
 ---
 
