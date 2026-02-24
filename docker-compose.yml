@@ -1,14 +1,15 @@
 services:
-  mysql:
-    image: mysql:8
-    container_name: nexia-mysql
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: nexia-postgres
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: nexia_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: nexia_db
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -20,33 +21,23 @@ services:
       - redis_data:/data
     restart: always
 
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: nexia-qdrant
-    volumes:
-      - qdrant_data:/qdrant/storage
-    restart: always
-
   backend:
     build: ./backend
     container_name: nexia-backend
     environment:
       - APP_ENV=prod
-      - NEXIA_DB_HOST=mysql
-      - NEXIA_DB_PORT=3306
-      - NEXIA_DB_USER=root
+      - NEXIA_DB_HOST=postgres
+      - NEXIA_DB_PORT=5432
+      - NEXIA_DB_USER=postgres
       - NEXIA_DB_PASSWORD=password
       - NEXIA_DB_NAME=nexia_db
+      - NEXIA_DB_SSL_MODE=disable
       - NEXIA_AI_REDIS_URL=redis:6379
-      - NEXIA_AI_QDRANT_HOST=qdrant
-      - NEXIA_AI_QDRANT_PORT=6334
       - NEXIA_AI_GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
-        condition: service_started
-      qdrant:
         condition: service_started
 
   frontend:
@@ -58,6 +49,5 @@ services:
       - backend
 
 volumes:
-  mysql_data:
+  postgres_data:
   redis_data:
-  qdrant_data:

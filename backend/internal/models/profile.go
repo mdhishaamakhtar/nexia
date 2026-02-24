@@ -38,15 +38,15 @@ type Profile struct {
 	Bio              string           `gorm:"type:text" json:"bio"`
 	Profession       string           `gorm:"type:varchar(150)" json:"profession"`
 	LongTermGoals    string           `gorm:"type:text" json:"long_term_goals"`
-	RelationshipType RelationshipType `gorm:"type:enum('Friend','Family','Colleague','Classmate','Crush','Ex','Mentor','Other');not null" json:"relationship_type"`
+	RelationshipType RelationshipType `gorm:"type:varchar(50);not null" json:"relationship_type"`
 	Birthday         *Date            `gorm:"type:date" json:"birthday"`
-	ZodiacSign       ZodiacSign       `gorm:"type:enum('Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces')" json:"zodiac_sign"`
+	ZodiacSign       ZodiacSign       `gorm:"type:varchar(50)" json:"zodiac_sign"`
 	MusicPreference  string           `gorm:"type:text" json:"music_preference"`
 	FavoriteMovie    string           `gorm:"type:varchar(200)" json:"favorite_movie"`
 	FavoriteBook     string           `gorm:"type:varchar(200)" json:"favorite_book"`
 	FavoriteMemory   string           `gorm:"type:text" json:"favorite_memory"`
-	CreatedAt        time.Time        `gorm:"not null;default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt        time.Time        `gorm:"not null;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"`
+	CreatedAt        time.Time        `gorm:"not null;default:now()" json:"created_at"`
+	UpdatedAt        time.Time        `gorm:"not null;default:now()" json:"updated_at"`
 
 	// Child Associations
 	Tags             []Tag             `gorm:"foreignKey:ProfileID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"tags"`

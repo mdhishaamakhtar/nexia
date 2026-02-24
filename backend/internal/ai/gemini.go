@@ -4,62 +4,61 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/generative-ai-go/genai"
-	"google.golang.org/api/option"
+	"google.golang.org/genai"
 )
 
+// GeminiClient wraps the new google.golang.org/genai SDK client.
 type GeminiClient struct {
 	client *genai.Client
-	model  *genai.GenerativeModel
-	emb    *genai.EmbeddingModel
 }
 
 func NewGeminiClient(apiKey string) (*GeminiClient, error) {
 	ctx := context.Background()
-	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  apiKey,
+		Backend: genai.BackendGeminiAPI,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
-
-	return &GeminiClient{
-		client: client,
-		model:  client.GenerativeModel("gemini-flash-latest"),
-		emb:    client.EmbeddingModel("text-embedding-004"),
-	}, nil
+	return &GeminiClient{client: client}, nil
 }
 
+// GenerateEmbedding generates a 3072-dimensional embedding using gemini-embedding-001.
 func (c *GeminiClient) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {
-	res, err := c.emb.EmbedContent(ctx, genai.Text(text))
+	contents := []*genai.Content{
+		{Parts: []*genai.Part{{Text: text}}},
+	}
+	res, err := c.client.Models.EmbedContent(ctx, "gemini-embedding-001", contents, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate embedding: %w", err)
 	}
-	if res.Embedding == nil {
+	if len(res.Embeddings) == 0 || res.Embeddings[0].Values == nil {
 		return nil, fmt.Errorf("no embedding returned")
 	}
-	return res.Embedding.Values, nil
+	return res.Embeddings[0].Values, nil
 }
 
-func (c *GeminiClient) GenerateChatResponse(ctx context.Context, history []*genai.Content, message string) (string, error) {
-	cs := c.model.StartChat()
-	cs.History = history
-
-	res, err := cs.SendMessage(ctx, genai.Text(message))
-	if err != nil {
-		return "", err
+// GenerateChatResponse sends a message and returns the AI text response.
+func (c *GeminiClient) GenerateChatResponse(ctx context.Context, systemPrompt string, userMessage string) (string, error) {
+	contents := []*genai.Content{
+		{Role: "user", Parts: []*genai.Part{{Text: userMessage}}},
 	}
-
-	if len(res.Candidates) == 0 || len(res.Candidates[0].Content.Parts) == 0 {
+	config := &genai.GenerateContentConfig{
+		SystemInstruction: &genai.Content{
+			Parts: []*genai.Part{{Text: systemPrompt}},
+		},
+	}
+	res, err := c.client.Models.GenerateContent(ctx, "gemini-2.5-flash", contents, config)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate response: %w", err)
+	}
+	if res == nil || len(res.Candidates) == 0 || res.Candidates[0].Content == nil || len(res.Candidates[0].Content.Parts) == 0 {
 		return "", fmt.Errorf("no response generated")
 	}
-
-	// Assuming text response
-	if txt, ok := res.Candidates[0].Content.Parts[0].(genai.Text); ok {
-		return string(txt), nil
-	}
-
-	return "", fmt.Errorf("unexpected response type")
+	return res.Candidates[0].Content.Parts[0].Text, nil
 }
 
 func (c *GeminiClient) Close() {
-	c.client.Close()
+	// google.golang.org/genai client does not require explicit close
 }

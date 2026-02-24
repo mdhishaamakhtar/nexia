@@ -16,16 +16,16 @@ import (
 )
 
 type TaskHandler struct {
-	db     *gorm.DB
-	gemini *ai.GeminiClient
-	qdrant *ai.QdrantClient
+	db       *gorm.DB
+	gemini   *ai.GeminiClient
+	pgvector *ai.PgVectorClient
 }
 
-func NewTaskHandler(db *gorm.DB, gemini *ai.GeminiClient, qdrant *ai.QdrantClient) *TaskHandler {
+func NewTaskHandler(db *gorm.DB, gemini *ai.GeminiClient, pgvector *ai.PgVectorClient) *TaskHandler {
 	return &TaskHandler{
-		db:     db,
-		gemini: gemini,
-		qdrant: qdrant,
+		db:       db,
+		gemini:   gemini,
+		pgvector: pgvector,
 	}
 }
 
@@ -156,7 +156,7 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 	if len(profile.Quotes) > 0 {
 		sb.WriteString("Quotes: ")
 		for i, q := range profile.Quotes {
-			sb.WriteString(fmt.Sprintf("\"%s\"", q.Quote))
+			sb.WriteString(fmt.Sprintf("%q", q.Quote))
 			if i < len(profile.Quotes)-1 {
 				sb.WriteString(", ")
 			}
@@ -172,9 +172,9 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 		return fmt.Errorf("gemini embedding failed: %w", err)
 	}
 
-	if err := h.qdrant.UpsertProfile(ctx, &profile, embedding); err != nil {
-		log.Printf("ERROR: Qdrant upsert failed for ProfileID %d: %v", p.ProfileID, err)
-		return fmt.Errorf("qdrant upsert failed: %w", err)
+	if err := h.pgvector.UpsertProfile(ctx, &profile, embedding); err != nil {
+		log.Printf("ERROR: pgvector upsert failed for ProfileID %d: %v", p.ProfileID, err)
+		return fmt.Errorf("pgvector upsert failed: %w", err)
 	}
 
 	log.Printf("✅ Successfully embedded and indexed ProfileID: %d for UserID: %d", p.ProfileID, profile.UserID)
@@ -189,11 +189,11 @@ func (h *TaskHandler) HandleDeletionTask(ctx context.Context, t *asynq.Task) err
 
 	log.Printf("Processing deletion task for ProfileID: %d", p.ProfileID)
 
-	if err := h.qdrant.DeleteProfile(ctx, p.ProfileID); err != nil {
-		log.Printf("ERROR: Qdrant deletion failed for ProfileID %d: %v", p.ProfileID, err)
-		return fmt.Errorf("qdrant deletion failed: %w", err)
+	if err := h.pgvector.DeleteProfile(ctx, p.ProfileID); err != nil {
+		log.Printf("ERROR: pgvector deletion failed for ProfileID %d: %v", p.ProfileID, err)
+		return fmt.Errorf("pgvector deletion failed: %w", err)
 	}
 
-	log.Printf("✅ Successfully deleted ProfileID: %d from Qdrant", p.ProfileID)
+	log.Printf("✅ Successfully deleted ProfileID: %d from pgvector", p.ProfileID)
 	return nil
 }

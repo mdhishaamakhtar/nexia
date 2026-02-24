@@ -11,8 +11,6 @@ import (
 	"nexia-backend/internal/services"
 	"nexia-backend/pkg/db"
 
-	"context"
-
 	"nexia-backend/internal/ai"
 	"nexia-backend/internal/queue"
 
@@ -37,7 +35,7 @@ func main() {
 	// 1.1 Set Gin Mode
 	gin.SetMode(cfg.Server.Mode)
 
-	// 2. Connect to Database
+	// 2. Connect to Database (Postgres)
 	if err := db.Connect(cfg); err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -50,12 +48,16 @@ func main() {
 	// 3. Initialize AI & Queue Components
 	var queueClient *queue.QueueClient
 	var geminiClient *ai.GeminiClient
-	var qdrantClient *ai.QdrantClient
+	var pgvectorClient *ai.PgVectorClient
 
-	// Only init if keys/urls are present (optional check, but good for local dev without RAG)
+	// pgvector reuses the existing Postgres connection — no separate host needed
+	pgvectorClient = ai.NewPgVectorClient(db.DB)
+	log.Println("pgvector client initialized")
+
+	// Only init queue/LLM if Redis URL is present
 	if cfg.AI.RedisURL != "" {
 		queueClient = queue.NewQueueClient(cfg.AI.RedisURL)
-		log.Println("Queue Client initialized")
+		log.Println("Queue client initialized")
 
 		var err error
 		geminiClient, err = ai.NewGeminiClient(cfg.AI.GeminiAPIKey)
@@ -63,20 +65,9 @@ func main() {
 			log.Printf("Warning: Failed to init Gemini: %v", err)
 		}
 
-		qdrantClient, err = ai.NewQdrantClient(cfg.AI.QdrantHost, cfg.AI.QdrantPort)
-		if err != nil {
-			log.Printf("Warning: Failed to init Qdrant: %v", err)
-		} else {
-			// Ensure collection exists
-			if err := qdrantClient.EnsureCollection(context.Background()); err != nil {
-				log.Printf("Warning: Failed to ensure Qdrant collection: %v", err)
-			}
-		}
-
 		// Start Worker
-		if geminiClient != nil && qdrantClient != nil {
-			taskHandler := queue.NewTaskHandler(db.DB, geminiClient, qdrantClient)
-			// Using asynq.Server
+		if geminiClient != nil {
+			taskHandler := queue.NewTaskHandler(db.DB, geminiClient, pgvectorClient)
 			srv := asynq.NewServer(
 				asynq.RedisClientOpt{Addr: cfg.AI.RedisURL},
 				asynq.Config{
@@ -97,19 +88,19 @@ func main() {
 			}()
 		}
 	} else {
-		log.Println("Redis URL not provided, generic RAG features disabled")
+		log.Println("Redis URL not provided, RAG features disabled")
 	}
 
 	// 4. Initialize Layers
 	profileRepo := repositories.NewProfileRepository(db.DB)
-	profileService := services.NewProfileService(profileRepo, queueClient) // Inject queue
+	profileService := services.NewProfileService(profileRepo, queueClient)
 	profileController := controllers.NewProfileController(profileService)
 
 	userRepo := repositories.NewUserRepository(db.DB)
 	authService := services.NewAuthService(userRepo, cfg)
 	authController := controllers.NewAuthController(authService)
 
-	chatService := services.NewChatService(geminiClient, qdrantClient)
+	chatService := services.NewChatService(geminiClient, pgvectorClient)
 	chatController := controllers.NewChatController(chatService)
 
 	// 5. Setup Router

@@ -91,7 +91,7 @@ func (s *ProfileService) DeleteProfile(id uint64, userID uint64) error {
 		return err
 	}
 
-	// Async deletion from Qdrant (vectorDB) via queue
+	// Async deletion from pgvector (vectorDB) via queue
 	if s.Queue != nil {
 		if err := s.Queue.EnqueueDeletionTask(id); err != nil {
 			// Log the error but don't fail the request since DB delete succeeded
