@@ -5,16 +5,12 @@ server:
 
 db:
   host: localhost
-  port: 3306
-  user: root
+  port: 5432
+  user: postgres
   password: password
   name: nexia_db
-  charset: utf8mb4
-  parseTime: True
-  loc: Local
+  ssl_mode: disable
 
 ai:
   gemini_api_key: ""
-  qdrant_host: "localhost"
-  qdrant_port: 6334
   redis_url: "127.0.0.1:6379"

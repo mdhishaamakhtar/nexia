@@ -7,18 +7,17 @@ import (
 
 	"nexia-backend/internal/ai"
 
-	"github.com/google/generative-ai-go/genai"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
 type ChatService struct {
-	Gemini *ai.GeminiClient
-	Qdrant *ai.QdrantClient
+	Gemini   *ai.GeminiClient
+	PgVector *ai.PgVectorClient
 }
 
-func NewChatService(gemini *ai.GeminiClient, qdrant *ai.QdrantClient) *ChatService {
-	return &ChatService{Gemini: gemini, Qdrant: qdrant}
+func NewChatService(gemini *ai.GeminiClient, pgvector *ai.PgVectorClient) *ChatService {
+	return &ChatService{Gemini: gemini, PgVector: pgvector}
 }
 
 func (s *ChatService) Chat(ctx context.Context, userID uint64, message string) (string, error) {
@@ -28,70 +27,34 @@ func (s *ChatService) Chat(ctx context.Context, userID uint64, message string) (
 		return "", fmt.Errorf("embedding failed: %w", err)
 	}
 
-	// 2. Search Qdrant
-	points, err := s.Qdrant.SearchContext(ctx, userID, embedding, 5)
+	// 2. Search pgvector for similar profiles
+	results, err := s.PgVector.SearchContext(ctx, userID, embedding, 5)
 	if err != nil {
 		return "", fmt.Errorf("search failed: %w", err)
 	}
 
-	// 3. Construct Context
+	// 3. Construct Context from JSONB payload
 	var contextBuilder strings.Builder
 	contextBuilder.WriteString("Context from my friends:\n")
-	for _, p := range points {
-		if p.Payload != nil {
-			contextBuilder.WriteString("--- Friend Data ---\n")
-			// Iterate through all payload keys to provide full context
-			for key, val := range p.Payload {
-				// Format key for readability
-				readableKey := cases.Title(language.Und).String(strings.ReplaceAll(key, "_", " "))
+	caser := cases.Title(language.Und)
+	for _, res := range results {
+		contextBuilder.WriteString("--- Friend Data ---\n")
+		for key, val := range res.Payload {
+			readableKey := caser.String(strings.ReplaceAll(key, "_", " "))
 
-				// Handle different value types from structpb
-				var strVal string
-				if s := val.GetStringValue(); s != "" {
-					strVal = s
-				} else if l := val.GetListValue(); l != nil {
-					// Handle lists (like tags, quotes, restrictions)
-					items := []string{}
-					for _, v := range l.Values {
-						if vs := v.GetStringValue(); vs != "" {
-							items = append(items, vs)
-						} else if structVal := v.GetStructValue(); structVal != nil {
-							// Generic field detector for list of structs
-							if f, ok := structVal.Fields["name"]; ok {
-								artist := structVal.Fields["artist"].GetStringValue()
-								items = append(items, fmt.Sprintf("%s by %s", f.GetStringValue(), artist))
-							} else if f, ok := structVal.Fields["quote"]; ok {
-								items = append(items, fmt.Sprintf("\"%s\"", f.GetStringValue()))
-							} else if f, ok := structVal.Fields["restriction"]; ok {
-								items = append(items, f.GetStringValue())
-							} else if f, ok := structVal.Fields["tag"]; ok {
-								items = append(items, f.GetStringValue())
-							} else if f, ok := structVal.Fields["place"]; ok {
-								items = append(items, f.GetStringValue())
-							} else if f, ok := structVal.Fields["view"]; ok {
-								items = append(items, f.GetStringValue())
-							} else if f, ok := structVal.Fields["genre"]; ok {
-								items = append(items, f.GetStringValue())
-							}
-						}
-					}
-					if len(items) > 0 {
-						strVal = strings.Join(items, ", ")
-					}
-				}
-
-				if strVal != "" && key != "user_id" && key != "id" && key != "profile_id" && !strings.Contains(key, "created") && !strings.Contains(key, "updated") {
-					contextBuilder.WriteString(fmt.Sprintf("%s: %s\n", readableKey, strVal))
-				}
+			strVal := formatPayloadValue(val)
+			if strVal != "" &&
+				key != "user_id" && key != "id" && key != "profile_id" &&
+				!strings.Contains(key, "created") && !strings.Contains(key, "updated") {
+				contextBuilder.WriteString(fmt.Sprintf("%s: %s\n", readableKey, strVal))
 			}
-			contextBuilder.WriteString("\n")
 		}
+		contextBuilder.WriteString("\n")
 	}
 
 	finalContext := contextBuilder.String()
 
 	// 4. Generate Response
-	// We use a fresh chat session for now, or could pass history if frontend sends it
 	systemPrompt := `You are Nexia Intel, a premium AI assistant.
 You have access to context about the user's friends provided below.
 Rules:
@@ -103,6 +66,56 @@ Rules:
 - If you don't know the answer based on the context, say so politely.
 - Always refer to friends by their full names if available.`
 
-	prompt := fmt.Sprintf("%s\n\nCONTEXT:\n%s\n\nUSER QUESTION: %s\n\n", systemPrompt, finalContext, message)
-	return s.Gemini.GenerateChatResponse(ctx, []*genai.Content{}, prompt)
+	return s.Gemini.GenerateChatResponse(ctx, systemPrompt, fmt.Sprintf("CONTEXT:\n%s\n\nUSER QUESTION: %s", finalContext, message))
+}
+
+// formatPayloadValue converts a JSON-decoded interface{} value into a readable string.
+// The payload comes from JSONB (decoded via json.Unmarshal), so values are standard Go types.
+func formatPayloadValue(val interface{}) string {
+	switch v := val.(type) {
+	case string:
+		return v
+	case float64:
+		// Numbers (IDs, etc.) — not shown due to key filter above
+		return fmt.Sprintf("%v", v)
+	case []interface{}:
+		// Lists: tags, quotes, songs, restrictions, etc.
+		items := []string{}
+		for _, item := range v {
+			switch iv := item.(type) {
+			case string:
+				items = append(items, iv)
+			case map[string]interface{}:
+				// Structs inside lists (songs, quotes, etc.)
+				if name, ok := iv["name"]; ok {
+					artist := fmt.Sprintf("%v", iv["artist"])
+					items = append(items, fmt.Sprintf("%v by %s", name, artist))
+				} else if q, ok := iv["quote"]; ok {
+					items = append(items, fmt.Sprintf("%q", q))
+				} else if r, ok := iv["restriction"]; ok {
+					items = append(items, fmt.Sprintf("%v", r))
+				} else if t, ok := iv["tag"]; ok {
+					items = append(items, fmt.Sprintf("%v", t))
+				} else if p, ok := iv["place"]; ok {
+					items = append(items, fmt.Sprintf("%v", p))
+				} else if vw, ok := iv["view"]; ok {
+					items = append(items, fmt.Sprintf("%v", vw))
+				} else if g, ok := iv["genre"]; ok {
+					items = append(items, fmt.Sprintf("%v", g))
+				}
+			}
+		}
+		return strings.Join(items, ", ")
+	case map[string]interface{}:
+		// Single struct (AssociatedSong)
+		if name, ok := v["name"]; ok {
+			artist := fmt.Sprintf("%v", v["artist"])
+			return fmt.Sprintf("%v by %s", name, artist)
+		}
+		return ""
+	case bool:
+		return fmt.Sprintf("%v", v)
+	default:
+		return ""
+	}
 }

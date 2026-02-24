@@ -1,3 +1,6 @@
+DROP INDEX IF EXISTS idx_profile_embeddings_vector;
+DROP INDEX IF EXISTS idx_profile_embeddings_user_id;
+DROP TABLE IF EXISTS profile_embeddings;
 DROP TABLE IF EXISTS associated_songs;
 DROP TABLE IF EXISTS top_songs;
 DROP TABLE IF EXISTS quotes;
@@ -8,3 +11,5 @@ DROP TABLE IF EXISTS food_restrictions;
 DROP TABLE IF EXISTS political_views;
 DROP TABLE IF EXISTS tags;
 DROP TABLE IF EXISTS profiles;
+DROP TABLE IF EXISTS users;
+DROP EXTENSION IF EXISTS vector;

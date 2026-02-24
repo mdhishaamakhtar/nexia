@@ -15,8 +15,6 @@ type Config struct {
 
 type AIConfig struct {
 	GeminiAPIKey string `mapstructure:"gemini_api_key"`
-	QdrantHost   string `mapstructure:"qdrant_host"`
-	QdrantPort   int    `mapstructure:"qdrant_port"`
 	RedisURL     string `mapstructure:"redis_url"`
 }
 
@@ -27,14 +25,12 @@ type ServerConfig struct {
 }
 
 type DBConfig struct {
-	Host      string `mapstructure:"host"`
-	Port      int    `mapstructure:"port"`
-	User      string `mapstructure:"user"`
-	Password  string `mapstructure:"password"`
-	Name      string `mapstructure:"name"`
-	Charset   string `mapstructure:"charset"`
-	ParseTime bool   `mapstructure:"parseTime"`
-	Loc       string `mapstructure:"loc"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	Name     string `mapstructure:"name"`
+	SSLMode  string `mapstructure:"ssl_mode"`
 }
 
 func LoadConfig() (*Config, error) {
