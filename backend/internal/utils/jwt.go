@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"time"
 
 	"nexia-backend/internal/config"
 
@@ -14,9 +15,18 @@ type Claims struct {
 }
 
 func GenerateToken(userID uint64, cfg *config.Config) (string, error) {
+	expiryMinutes := cfg.Server.JWTExpiryMinutes
+	if expiryMinutes <= 0 {
+		expiryMinutes = 24 * 60
+	}
+
+	now := time.Now()
 	claims := &Claims{
-		UserID:           userID,
-		RegisteredClaims: jwt.RegisteredClaims{},
+		UserID: userID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(expiryMinutes) * time.Minute)),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

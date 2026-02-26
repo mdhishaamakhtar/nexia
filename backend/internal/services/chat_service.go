@@ -2,33 +2,50 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
-
 	"nexia-backend/internal/ai"
+	"strings"
+	"time"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
 type ChatService struct {
-	Gemini   *ai.GeminiClient
-	PgVector *ai.PgVectorClient
+	Gemini   GeminiClient
+	PgVector VectorSearchClient
 }
 
-func NewChatService(gemini *ai.GeminiClient, pgvector *ai.PgVectorClient) *ChatService {
+type GeminiClient interface {
+	GenerateEmbedding(ctx context.Context, text string) ([]float32, error)
+	GenerateChatResponse(ctx context.Context, systemPrompt string, userMessage string) (string, error)
+}
+
+type VectorSearchClient interface {
+	SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit int) ([]ai.SearchResult, error)
+}
+
+func NewChatService(gemini GeminiClient, pgvector VectorSearchClient) *ChatService {
 	return &ChatService{Gemini: gemini, PgVector: pgvector}
 }
 
 func (s *ChatService) Chat(ctx context.Context, userID uint64, message string) (string, error) {
+	if s.Gemini == nil || s.PgVector == nil {
+		return "", ErrAIUnavailable
+	}
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
 	// 1. Generate Embedding for query
-	embedding, err := s.Gemini.GenerateEmbedding(ctx, message)
+	embedding, err := s.Gemini.GenerateEmbedding(timeoutCtx, message)
 	if err != nil {
 		return "", fmt.Errorf("embedding failed: %w", err)
 	}
 
 	// 2. Search pgvector for similar profiles
-	results, err := s.PgVector.SearchContext(ctx, userID, embedding, 5)
+	results, err := s.PgVector.SearchContext(timeoutCtx, userID, embedding, 5)
 	if err != nil {
 		return "", fmt.Errorf("search failed: %w", err)
 	}
@@ -66,7 +83,14 @@ Rules:
 - If you don't know the answer based on the context, say so politely.
 - Always refer to friends by their full names if available.`
 
-	return s.Gemini.GenerateChatResponse(ctx, systemPrompt, fmt.Sprintf("CONTEXT:\n%s\n\nUSER QUESTION: %s", finalContext, message))
+	response, err := s.Gemini.GenerateChatResponse(timeoutCtx, systemPrompt, fmt.Sprintf("CONTEXT:\n%s\n\nUSER QUESTION: %s", finalContext, message))
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(response) == "" {
+		return "", errors.New("empty response from ai")
+	}
+	return response, nil
 }
 
 // formatPayloadValue converts a JSON-decoded interface{} value into a readable string.

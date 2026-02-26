@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"net/http"
 	_ "nexia-backend/docs/swagger"
 	"nexia-backend/internal/config"
 	"nexia-backend/internal/controllers"
@@ -15,9 +16,14 @@ import (
 func SetupRouter(profileController *controllers.ProfileController, authController *controllers.AuthController, chatController *controllers.ChatController, cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
+	allowOrigins := cfg.Server.CORSOrigins
+	if len(allowOrigins) == 0 {
+		allowOrigins = []string{"http://localhost:3000"}
+	}
+
 	// CORS Middleware
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -27,8 +33,17 @@ func SetupRouter(profileController *controllers.ProfileController, authControlle
 	// API Version 1
 	v1 := r.Group("/api/v1")
 	{
+		v1.GET("/healthz", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		})
+		v1.GET("/readyz", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"status": "ready"})
+		})
+
 		// Auth
 		v1.POST("/auth", authController.LoginOrSignup)
+		v1.GET("/auth/me", middleware.AuthMiddleware(cfg), authController.Me)
+		v1.POST("/auth/logout", middleware.AuthMiddleware(cfg), authController.Logout)
 
 		// Chat (Protected)
 		v1.POST("/chat", middleware.AuthMiddleware(cfg), chatController.Chat)

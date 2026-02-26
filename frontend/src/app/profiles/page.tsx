@@ -1,50 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import ProtectedRoute from "@/components/guards/ProtectedRoute";
 import Navbar from "@/components/molecules/Navbar";
 import CardProfilePreview from "@/components/molecules/CardProfilePreview";
-import api from "@/lib/api";
-
-interface Profile {
-  id: number;
-  full_name: string;
-  relationship_type: string;
-  zodiac_sign?: string;
-  tags?: { tag: string }[];
-}
+import { listProfiles } from "@/features/profiles/api";
+import type { Profile } from "@/shared/types/profile";
 
 export default function ProfilesPage() {
   const router = useRouter();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [relationshipFilter, setRelationshipFilter] = useState("");
 
-  useEffect(() => {
-    fetchProfiles();
-  }, [search, relationshipFilter]);
-
-  const fetchProfiles = async () => {
-    try {
-      setIsLoading(true);
-      const params = new URLSearchParams();
-      params.append("page", "1");
-      params.append("limit", "100");
-      if (search) params.append("search", search);
-      if (relationshipFilter) params.append("relationship_type", relationshipFilter);
-
-      const response = await api.get(`/profiles?${params.toString()}`);
-      setProfiles(response.data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch profiles:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data, isLoading } = useQuery({
+    queryKey: ["profiles", search, relationshipFilter],
+    queryFn: () =>
+      listProfiles({
+        page: 1,
+        limit: 100,
+        search,
+        relationship_type: relationshipFilter,
+      }),
+  });
+  const profiles: Profile[] = data?.data ?? [];
 
   return (
     <ProtectedRoute>

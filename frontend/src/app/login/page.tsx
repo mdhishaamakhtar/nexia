@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import api from "@/lib/api";
 import Input from "@/components/atoms/Input";
 import Button from "@/components/atoms/Button";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
+import { loginOrSignup } from "@/features/auth/api";
+import { getErrorMessage } from "@/shared/api/client";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -22,11 +23,10 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await api.post("/auth", { username, password });
-      const { token } = response.data;
-      login(token);
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || "Authentication failed");
+      await loginOrSignup(username, password);
+      await login();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Authentication failed"));
     } finally {
       setIsLoading(false);
     }

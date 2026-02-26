@@ -1,32 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ArrowLeft,
-  User,
-  Heart,
-  Star,
-  Coffee,
-  MessageSquare,
-  Edit,
-  Trash2,
-  Calendar,
-  Music,
-  Book,
-  Film,
-  MapPin,
   AlertCircle,
+  ArrowLeft,
+  Book,
+  Calendar,
+  Coffee,
+  Edit,
+  Film,
+  Heart,
+  MapPin,
+  MessageSquare,
+  Music,
+  Star,
+  Trash2,
+  User,
+  type LucideIcon,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import ProtectedRoute from "@/components/guards/ProtectedRoute";
 import Navbar from "@/components/molecules/Navbar";
 import Button from "@/components/atoms/Button";
 import QuoteModal from "@/components/molecules/QuoteModal";
-import api from "@/lib/api";
+import { deleteProfile, getProfile } from "@/features/profiles/api";
+import type { Profile } from "@/shared/types/profile";
+import { useToast } from "@/shared/ui/toast";
+import { getErrorMessage } from "@/shared/api/client";
 
-// Section Component for cleaner code
-const DetailSection = ({
+function DetailSection({
   id,
   title,
   icon: Icon,
@@ -34,98 +38,80 @@ const DetailSection = ({
 }: {
   id: string;
   title: string;
-  icon: any;
+  icon: LucideIcon;
   children: React.ReactNode;
-}) => (
-  <div id={id} className="scroll-mt-24">
-    <div className="glass-panel rounded-2xl p-8 border-t border-white/10">
-      <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
-        <div className="p-2 bg-[var(--color-primary-from)]/10 rounded-lg text-[var(--color-primary-from)]">
-          <Icon className="w-6 h-6" />
+}) {
+  return (
+    <div id={id} className="scroll-mt-24">
+      <div className="glass-panel rounded-2xl border-t border-white/10 p-8">
+        <div className="mb-8 flex items-center gap-3 border-b border-white/5 pb-4">
+          <div className="rounded-lg bg-[var(--color-primary-from)]/10 p-2 text-[var(--color-primary-from)]">
+            <Icon className="h-6 w-6" />
+          </div>
+          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{title}</h2>
         </div>
-        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{title}</h2>
+        <div className="space-y-6">{children}</div>
       </div>
-      <div className="space-y-6">{children}</div>
     </div>
-  </div>
-);
+  );
+}
 
-// Helper component for displaying a field
-const Field = ({
+function Field({
   label,
   value,
   icon: Icon,
 }: {
   label: string;
-  value: string | undefined | null;
-  icon?: any;
-}) => {
+  value?: string | null;
+  icon?: LucideIcon;
+}) {
   if (!value) return null;
   return (
     <div className="mb-4">
-      <div className="text-sm text-[var(--color-text-secondary)] mb-1 flex items-center gap-2">
-        {Icon && <Icon className="w-3 h-3" />}
+      <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+        {Icon ? <Icon className="h-3 w-3" /> : null}
         {label}
       </div>
       <div className="text-lg font-medium text-[var(--color-text-primary)]">{value}</div>
     </div>
   );
-};
+}
 
-// Helper for tags/pills
-const PillList = ({
-  items,
-  colorClass = "bg-white/10",
-}: {
-  items: string[];
-  colorClass?: string;
-}) => {
-  if (!items || items.length === 0) return null;
+function PillList({ items, colorClass = "bg-white/10" }: { items: string[]; colorClass?: string }) {
+  if (items.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map((item, i) => (
-        <span key={i} className={`${colorClass} px-3 py-1 rounded-full text-sm`}>
+      {items.map((item) => (
+        <span key={item} className={`${colorClass} rounded-full px-3 py-1 text-sm`}>
           {item}
         </span>
       ))}
     </div>
   );
-};
+}
 
 export default function ProfileDetailPage() {
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-  const id = params?.id as string;
-  const [profile, setProfile] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { success, error } = useToast();
+  const id = params?.id;
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      fetchProfile();
-    }
-  }, [id]);
-
-  const fetchProfile = async () => {
-    try {
-      const response = await api.get(`/profiles/${id}`);
-      setProfile(response.data);
-    } catch (error) {
-      console.error("Failed to fetch profile:", error);
-      router.push("/profiles");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data: profile, isLoading } = useQuery<Profile>({
+    enabled: !!id,
+    queryKey: ["profile", id],
+    queryFn: () => getProfile(id),
+  });
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this profile? This cannot be undone.")) return;
+    if (!id || !confirm("Are you sure you want to delete this profile? This cannot be undone."))
+      return;
     try {
-      await api.delete(`/profiles/${id}`);
+      await deleteProfile(id);
+      success("Profile deleted successfully");
       router.push("/profiles");
-    } catch (error) {
-      console.error("Failed to delete profile:", error);
-      alert("Failed to delete profile");
+    } catch (err: unknown) {
+      error(getErrorMessage(err, "Failed to delete profile"));
     }
   };
 
@@ -134,106 +120,93 @@ export default function ProfileDetailPage() {
       <ProtectedRoute>
         <div className="min-h-screen bg-[var(--color-bg)]">
           <Navbar />
-          <div className="max-w-4xl mx-auto px-4 py-12">
-            <div className="glass-panel h-96 rounded-3xl animate-pulse bg-[var(--color-surface-highlight)]" />
+          <div className="mx-auto max-w-4xl px-4 py-12">
+            <div className="glass-panel h-96 rounded-3xl bg-[var(--color-surface-highlight)]" />
           </div>
         </div>
       </ProtectedRoute>
     );
   }
 
-  if (!profile) return null;
+  if (!profile || !id) return null;
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[var(--color-bg)] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-900 to-slate-900">
         <Navbar />
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Header */}
+        <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between mb-12"
+            className="mb-12 flex items-center justify-between"
           >
             <button
               onClick={() => router.push("/profiles")}
-              className="flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors group"
+              className="group flex items-center gap-2 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
             >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
               <span className="text-lg">Back to Universe</span>
             </button>
 
             <div className="flex gap-3">
               <Button onClick={() => router.push(`/profiles/${id}/edit`)} variant="secondary">
-                <Edit className="w-4 h-4 mr-2" /> Edit
+                <Edit className="mr-2 h-4 w-4" /> Edit
               </Button>
               <Button onClick={handleDelete} variant="destructive" className="!px-3">
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           </motion.div>
 
-          {/* Profile Header Card */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-panel rounded-3xl p-8 mb-12 border-t border-white/10 bg-gradient-to-br from-white/5 to-transparent"
+            className="glass-panel mb-12 rounded-3xl border-t border-white/10 bg-gradient-to-br from-white/5 to-transparent p-8"
           >
-            <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 flex items-center justify-center text-4xl font-bold text-white shadow-lg shadow-indigo-500/20">
+            <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-4xl font-bold text-white shadow-lg shadow-indigo-500/20">
                 {profile.full_name?.charAt(0) || "?"}
               </div>
               <div className="flex-1">
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+                <h1 className="mb-2 text-4xl font-bold text-white md:text-5xl">
                   {profile.full_name}
                 </h1>
                 <div className="flex flex-wrap gap-4 text-[var(--color-text-secondary)]">
-                  {profile.relationship_type && (
-                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm">
-                      {profile.relationship_type}
-                    </span>
-                  )}
-                  {profile.birthday && (
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm">
+                    {profile.relationship_type}
+                  </span>
+                  {profile.birthday ? (
                     <span className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="h-4 w-4" />
                       {new Date(profile.birthday).toLocaleDateString(undefined, {
                         month: "long",
                         day: "numeric",
                       })}
                     </span>
-                  )}
-                  {profile.zodiac_sign && (
+                  ) : null}
+                  {profile.zodiac_sign ? (
                     <span className="flex items-center gap-2 text-sm">
-                      <Star className="w-4 h-4" />
+                      <Star className="h-4 w-4" />
                       {profile.zodiac_sign}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
-            {profile.bio && (
-              <div className="mt-8 p-6 bg-white/5 rounded-2xl border border-white/5">
-                <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed">
+
+            {profile.bio ? (
+              <div className="mt-8 rounded-2xl border border-white/5 bg-white/5 p-6">
+                <p className="text-lg leading-relaxed text-[var(--color-text-secondary)]">
                   {profile.bio}
                 </p>
               </div>
-            )}
-            {profile.tags && profile.tags.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2">
-                {profile.tags.map((t: any, i: number) => (
-                  <span key={i} className="text-indigo-300 text-sm">
-                    #{t.tag}
-                  </span>
-                ))}
-              </div>
-            )}
+            ) : null}
           </motion.div>
 
           <div className="space-y-10">
-            {/* Overview / Basic Info */}
             <DetailSection id="overview" title="Overview" icon={User}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <Field label="Profession" value={profile.profession} />
                 <Field label="Relationship" value={profile.relationship_type} />
                 <Field
@@ -244,150 +217,94 @@ export default function ProfileDetailPage() {
               </div>
             </DetailSection>
 
-            {/* Favorites & Interests */}
             <DetailSection id="favorites" title="Favorites & Interests" icon={Star}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <Field label="Favorite Movie" value={profile.favorite_movie} icon={Film} />
                 <Field label="Favorite Book" value={profile.favorite_book} icon={Book} />
                 <Field label="Music Preference" value={profile.music_preference} icon={Music} />
 
-                {profile.associated_song && (
-                  <div className="md:col-span-2 p-4 bg-white/5 rounded-xl border border-white/10 flex items-center gap-4">
-                    <div className="p-3 bg-rose-500/20 rounded-full text-rose-300">
-                      <Music className="w-6 h-6" />
+                {profile.associated_song ? (
+                  <div className="md:col-span-2 flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <div className="rounded-full bg-rose-500/20 p-3 text-rose-300">
+                      <Music className="h-6 w-6" />
                     </div>
                     <div>
-                      <div className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">
+                      <div className="mb-1 text-xs uppercase tracking-wider text-[var(--color-text-secondary)]">
                         Associated Song
                       </div>
-                      <div className="font-medium text-lg">{profile.associated_song.name}</div>
+                      <div className="text-lg font-medium">{profile.associated_song.name}</div>
                       <div className="text-sm text-[var(--color-text-secondary)]">
                         {profile.associated_song.artist}
                       </div>
                     </div>
                   </div>
-                )}
-
-                {profile.top_songs && profile.top_songs.length > 0 && (
-                  <div className="md:col-span-2">
-                    <div className="text-sm text-[var(--color-text-secondary)] mb-3 flex items-center gap-2">
-                      <Music className="w-3 h-3" /> Top Songs
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {profile.top_songs.map((song: any, i: number) => (
-                        <div
-                          key={i}
-                          className="p-3 bg-white/5 rounded-lg border border-white/5 flex flex-col"
-                        >
-                          <span className="font-medium">{song.name}</span>
-                          <span className="text-xs text-[var(--color-text-secondary)]">
-                            {song.artist}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                ) : null}
               </div>
             </DetailSection>
 
-            {/* Lifestyle */}
             <DetailSection id="lifestyle" title="Lifestyle" icon={Coffee}>
               <div className="space-y-6">
-                {profile.hangout_places && profile.hangout_places.length > 0 && (
-                  <div>
-                    <div className="text-sm text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
-                      <MapPin className="w-3 h-3" /> Hangout Places
-                    </div>
-                    <PillList items={profile.hangout_places.map((p: any) => p.place)} />
+                <div>
+                  <div className="mb-2 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                    <MapPin className="h-3 w-3" /> Hangout Places
                   </div>
-                )}
+                  <PillList items={profile.hangout_places.map((p) => p.place)} />
+                </div>
 
-                {profile.food_restrictions && profile.food_restrictions.length > 0 && (
-                  <div>
-                    <div className="text-sm text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
-                      <AlertCircle className="w-3 h-3" /> Food Restrictions
-                    </div>
-                    <PillList
-                      items={profile.food_restrictions.map((r: any) => r.restriction)}
-                      colorClass="bg-rose-500/10 text-rose-300 border border-rose-500/20"
-                    />
+                <div>
+                  <div className="mb-2 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                    <AlertCircle className="h-3 w-3" /> Food Restrictions
                   </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {profile.movie_genres && profile.movie_genres.length > 0 && (
-                    <div>
-                      <div className="text-sm text-[var(--color-text-secondary)] mb-2">
-                        Movie Genres
-                      </div>
-                      <PillList items={profile.movie_genres.map((g: any) => g.genre)} />
-                    </div>
-                  )}
-                  {profile.book_genres && profile.book_genres.length > 0 && (
-                    <div>
-                      <div className="text-sm text-[var(--color-text-secondary)] mb-2">
-                        Book Genres
-                      </div>
-                      <PillList items={profile.book_genres.map((g: any) => g.genre)} />
-                    </div>
-                  )}
+                  <PillList
+                    items={profile.food_restrictions.map((r) => r.restriction)}
+                    colorClass="border border-rose-500/20 bg-rose-500/10 text-rose-300"
+                  />
                 </div>
               </div>
             </DetailSection>
 
-            {/* Deep Dive */}
             <DetailSection id="deep" title="Deep Dive" icon={MessageSquare}>
-              <div className="space-y-8">
-                {profile.long_term_goals && (
-                  <div>
-                    <div className="text-sm text-[var(--color-text-secondary)] mb-2 uppercase tracking-wider">
-                      Long Term Goals
-                    </div>
-                    <p className="text-lg leading-relaxed">{profile.long_term_goals}</p>
+              {profile.long_term_goals ? (
+                <div>
+                  <div className="mb-2 text-sm uppercase tracking-wider text-[var(--color-text-secondary)]">
+                    Long Term Goals
                   </div>
-                )}
+                  <p className="text-lg leading-relaxed">{profile.long_term_goals}</p>
+                </div>
+              ) : null}
 
-                {profile.favorite_memory && (
-                  <div className="p-6 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                    <div className="text-sm text-indigo-300 mb-2 uppercase tracking-wider flex items-center gap-2">
-                      <Heart className="w-4 h-4" /> Favorite Memory
-                    </div>
-                    <p className="text-lg font-serif italic text-indigo-100 leading-relaxed">
-                      "{profile.favorite_memory}"
-                    </p>
+              {profile.favorite_memory ? (
+                <div className="rounded-2xl border border-indigo-500/10 bg-indigo-500/5 p-6">
+                  <div className="mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-indigo-300">
+                    <Heart className="h-4 w-4" /> Favorite Memory
                   </div>
-                )}
+                  <p className="text-lg font-serif italic leading-relaxed text-indigo-100">
+                    &quot;{profile.favorite_memory}&quot;
+                  </p>
+                </div>
+              ) : null}
 
-                {profile.quotes && profile.quotes.length > 0 && (
-                  <div>
-                    <div className="text-sm text-[var(--color-text-secondary)] mb-4 uppercase tracking-wider">
-                      Words They Said
-                    </div>
-                    <div className="columns-1 md:columns-2 gap-6 space-y-6">
-                      {profile.quotes.map((q: any, i: number) => (
-                        <motion.div
-                          key={i}
-                          whileHover={{ scale: 1.02, y: -5 }}
-                          onClick={() => setSelectedQuote(q.quote)}
-                          className="p-6 bg-white/5 rounded-xl border-l-4 border-indigo-400 break-inside-avoid cursor-pointer hover:shadow-lg hover:shadow-indigo-500/10 transition-all"
-                        >
-                          <p className="text-xl font-serif text-slate-300 line-clamp-1">
-                            "{q.quote}"
-                          </p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div>
+                <div className="mb-2 text-sm text-[var(--color-text-secondary)]">Quotes</div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {profile.quotes.map((q) => (
+                    <button
+                      key={q.id ?? q.quote}
+                      onClick={() => setSelectedQuote(q.quote)}
+                      className="rounded-xl border border-white/10 bg-white/5 p-4 text-left font-serif italic"
+                    >
+                      &quot;{q.quote}&quot;
+                    </button>
+                  ))}
+                </div>
               </div>
             </DetailSection>
           </div>
         </div>
 
-        {selectedQuote && (
+        {selectedQuote ? (
           <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />
-        )}
+        ) : null}
       </div>
     </ProtectedRoute>
   );
