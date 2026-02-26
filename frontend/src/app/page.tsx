@@ -6,17 +6,17 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function HomePage() {
   const router = useRouter();
-  const { token, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading) {
-      if (token) {
+      if (isAuthenticated) {
         router.push("/profiles");
       } else {
         router.push("/login");
       }
     }
-  }, [token, isLoading, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

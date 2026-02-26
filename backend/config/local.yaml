@@ -2,6 +2,9 @@ server:
   port: 8080
   mode: debug
   jwt_secret: "super-secret-key-for-dev"
+  jwt_expiry_minutes: 1440
+  cors_origins:
+    - "http://localhost:3000"
 
 db:
   host: localhost

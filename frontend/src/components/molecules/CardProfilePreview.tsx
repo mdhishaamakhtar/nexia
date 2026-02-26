@@ -1,13 +1,6 @@
 import { Heart, Hash } from "lucide-react";
 import { motion } from "framer-motion";
-
-interface Profile {
-  id: number;
-  full_name: string;
-  relationship_type: string;
-  zodiac_sign?: string;
-  tags?: { tag: string }[];
-}
+import type { Profile } from "@/shared/types/profile";
 
 interface CardProfilePreviewProps {
   profile: Profile;

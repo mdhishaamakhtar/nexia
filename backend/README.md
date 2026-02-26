@@ -75,12 +75,78 @@ docker-compose up --build
 ### 📖 API Documentation
 
 Swagger UI is available locally at:
-`http://localhost:8080/api/v1/swagger/index.html`
+	`http://localhost:8080/api/v1/swagger/index.html`
 
 To regenerate or update the Swagger documentation, run:
 
 ```bash
 go run github.com/swaggo/swag/cmd/swag init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
+```
+
+---
+
+## ✅ Testing
+
+### Format Code (`go fmt`)
+
+```bash
+cd backend
+go fmt ./...
+```
+
+### Test Structure
+
+All backend tests are centralized under `backend/tests`:
+
+- `tests/unit`: Focused unit tests for services, middleware, config, models, and utils.
+- `tests/integration`: End-to-end API flow tests (auth, profiles, chat, health/readiness).
+
+### Run All Tests
+
+```bash
+cd backend
+go test ./...
+```
+
+### Run Integration Tests Only
+
+```bash
+cd backend
+go test ./tests/integration -v
+```
+
+### Run Unit Tests Only
+
+```bash
+cd backend
+go test ./tests/unit -v
+```
+
+### Coverage (All Packages)
+
+```bash
+cd backend
+go test ./... -coverpkg=./... -coverprofile=coverage.out
+go tool cover -func=coverage.out
+```
+
+### Coverage (Core Internal Packages)
+
+This excludes external-adapter style packages (for example `internal/ai`) and is the recommended quality target for day-to-day development.
+
+```bash
+cd backend
+go test ./tests/... \
+  -coverpkg=./internal/config,./internal/controllers,./internal/middleware,./internal/models,./internal/routes,./internal/services,./internal/utils \
+  -coverprofile=coverage.core.out
+go tool cover -func=coverage.core.out
+```
+
+### Open HTML Coverage Report
+
+```bash
+cd backend
+go tool cover -html=coverage.core.out -o coverage.html
 ```
 
 ---

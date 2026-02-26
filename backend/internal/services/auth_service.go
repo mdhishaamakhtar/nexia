@@ -5,7 +5,6 @@ import (
 
 	"nexia-backend/internal/config"
 	"nexia-backend/internal/models"
-	"nexia-backend/internal/repositories"
 	"nexia-backend/internal/utils"
 
 	"golang.org/x/crypto/bcrypt"
@@ -13,11 +12,16 @@ import (
 )
 
 type AuthService struct {
-	Repo   *repositories.UserRepository
+	Repo   UserRepository
 	Config *config.Config
 }
 
-func NewAuthService(repo *repositories.UserRepository, cfg *config.Config) *AuthService {
+type UserRepository interface {
+	Create(user *models.User) error
+	FindByUsername(username string) (*models.User, error)
+}
+
+func NewAuthService(repo UserRepository, cfg *config.Config) *AuthService {
 	return &AuthService{Repo: repo, Config: cfg}
 }
 
@@ -44,7 +48,7 @@ func (s *AuthService) LoginOrSignup(username, password string) (string, error) {
 
 	// Login
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", errors.New("invalid credentials")
+		return "", ErrUnauthorized
 	}
 
 	return utils.GenerateToken(user.ID, s.Config)

@@ -19,9 +19,11 @@ type AIConfig struct {
 }
 
 type ServerConfig struct {
-	Port      int    `mapstructure:"port"`
-	Mode      string `mapstructure:"mode"`
-	JWTSecret string `mapstructure:"jwt_secret"`
+	Port             int      `mapstructure:"port"`
+	Mode             string   `mapstructure:"mode"`
+	JWTSecret        string   `mapstructure:"jwt_secret"`
+	JWTExpiryMinutes int      `mapstructure:"jwt_expiry_minutes"`
+	CORSOrigins      []string `mapstructure:"cors_origins"`
 }
 
 type DBConfig struct {

@@ -1,21 +1,32 @@
 package services
 
 import (
-	"errors"
+	"fmt"
 	"log"
 	"time"
 
 	"nexia-backend/internal/models"
-	"nexia-backend/internal/queue"
-	"nexia-backend/internal/repositories"
 )
 
 type ProfileService struct {
-	Repo  *repositories.ProfileRepository
-	Queue *queue.QueueClient
+	Repo  ProfileRepository
+	Queue EmbeddingTaskQueue
 }
 
-func NewProfileService(repo *repositories.ProfileRepository, queue *queue.QueueClient) *ProfileService {
+type ProfileRepository interface {
+	Create(profile *models.Profile) error
+	FindByID(id uint64, userID uint64) (*models.Profile, error)
+	FindAll(page, limit int, search string, relationshipType string, userID uint64) ([]models.Profile, int64, error)
+	Update(profile *models.Profile) error
+	Delete(id uint64, userID uint64) error
+}
+
+type EmbeddingTaskQueue interface {
+	EnqueueEmbeddingTask(profileID uint) error
+	EnqueueDeletionTask(profileID uint64) error
+}
+
+func NewProfileService(repo ProfileRepository, queue EmbeddingTaskQueue) *ProfileService {
 	return &ProfileService{Repo: repo, Queue: queue}
 }
 
@@ -24,7 +35,7 @@ func (s *ProfileService) CreateProfile(profile *models.Profile, userID uint64) e
 
 	// Validate Top Songs (Max 3)
 	if len(profile.TopSongs) > 3 {
-		return errors.New("cannot have more than 3 top songs")
+		return fmt.Errorf("%w: cannot have more than 3 top songs", ErrValidation)
 	}
 
 	// Derive Zodiac
@@ -55,6 +66,9 @@ func (s *ProfileService) ListProfiles(page, limit int, search, relationshipType 
 	if limit < 1 {
 		limit = 10
 	}
+	if limit > 100 {
+		limit = 100
+	}
 	return s.Repo.FindAll(page, limit, search, relationshipType, userID)
 }
 
@@ -65,7 +79,7 @@ func (s *ProfileService) UpdateProfile(id uint64, profile *models.Profile, userI
 
 	// Validate Top Songs (Max 3)
 	if len(profile.TopSongs) > 3 {
-		return errors.New("cannot have more than 3 top songs")
+		return fmt.Errorf("%w: cannot have more than 3 top songs", ErrValidation)
 	}
 
 	// Derive Zodiac

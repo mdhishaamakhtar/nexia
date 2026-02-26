@@ -2,6 +2,9 @@ server:
   port: 8080
   mode: release
   jwt_secret: "change-me-in-prod"
+  jwt_expiry_minutes: 60
+  cors_origins:
+    - "http://localhost:3000"
 
 db:
   host: localhost

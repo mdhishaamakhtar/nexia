@@ -98,7 +98,7 @@ func main() {
 
 	userRepo := repositories.NewUserRepository(db.DB)
 	authService := services.NewAuthService(userRepo, cfg)
-	authController := controllers.NewAuthController(authService)
+	authController := controllers.NewAuthController(authService, cfg)
 
 	chatService := services.NewChatService(geminiClient, pgvectorClient)
 	chatController := controllers.NewChatController(chatService)

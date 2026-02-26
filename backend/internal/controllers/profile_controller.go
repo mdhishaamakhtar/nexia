@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"nexia-backend/internal/middleware"
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/services"
 	"nexia-backend/internal/utils"
@@ -33,8 +34,8 @@ func NewProfileController(service *services.ProfileService) *ProfileController {
 // @Failure 500 {object} utils.ErrorResponse
 // @Router /profiles [post]
 func (ctrl *ProfileController) CreateProfile(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
 		utils.RespondWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
@@ -45,8 +46,8 @@ func (ctrl *ProfileController) CreateProfile(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.Service.CreateProfile(&profile, userID.(uint64)); err != nil {
-		utils.RespondWithError(c, http.StatusInternalServerError, "SERVER_ERROR", err.Error())
+	if err := ctrl.Service.CreateProfile(&profile, userID); err != nil {
+		respondWithServiceError(c, err)
 		return
 	}
 
@@ -67,8 +68,8 @@ func (ctrl *ProfileController) CreateProfile(c *gin.Context) {
 // @Failure 500 {object} utils.ErrorResponse
 // @Router /profiles/{id} [get]
 func (ctrl *ProfileController) GetProfile(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
 		utils.RespondWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
@@ -80,9 +81,9 @@ func (ctrl *ProfileController) GetProfile(c *gin.Context) {
 		return
 	}
 
-	profile, err := ctrl.Service.GetProfile(id, userID.(uint64))
+	profile, err := ctrl.Service.GetProfile(id, userID)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusNotFound, "NOT_FOUND", "Profile not found")
+		respondWithServiceError(c, err)
 		return
 	}
 
@@ -105,8 +106,8 @@ func (ctrl *ProfileController) GetProfile(c *gin.Context) {
 // @Failure 500 {object} utils.ErrorResponse
 // @Router /profiles [get]
 func (ctrl *ProfileController) ListProfiles(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
 		utils.RespondWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
@@ -116,9 +117,9 @@ func (ctrl *ProfileController) ListProfiles(c *gin.Context) {
 	search := c.Query("search")
 	relationshipType := c.Query("relationship_type")
 
-	profiles, total, err := ctrl.Service.ListProfiles(page, limit, search, relationshipType, userID.(uint64))
+	profiles, total, err := ctrl.Service.ListProfiles(page, limit, search, relationshipType, userID)
 	if err != nil {
-		utils.RespondWithError(c, http.StatusInternalServerError, "SERVER_ERROR", err.Error())
+		respondWithServiceError(c, err)
 		return
 	}
 
@@ -145,8 +146,8 @@ func (ctrl *ProfileController) ListProfiles(c *gin.Context) {
 // @Failure 500 {object} utils.ErrorResponse
 // @Router /profiles/{id} [put]
 func (ctrl *ProfileController) UpdateProfile(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
 		utils.RespondWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
@@ -164,8 +165,8 @@ func (ctrl *ProfileController) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.Service.UpdateProfile(id, &profile, userID.(uint64)); err != nil {
-		utils.RespondWithError(c, http.StatusInternalServerError, "SERVER_ERROR", err.Error())
+	if err := ctrl.Service.UpdateProfile(id, &profile, userID); err != nil {
+		respondWithServiceError(c, err)
 		return
 	}
 
@@ -186,8 +187,8 @@ func (ctrl *ProfileController) UpdateProfile(c *gin.Context) {
 // @Failure 500 {object} utils.ErrorResponse
 // @Router /profiles/{id} [delete]
 func (ctrl *ProfileController) DeleteProfile(c *gin.Context) {
-	userID, exists := c.Get("userID")
-	if !exists {
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
 		utils.RespondWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "User ID not found in context")
 		return
 	}
@@ -199,8 +200,8 @@ func (ctrl *ProfileController) DeleteProfile(c *gin.Context) {
 		return
 	}
 
-	if err := ctrl.Service.DeleteProfile(id, userID.(uint64)); err != nil {
-		utils.RespondWithError(c, http.StatusInternalServerError, "SERVER_ERROR", err.Error())
+	if err := ctrl.Service.DeleteProfile(id, userID); err != nil {
+		respondWithServiceError(c, err)
 		return
 	}
 
