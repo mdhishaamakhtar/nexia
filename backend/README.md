@@ -8,11 +8,16 @@ Nexia Backend is a production-grade REST API built using **Go**, **Gin**, and **
 
 ## 🛠 Tech Stack
 
-[![Go](https://img.shields.io/badge/Language-Go_1.25+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
-[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_17-336791?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![pgvector](https://img.shields.io/badge/Vector_Search-pgvector-336791?style=flat-square&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
-[![Redis](https://img.shields.io/badge/Queue-Redis-DC382D?style=flat-square&logo=redis&logoColor=white)](https://redis.io/)
-[![Google Gemini](https://img.shields.io/badge/AI-Gemini_2.5_Flash-8E75C2?style=flat-square&logo=google-gemini&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![Gin](https://img.shields.io/badge/Gin-1.11-009688?style=for-the-badge&logo=gin&logoColor=white)](https://gin-gonic.com/)
+[![GORM](https://img.shields.io/badge/GORM-1.31-1A237E?style=for-the-badge&logo=go&logoColor=white)](https://gorm.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![pgvector](https://img.shields.io/badge/pgvector-PG17_Extension-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Asynq](https://img.shields.io/badge/Asynq-0.25.1-CE412B?style=for-the-badge&logo=go&logoColor=white)](https://github.com/hibiken/asynq)
+[![GORM PostgreSQL Driver](https://img.shields.io/badge/gorm.io/driver/postgres-1.5.11-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://pkg.go.dev/gorm.io/driver/postgres)
+[![Google GenAI SDK](https://img.shields.io/badge/google.golang.org/genai-1.0.0-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://pkg.go.dev/google.golang.org/genai)
+[![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 
 ---
 

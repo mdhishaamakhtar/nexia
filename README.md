@@ -18,13 +18,20 @@ Think: "Who hates mushrooms?" or "What song reminds me of Sam?" and get answers 
 - Auto-derive zodiac from birthday
 - Background embedding sync via Redis workers
 
-## Stack
+## Tech Stack
 
-- Frontend: Next.js + TypeScript + Tailwind
-- Backend: Go + Gin + GORM
-- Database: PostgreSQL + pgvector
-- Queue/Workers: Redis + Asynq
-- LLM: Gemini API
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-149ECA?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![Gin](https://img.shields.io/badge/Gin-1.11-009688?style=for-the-badge&logo=gin&logoColor=white)](https://gin-gonic.com/)
+[![GORM](https://img.shields.io/badge/GORM-1.31-1A237E?style=for-the-badge&logo=go&logoColor=white)](https://gorm.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![pgvector](https://img.shields.io/badge/pgvector-PG17_Extension-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Asynq](https://img.shields.io/badge/Asynq-0.25.1-CE412B?style=for-the-badge&logo=go&logoColor=white)](https://github.com/hibiken/asynq)
+[![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 
 ## Quick Start (Docker)
 

@@ -2,16 +2,19 @@
 
 > A premium, glassmorphism-inspired "Digital Sanctuary" for your memories.
 
-This is the official Nexia client interface, built with **Next.js 15**, **Tailwind CSS**, and **Framer Motion**. It delivers a high-fidelity, cinematic experience for managing and interacting with your social circle.
+This is the official Nexia client interface, built with **Next.js 16**, **Tailwind CSS 4**, and **Framer Motion**. It delivers a high-fidelity, cinematic experience for managing and interacting with your social circle.
 
 ---
 
-## 🎨 Design System
+## 🛠 Tech Stack
 
-[![Next.js](https://img.shields.io/badge/Framework-Next.js_15-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Styling-Tailwind_3.4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Framer Motion](https://img.shields.io/badge/Motion-Framer_10-0055FF?style=flat-square&logo=framer&logoColor=white)](https://www.framer.com/motion/)
-[![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-149ECA?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Framer Motion](https://img.shields.io/badge/Framer_Motion-12-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
+[![TanStack Query](https://img.shields.io/badge/TanStack_Query-5-FF4154?style=for-the-badge&logo=reactquery&logoColor=white)](https://tanstack.com/query)
+[![Axios](https://img.shields.io/badge/Axios-1.13-5A29E4?style=for-the-badge&logo=axios&logoColor=white)](https://axios-http.com/)
 
 ---
 
@@ -61,7 +64,7 @@ This will automatically proxy `/api` calls to the internal backend.
 
 ## 📂 Structure
 
-- `app/`: Next.js 15 App Router pages and simplified hydration logic.
+- `app/`: Next.js 16 App Router pages and simplified hydration logic.
 - `components/`: Atomic UI design (Atoms, Molecules, Organisms).
 - `lib/api.ts`: Centralized API client using Axios.
 - `public/assets/`: Premium assets including the official Nexia banner.
