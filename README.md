@@ -2,78 +2,58 @@
   <img src="frontend/public/assets/nexia_banner.png" alt="Nexia Banner" width="400" height="200">
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Go-1.25%2B-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go">
-  <img src="https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js">
-  <img src="https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
-  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS">
-</p>
+## Nexia
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Gemini_AI-2.5_Flash-8E75C2?style=for-the-badge&logo=google-gemini&logoColor=white" alt="Gemini">
-  <img src="https://img.shields.io/badge/pgvector-Vector_Search-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="pgvector">
-  <img src="https://img.shields.io/badge/Redis-Queue-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
-  <img src="https://img.shields.io/badge/Asynq-Workers-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Asynq">
-</p>
+Nexia is a digital slambook for your people.
 
-## 🌟 Overview
+You add profiles for friends/family, store the details you usually forget later (favorite songs, random quotes, food quirks, old memories), and ask an AI chat assistant questions about them.
 
-Nexia is a sophisticated personal digital slambook designed to modernize the way we cherish memories and friendships. Beyond standard storage, Nexia implements a **Retrieval-Augmented Generation (RAG)** pipeline, allowing you to have intelligent, context-aware conversations about your social circle.
+Think: "Who hates mushrooms?" or "What song reminds me of Sam?" and get answers from your own saved context.
 
-Built with a high-performance **Go** backend and a cinematic **Next.js** frontend, Nexia offers a "Digital Sanctuary" for the people who matter most.
+## What It Does
 
-## ✨ Key Features
+- Create and manage rich friend profiles
+- Search profiles by name and relationship
+- Chat with AI using RAG over your profile data
+- Auto-derive zodiac from birthday
+- Background embedding sync via Redis workers
 
-- **AI Intel Chat**: Interactive chatbot powered by Google Gemini 2.5 Flash and PostgreSQL semantic search.
-- **Semantic Retrieval**: Uses vector embeddings stored directly in PostgreSQL (`pgvector`) to find relevant friend data instantly.
-- **Async Processing**: Background embedding generation via Redis-backed workers.
-- **Smart Derivations**: Automatic zodiac sign calculation and data normalization.
+## Stack
 
-## 🚀 Quick Start (Recommended)
+- Frontend: Next.js + TypeScript + Tailwind
+- Backend: Go + Gin + GORM
+- Database: PostgreSQL + pgvector
+- Queue/Workers: Redis + Asynq
+- LLM: Gemini API
 
-The easiest way to run Nexia is using **Docker Compose**. This starts the frontend, backend, database, and vector engine with a single command.
+## Quick Start (Docker)
 
-1. **Set your Gemini API Key**:
+```bash
+export GEMINI_API_KEY=your_key_here
+docker-compose up --build
+```
 
-   ```bash
-   export GEMINI_API_KEY=your_key_here
-   ```
+Then open:
 
-2. **Launch everything**:
+- App: [http://localhost:3000](http://localhost:3000)
+- Swagger: [http://localhost:3000/api/v1/swagger/index.html](http://localhost:3000/api/v1/swagger/index.html)
 
-   ```bash
-   docker-compose up --build
-   ```
+## Manual Dev Setup
 
-3. **Access Nexia**:
-   - **Frontend**: [http://localhost:3000](http://localhost:3000)
-   - **API Docs**: [http://localhost:3000/api/v1/swagger/index.html](http://localhost:3000/api/v1/swagger/index.html) (Proxied)
-
----
-
-## 🛠 Manual Development Setup
-
-If you prefer to run services manually for development:
-
-### Prerequisites
-
-- **Go 1.25+** | **Node.js 20+** | **Docker Desktop** (for DBs)
-
-### 1. Launch DB Infrastructure
+### 1. Start infra
 
 ```bash
 docker-compose up -d postgres redis
 ```
 
-### 2. Backend Setup
+### 2. Run backend
 
 ```bash
 cd backend
-# Update config/local.yaml with your credentials
 go run cmd/server/main.go
 ```
 
-### 3. Frontend Setup
+### 3. Run frontend
 
 ```bash
 cd frontend
@@ -81,24 +61,22 @@ npm install
 npm run dev
 ```
 
-### 4. Backfill Data
-
-If you have existing profiles, index them into the AI engine:
+### 4. Optional: backfill embeddings
 
 ```bash
 cd backend
 go run cmd/sync/main.go
 ```
 
-## 📖 Deep Dives
+## Project Docs
 
-- [**Backend Documentation**](./backend/README.md)
-- [**Frontend Documentation**](./frontend/README.md)
+- Backend: [backend/README.md](./backend/README.md)
+- Frontend: [frontend/README.md](./frontend/README.md)
 
-## Contributors
+## Contributor
 
-- **Md Hishaam Akhtar**
+- Md Hishaam Akhtar
 
 <p align="center">
-  Made with ❤️ for Friends
+  Built for remembering people better.
 </p>
