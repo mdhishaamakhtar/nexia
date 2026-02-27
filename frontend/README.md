@@ -1,6 +1,6 @@
 # ✨ Nexia Frontend
 
-> A premium, glassmorphism-inspired "Digital Sanctuary" for your memories.
+> A scrapbook-inspired "Digital Sanctuary" for your memories.
 
 This is the official Nexia client interface, built with **Next.js 16**, **Tailwind CSS 4**, and **Framer Motion**. It delivers a high-fidelity, cinematic experience for managing and interacting with your social circle.
 
@@ -20,10 +20,10 @@ This is the official Nexia client interface, built with **Next.js 16**, **Tailwi
 
 ## 🔥 Key UI Features
 
-- **AI Intel Chat**: A beautifully designed RAG interface with spacious typography and serif-inspired readability.
+- **AI Intel Chat**: A beautifully designed RAG interface featuring the Nexia Mascot and interactive message bubbles.
+- **Scrapbook Aesthetics**: Integrated design system featuring washi-tape accents, hand-drawn stickers, and tilted paper-scrap layouts.
 - **Glassmorphism Components**: Native-feel blur effects, translucent panels, and vibrant gradient glows.
-- **Perfect Grid Layout**: A 3-column row-based explorer that keeps profile cards perfectly aligned.
-- **Micro-interactions**: Hover effects, smooth route transitions, and interactive loading states.
+- **Micro-interactions**: Spring-loaded hover effects, smooth route transitions, and interactive loading states.
 - **Responsive Architecture**: Fully optimized for mobile, tablet, and desktop viewports.
 
 ---
@@ -42,6 +42,10 @@ This is the official Nexia client interface, built with **Next.js 16**, **Tailwi
 From the root directory, run:
 
 ```bash
+# Using the nexia utility script (Recommended)
+./nexia.sh start
+
+# Or using raw Docker Compose
 export GEMINI_API_KEY=your_key_here
 docker-compose up --build
 ```
@@ -71,10 +75,11 @@ This will automatically proxy `/api` calls to the internal backend.
 
 ## 📂 Structure
 
-- `app/`: Next.js 16 App Router pages and simplified hydration logic.
-- `components/`: Atomic UI design (Atoms, Molecules, Organisms).
-- `lib/api.ts`: Centralized API client using Axios.
-- `public/assets/`: Premium assets including the official Nexia banner.
+- `src/app/`: Next.js 16 App Router pages and simplified hydration logic.
+- `src/components/`: Atomic UI design (Atoms, Molecules, Organisms).
+- `src/features/`: Domain-specific logic and feature-based components (e.g., Profiles, Zodiac).
+- `src/shared/ui/`: Core brand assets including the Nexia Mascot and hand-drawn stickers.
+- `src/lib/api.ts`: Centralized API client using Axios.
 
 ---
 
