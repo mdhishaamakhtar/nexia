@@ -72,6 +72,11 @@ const docTemplate = `{
         },
         "/chat": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Ask questions about your friends using RAG",
                 "consumes": [
                     "application/json"
@@ -104,31 +109,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/nexia-backend_internal_utils.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/nexia-backend_internal_utils.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/profiles": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "List profiles with pagination and filtering",
                 "consumes": [
                     "application/json"
@@ -186,14 +185,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/nexia-backend_internal_utils.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "description": "Create a new profile with all child attributes",
                 "consumes": [
                     "application/json"
@@ -245,16 +244,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/nexia-backend_internal_utils.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
+                }
             }
         },
         "/profiles/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get full profile details including all child lists",
                 "consumes": [
                     "application/json"
@@ -300,14 +299,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/nexia-backend_internal_utils.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "put": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ]
-            },
-            "put": {
+                ],
                 "description": "Full overwrite update of a profile",
                 "consumes": [
                     "application/json"
@@ -365,14 +364,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/nexia-backend_internal_utils.ErrorResponse"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "description": "Delete a profile and all its child entities",
                 "consumes": [
                     "application/json"
@@ -421,12 +420,7 @@ const docTemplate = `{
                             "$ref": "#/definitions/nexia-backend_internal_utils.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
+                }
             }
         }
     },

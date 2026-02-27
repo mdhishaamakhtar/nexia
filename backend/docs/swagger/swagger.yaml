@@ -298,15 +298,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Chat with your friends' profiles
