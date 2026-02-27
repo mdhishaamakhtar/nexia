@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 
 type ToastType = "success" | "error";
 
@@ -39,18 +40,32 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed right-4 top-4 z-[100] flex w-full max-w-sm flex-col gap-2">
-        {toasts.map((toast) => (
-          <div
+      <div className="fixed bottom-4 left-4 z-[100] flex w-full max-w-sm flex-col gap-2">
+        {toasts.map((toast, idx) => (
+          <motion.div
             key={toast.id}
-            className={`glass-panel rounded-xl px-4 py-3 text-sm shadow-xl ${
-              toast.type === "error"
-                ? "border-red-500/30 text-red-300"
-                : "border-emerald-500/30 text-emerald-300"
-            }`}
+            initial={{ opacity: 0, x: -40, rotate: -10, scale: 0.8 }}
+            animate={{ opacity: 1, x: 0, rotate: idx % 2 === 0 ? -2 : 2, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8, x: -20 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`glass-panel scrapbook-card rounded-2xl px-5 py-3.5 text-xs font-bold tracking-tight flex items-center gap-3 relative overflow-hidden`}
+            style={{
+              borderColor: toast.type === "error" ? "rgba(239, 68, 68, 0.4)" : "var(--lavender)",
+              color: "var(--text-1)",
+              boxShadow: "2px 2px 0px var(--border-mid)",
+            }}
           >
+            {/* Sticker side accent */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1"
+              style={{ background: toast.type === "error" ? "var(--red)" : "var(--blue)" }}
+            />
+
+            <div
+              className={`w-2 h-2 rounded-full shrink-0 ${toast.type === "error" ? "bg-red-500" : "bg-emerald-500"} animate-pulse`}
+            />
             {toast.message}
-          </div>
+          </motion.div>
         ))}
       </div>
     </ToastContext.Provider>

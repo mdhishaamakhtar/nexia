@@ -1,9 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Coffee, Heart, MessageSquare, Save, Star, Trash2, User } from "lucide-react";
-import { useEffect } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { ChevronDown, Coffee, Heart, MessageSquare, Save, Star, Trash2, User } from "lucide-react";
+import { motion } from "framer-motion";
+import { useRef } from "react";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
@@ -59,16 +60,10 @@ export default function ProfileForm({
     handleSubmit,
     formState: { errors },
     control,
-    watch,
-    reset,
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(schema),
     defaultValues: initialValues,
   });
-
-  useEffect(() => {
-    reset(initialValues);
-  }, [initialValues, reset]);
 
   const tagsField = useFieldArray({ control, name: "tags" });
   const quotesField = useFieldArray({ control, name: "quotes" });
@@ -78,18 +73,38 @@ export default function ProfileForm({
   const foodRestrictionsField = useFieldArray({ control, name: "food_restrictions" });
   const politicalViewsField = useFieldArray({ control, name: "political_views" });
   const songsField = useFieldArray({ control, name: "top_songs" });
+  const songNameInputRef = useRef<HTMLInputElement>(null);
+  const songArtistInputRef = useRef<HTMLInputElement>(null);
 
-  const songs = watch("top_songs");
+  const songs = useWatch({ control, name: "top_songs" });
+
+  const addTopSong = () => {
+    const name = songNameInputRef.current?.value.trim() ?? "";
+    const artist = songArtistInputRef.current?.value.trim() ?? "";
+    if (!name || !artist) return;
+
+    songsField.append({ name, artist });
+
+    if (songNameInputRef.current) songNameInputRef.current.value = "";
+    if (songArtistInputRef.current) songArtistInputRef.current.value = "";
+    songNameInputRef.current?.focus();
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
+    <motion.form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-10"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <div className="flex justify-end">
         <Button type="submit" isLoading={isSubmitting} className="!px-8">
           <Save className="mr-2 h-4 w-4" /> {submitLabel}
         </Button>
       </div>
 
-      <ProfileFormSection id="basic" title="Basic Information" icon={User}>
+      <ProfileFormSection id="basic" title="Basic Information" icon={User} index={0}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Input label="Full Name" {...register("full_name")} error={errors.full_name?.message} />
 
@@ -97,19 +112,25 @@ export default function ProfileForm({
             <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
               Relationship Type
             </label>
-            <select
-              {...register("relationship_type")}
-              className="glass-input w-full rounded-xl border border-[var(--color-border-subtle)] px-4 py-3"
-            >
-              <option value="Friend">Friend</option>
-              <option value="Family">Family</option>
-              <option value="Colleague">Colleague</option>
-              <option value="Classmate">Classmate</option>
-              <option value="Crush">Crush</option>
-              <option value="Ex">Ex</option>
-              <option value="Mentor">Mentor</option>
-              <option value="Other">Other</option>
-            </select>
+            <div className="relative">
+              <select
+                {...register("relationship_type")}
+                className="glass-input w-full appearance-none rounded-xl border border-[var(--color-border-subtle)] px-4 py-3 pr-10"
+              >
+                <option value="Friend">Friend</option>
+                <option value="Family">Family</option>
+                <option value="Colleague">Colleague</option>
+                <option value="Classmate">Classmate</option>
+                <option value="Crush">Crush</option>
+                <option value="Ex">Ex</option>
+                <option value="Mentor">Mentor</option>
+                <option value="Other">Other</option>
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2"
+                style={{ color: "var(--text-3)" }}
+              />
+            </div>
           </div>
 
           <Input label="Birthday" type="date" {...register("birthday")} />
@@ -133,21 +154,26 @@ export default function ProfileForm({
               items={tagsField.fields}
               append={tagsField.append}
               remove={tagsField.remove}
-              badgeClassName="border border-indigo-500/30 bg-indigo-500/20 text-indigo-300"
             />
           </div>
         </div>
       </ProfileFormSection>
 
-      <ProfileFormSection id="interests" title="Interests & Favorites" icon={Star}>
+      <ProfileFormSection id="interests" title="Interests & Favorites" icon={Star} index={1}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Input label="Music Preference" {...register("music_preference")} />
           <Input label="Favorite Movie" {...register("favorite_movie")} />
           <Input label="Favorite Book" {...register("favorite_book")} />
 
-          <div className="md:col-span-2 rounded-xl border border-white/10 bg-white/5 p-4">
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-medium">
-              <Heart className="h-4 w-4 text-rose-400" /> Song Association
+          <div
+            className="md:col-span-2 rounded-xl border p-4"
+            style={{ background: "var(--fill)", borderColor: "var(--border)" }}
+          >
+            <h3
+              className="mb-4 flex items-center gap-2 text-sm font-semibold"
+              style={{ color: "var(--text-2)" }}
+            >
+              <Heart className="h-4 w-4" style={{ color: "var(--text-3)" }} /> Song Association
             </h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Input placeholder="Song Name" {...register("associated_song_name")} />
@@ -163,49 +189,57 @@ export default function ProfileForm({
               {songsField.fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-3"
+                  className="flex items-center justify-between rounded-lg border p-3"
+                  style={{ background: "var(--fill)", borderColor: "var(--border)" }}
                 >
                   <div>
-                    <div className="font-medium">{songs[index]?.name || "Untitled"}</div>
-                    <div className="text-xs text-[var(--color-text-secondary)]">
+                    <div className="font-medium text-sm" style={{ color: "var(--text-1)" }}>
+                      {songs[index]?.name || "Untitled"}
+                    </div>
+                    <div className="text-xs" style={{ color: "var(--text-3)" }}>
                       {songs[index]?.artist}
                     </div>
                   </div>
                   <button type="button" onClick={() => songsField.remove(index)}>
-                    <Trash2 className="h-4 w-4 text-red-400" />
+                    <Trash2 className="h-4 w-4" style={{ color: "var(--red)" }} />
                   </button>
                 </div>
               ))}
             </div>
             {errors.top_songs?.message && (
-              <p className="mt-1 text-sm text-red-400">{errors.top_songs.message}</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--red)" }}>
+                {errors.top_songs.message}
+              </p>
             )}
             <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-              <Input
+              <input
+                ref={songNameInputRef}
                 placeholder="Song Name"
                 onKeyDown={(e) => {
-                  if (e.key !== "Enter") return;
-                  e.preventDefault();
-                  const currentTarget = e.currentTarget;
-                  const artistInput = document.getElementById(
-                    "song-artist-input"
-                  ) as HTMLInputElement;
-                  if (!currentTarget.value.trim() || !artistInput?.value.trim()) return;
-                  songsField.append({
-                    name: currentTarget.value.trim(),
-                    artist: artistInput.value.trim(),
-                  });
-                  currentTarget.value = "";
-                  artistInput.value = "";
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTopSong();
+                  }
                 }}
+                className="glass-input w-full rounded-xl px-4 py-3"
               />
-              <Input id="song-artist-input" placeholder="Artist" />
+              <input
+                ref={songArtistInputRef}
+                placeholder="Artist"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTopSong();
+                  }
+                }}
+                className="glass-input w-full rounded-xl px-4 py-3"
+              />
             </div>
           </div>
         </div>
       </ProfileFormSection>
 
-      <ProfileFormSection id="lifestyle" title="Lifestyle" icon={Coffee}>
+      <ProfileFormSection id="lifestyle" title="Lifestyle" icon={Coffee} index={2}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <FieldArrayInput
             label="Hangout Places"
@@ -222,7 +256,6 @@ export default function ProfileForm({
             items={foodRestrictionsField.fields}
             append={foodRestrictionsField.append}
             remove={foodRestrictionsField.remove}
-            badgeClassName="border border-rose-500/20 bg-rose-500/10 text-rose-300"
           />
           <FieldArrayInput
             label="Movie Genres"
@@ -243,7 +276,7 @@ export default function ProfileForm({
         </div>
       </ProfileFormSection>
 
-      <ProfileFormSection id="deep" title="Deep Dive" icon={MessageSquare}>
+      <ProfileFormSection id="deep" title="Deep Dive" icon={MessageSquare} index={3}>
         <div className="space-y-6">
           <div>
             <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
@@ -261,7 +294,7 @@ export default function ProfileForm({
             </label>
             <textarea
               {...register("favorite_memory")}
-              className="glass-input h-32 w-full resize-none rounded-xl p-4 font-serif text-lg focus:outline-none"
+              className="glass-input h-32 w-full resize-none rounded-xl p-4 focus:outline-none"
             />
           </div>
 
@@ -283,6 +316,6 @@ export default function ProfileForm({
           />
         </div>
       </ProfileFormSection>
-    </form>
+    </motion.form>
   );
 }

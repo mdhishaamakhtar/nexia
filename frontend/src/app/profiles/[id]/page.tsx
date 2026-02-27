@@ -17,14 +17,15 @@ import {
   Star,
   Trash2,
   User,
-  type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ProtectedRoute from "@/components/guards/ProtectedRoute";
 import Navbar from "@/components/molecules/Navbar";
+import ConfirmDialog from "@/components/molecules/ConfirmDialog";
 import Button from "@/components/atoms/Button";
 import QuoteModal from "@/components/molecules/QuoteModal";
+import ZodiacIcon from "@/features/profiles/components/ZodiacIcon";
 import { deleteProfile, getProfile } from "@/features/profiles/api";
 import type { Profile } from "@/shared/types/profile";
 import { useToast } from "@/shared/ui/toast";
@@ -35,24 +36,46 @@ function DetailSection({
   title,
   icon: Icon,
   children,
+  index = 0,
 }: {
   id: string;
   title: string;
-  icon: LucideIcon;
+  icon: React.ElementType;
   children: React.ReactNode;
+  index?: number;
 }) {
   return (
-    <div id={id} className="scroll-mt-24">
-      <div className="glass-panel rounded-2xl border-t border-white/10 p-8">
-        <div className="mb-8 flex items-center gap-3 border-b border-white/5 pb-4">
-          <div className="rounded-lg bg-[var(--color-primary-from)]/10 p-2 text-[var(--color-primary-from)]">
-            <Icon className="h-6 w-6" />
+    <motion.div
+      initial={{ opacity: 0, x: -15, rotate: index % 2 === 0 ? -1 : 1 }}
+      animate={{ opacity: 1, x: 0, rotate: index % 2 === 0 ? -0.5 : 0.5 }}
+      transition={{ delay: 0.1 + index * 0.08, type: "spring", damping: 20 }}
+      id={id}
+      className="scroll-mt-20 relative group"
+    >
+      {/* Decorative Tape */}
+      <div
+        className="washi-tape-accent w-20 opacity-30 group-hover:opacity-100 transition-opacity"
+        style={{ background: index % 2 === 0 ? "var(--peach)" : "var(--lavender)", top: "-10px" }}
+      />
+
+      <div className="glass-panel rounded-2xl p-6 sm:p-7 scrapbook-card overflow-hidden">
+        <div className="mb-6 flex items-center gap-3">
+          <div
+            className="rounded-xl p-2"
+            style={{ background: "var(--fill)", color: "var(--text-3)" }}
+          >
+            <Icon className="h-4 w-4" />
           </div>
-          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{title}</h2>
+          <h2
+            className="text-[11px] font-bold uppercase tracking-[0.14em]"
+            style={{ color: "var(--text-3)" }}
+          >
+            {title}
+          </h2>
         </div>
-        <div className="space-y-6">{children}</div>
+        <div className="space-y-5">{children}</div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -63,26 +86,39 @@ function Field({
 }: {
   label: string;
   value?: string | null;
-  icon?: LucideIcon;
+  icon?: React.ElementType;
 }) {
   if (!value) return null;
   return (
-    <div className="mb-4">
-      <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+    <div className="mb-3">
+      <div
+        className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+        style={{ color: "var(--text-3)" }}
+      >
         {Icon ? <Icon className="h-3 w-3" /> : null}
         {label}
       </div>
-      <div className="text-lg font-medium text-[var(--color-text-primary)]">{value}</div>
+      <div className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
+        {value}
+      </div>
     </div>
   );
 }
 
-function PillList({ items, colorClass = "bg-white/10" }: { items: string[]; colorClass?: string }) {
+function PillList({ items }: { items: string[] }) {
   if (items.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {items.map((item) => (
-        <span key={item} className={`${colorClass} rounded-full px-3 py-1 text-sm`}>
+        <span
+          key={item}
+          className="rounded-full px-3 py-1 text-xs font-medium border"
+          style={{
+            background: "var(--fill)",
+            borderColor: "var(--border)",
+            color: "var(--text-2)",
+          }}
+        >
           {item}
         </span>
       ))}
@@ -95,7 +131,10 @@ export default function ProfileDetailPage() {
   const router = useRouter();
   const { success, error } = useToast();
   const id = params?.id;
+  const queryClient = useQueryClient();
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: profile, isLoading } = useQuery<Profile>({
     enabled: !!id,
@@ -104,24 +143,31 @@ export default function ProfileDetailPage() {
   });
 
   const handleDelete = async () => {
-    if (!id || !confirm("Are you sure you want to delete this profile? This cannot be undone."))
-      return;
+    if (!id || isDeleting) return;
+    setIsDeleting(true);
     try {
       await deleteProfile(id);
-      success("Profile deleted successfully");
+      await queryClient.invalidateQueries({ queryKey: ["profiles"] });
+      await queryClient.removeQueries({ queryKey: ["profile", id] });
+      success("Profile deleted");
       router.push("/profiles");
     } catch (err: unknown) {
       error(getErrorMessage(err, "Failed to delete profile"));
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
     }
   };
 
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-[var(--color-bg)]">
+        <div className="min-h-screen">
           <Navbar />
-          <div className="mx-auto max-w-4xl px-4 py-12">
-            <div className="glass-panel h-96 rounded-3xl bg-[var(--color-surface-highlight)]" />
+          <div className="mx-auto max-w-3xl px-4 py-12 space-y-4">
+            <div className="h-44 rounded-2xl shimmer" />
+            <div className="h-28 rounded-2xl shimmer" />
+            <div className="h-28 rounded-2xl shimmer" />
           </div>
         </div>
       </ProtectedRoute>
@@ -132,179 +178,336 @@ export default function ProfileDetailPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[var(--color-bg)] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-900 to-slate-900">
+      <div className="min-h-screen">
         <Navbar />
 
-        <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+          {/* Back + Actions */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-12 flex items-center justify-between"
+            className="mb-8 flex items-center justify-between"
           >
             <button
               onClick={() => router.push("/profiles")}
-              className="group flex items-center gap-2 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+              className="group flex items-center gap-2 transition-colors text-sm"
+              style={{ color: "var(--text-3)" }}
             >
-              <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-              <span className="text-lg">Back to Universe</span>
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              back
             </button>
 
-            <div className="flex gap-3">
-              <Button onClick={() => router.push(`/profiles/${id}/edit`)} variant="secondary">
-                <Edit className="mr-2 h-4 w-4" /> Edit
+            <div className="flex gap-2">
+              <Button
+                onClick={() => router.push(`/profiles/${id}/edit`)}
+                variant="secondary"
+                className="text-xs px-3 py-2"
+              >
+                <Edit className="mr-1.5 h-3.5 w-3.5" /> Edit
               </Button>
-              <Button onClick={handleDelete} variant="destructive" className="!px-3">
-                <Trash2 className="h-4 w-4" />
+              <Button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                variant="destructive"
+                className="px-3 py-2"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>
           </motion.div>
 
+          {/* Hero Card */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="glass-panel mb-12 rounded-3xl border-t border-white/10 bg-gradient-to-br from-white/5 to-transparent p-8"
+            initial={{ opacity: 0, scale: 0.95, rotate: -0.5 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ duration: 0.5, type: "spring" }}
+            className="glass-panel mb-8 rounded-3xl p-8 sm:p-10 relative scrapbook-card"
           >
-            <div className="flex flex-col items-start gap-8 md:flex-row md:items-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 text-4xl font-bold text-white shadow-lg shadow-indigo-500/20">
-                {profile.full_name?.charAt(0) || "?"}
+            {/* Big Washi Tape */}
+            <div className="washi-tape-accent w-32 h-8 !top-[-15px]" style={{ opacity: 0.7 }} />
+
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+              <div
+                className="h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center rounded-2xl text-3xl sm:text-4xl font-semibold shrink-0 scrapbook-card rotate-[-2deg]"
+                style={{ background: "var(--lavender)", color: "var(--text-1)" }}
+              >
+                {profile.full_name?.charAt(0)?.toUpperCase() || "?"}
               </div>
+
               <div className="flex-1">
-                <h1 className="mb-2 text-4xl font-bold text-white md:text-5xl">
+                <h1
+                  className="text-3xl sm:text-4xl font-semibold mb-2.5 leading-tight"
+                  style={{ color: "var(--text-1)" }}
+                >
                   {profile.full_name}
                 </h1>
-                <div className="flex flex-wrap gap-4 text-[var(--color-text-secondary)]">
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-medium border"
+                    style={{
+                      color: "var(--text-2)",
+                      background: "var(--fill)",
+                      borderColor: "var(--border)",
+                    }}
+                  >
+                    <Heart className="h-3 w-3" />
                     {profile.relationship_type}
                   </span>
-                  {profile.birthday ? (
-                    <span className="flex items-center gap-2 text-sm">
-                      <Calendar className="h-4 w-4" />
+                  {profile.birthday && (
+                    <span
+                      className="flex items-center gap-1.5 text-xs"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      <Calendar className="h-3 w-3" />
                       {new Date(profile.birthday).toLocaleDateString(undefined, {
                         month: "long",
                         day: "numeric",
                       })}
                     </span>
-                  ) : null}
-                  {profile.zodiac_sign ? (
-                    <span className="flex items-center gap-2 text-sm">
-                      <Star className="h-4 w-4" />
+                  )}
+                  {profile.zodiac_sign && (
+                    <span
+                      className="flex items-center gap-1.5 text-xs"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      <ZodiacIcon
+                        sign={profile.zodiac_sign}
+                        size={12}
+                        className="text-[var(--blue)]"
+                      />
                       {profile.zodiac_sign}
                     </span>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </div>
 
-            {profile.bio ? (
-              <div className="mt-8 rounded-2xl border border-white/5 bg-white/5 p-6">
-                <p className="text-lg leading-relaxed text-[var(--color-text-secondary)]">
-                  {profile.bio}
+            {profile.bio && (
+              <div className="mt-6 pt-5 border-t" style={{ borderColor: "var(--border)" }}>
+                <p className="text-sm leading-relaxed italic" style={{ color: "var(--text-2)" }}>
+                  &ldquo;{profile.bio}&rdquo;
                 </p>
               </div>
-            ) : null}
+            )}
           </motion.div>
 
-          <div className="space-y-10">
-            <DetailSection id="overview" title="Overview" icon={User}>
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <Field label="Profession" value={profile.profession} />
-                <Field label="Relationship" value={profile.relationship_type} />
-                <Field
-                  label="Birthday"
-                  value={profile.birthday ? new Date(profile.birthday).toLocaleDateString() : null}
-                />
-                <Field label="Zodiac" value={profile.zodiac_sign} />
-              </div>
-            </DetailSection>
+          {/* Sections */}
+          <div className="space-y-4">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+            >
+              <DetailSection id="overview" title="Overview" icon={User} index={0}>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Profession" value={profile.profession} />
+                  <Field
+                    label="Birthday"
+                    value={
+                      profile.birthday ? new Date(profile.birthday).toLocaleDateString() : null
+                    }
+                    icon={Calendar}
+                  />
+                  <Field
+                    label="Zodiac"
+                    value={profile.zodiac_sign}
+                    icon={() => (
+                      <ZodiacIcon
+                        sign={profile.zodiac_sign!}
+                        size={12}
+                        className="text-[var(--blue)] mr-1"
+                      />
+                    )}
+                  />
+                </div>
+                {profile.tags && profile.tags.length > 0 && (
+                  <div className="pt-1">
+                    <div
+                      className="mb-2 text-[10px] uppercase tracking-[0.12em]"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      Tags
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {profile.tags.map((t, i) => (
+                        <span
+                          key={i}
+                          className="text-xs px-2.5 py-1 rounded-full border"
+                          style={{
+                            background: "var(--fill)",
+                            borderColor: "var(--border)",
+                            color: "var(--text-3)",
+                          }}
+                        >
+                          #{t.tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </DetailSection>
+            </motion.div>
 
-            <DetailSection id="favorites" title="Favorites & Interests" icon={Star}>
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <Field label="Favorite Movie" value={profile.favorite_movie} icon={Film} />
-                <Field label="Favorite Book" value={profile.favorite_book} icon={Book} />
-                <Field label="Music Preference" value={profile.music_preference} icon={Music} />
-
-                {profile.associated_song ? (
-                  <div className="md:col-span-2 flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4">
-                    <div className="rounded-full bg-rose-500/20 p-3 text-rose-300">
-                      <Music className="h-6 w-6" />
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+            >
+              <DetailSection id="favorites" title="Favorites & Interests" icon={Star} index={1}>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Favorite Movie" value={profile.favorite_movie} icon={Film} />
+                  <Field label="Favorite Book" value={profile.favorite_book} icon={Book} />
+                  <Field label="Music Preference" value={profile.music_preference} icon={Music} />
+                </div>
+                {profile.associated_song && (
+                  <div
+                    className="flex items-center gap-4 rounded-xl p-4 mt-1 border"
+                    style={{
+                      background: "var(--fill)",
+                      borderColor: "var(--border)",
+                    }}
+                  >
+                    <div
+                      className="rounded-full p-2.5 shrink-0"
+                      style={{ background: "var(--fill-hover)", color: "var(--text-2)" }}
+                    >
+                      <Music className="h-4 w-4" />
                     </div>
                     <div>
-                      <div className="mb-1 text-xs uppercase tracking-wider text-[var(--color-text-secondary)]">
+                      <div
+                        className="text-[9px] uppercase tracking-[0.18em] mb-0.5"
+                        style={{ color: "var(--text-3)" }}
+                      >
                         Associated Song
                       </div>
-                      <div className="text-lg font-medium">{profile.associated_song.name}</div>
-                      <div className="text-sm text-[var(--color-text-secondary)]">
+                      <div className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
+                        {profile.associated_song.name}
+                      </div>
+                      <div className="text-xs" style={{ color: "var(--text-2)" }}>
                         {profile.associated_song.artist}
                       </div>
                     </div>
                   </div>
-                ) : null}
-              </div>
-            </DetailSection>
+                )}
+              </DetailSection>
+            </motion.div>
 
-            <DetailSection id="lifestyle" title="Lifestyle" icon={Coffee}>
-              <div className="space-y-6">
-                <div>
-                  <div className="mb-2 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                    <MapPin className="h-3 w-3" /> Hangout Places
-                  </div>
-                  <PillList items={profile.hangout_places.map((p) => p.place)} />
-                </div>
-
-                <div>
-                  <div className="mb-2 flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                    <AlertCircle className="h-3 w-3" /> Food Restrictions
-                  </div>
-                  <PillList
-                    items={profile.food_restrictions.map((r) => r.restriction)}
-                    colorClass="border border-rose-500/20 bg-rose-500/10 text-rose-300"
-                  />
-                </div>
-              </div>
-            </DetailSection>
-
-            <DetailSection id="deep" title="Deep Dive" icon={MessageSquare}>
-              {profile.long_term_goals ? (
-                <div>
-                  <div className="mb-2 text-sm uppercase tracking-wider text-[var(--color-text-secondary)]">
-                    Long Term Goals
-                  </div>
-                  <p className="text-lg leading-relaxed">{profile.long_term_goals}</p>
-                </div>
-              ) : null}
-
-              {profile.favorite_memory ? (
-                <div className="rounded-2xl border border-indigo-500/10 bg-indigo-500/5 p-6">
-                  <div className="mb-2 flex items-center gap-2 text-sm uppercase tracking-wider text-indigo-300">
-                    <Heart className="h-4 w-4" /> Favorite Memory
-                  </div>
-                  <p className="text-lg font-serif italic leading-relaxed text-indigo-100">
-                    &quot;{profile.favorite_memory}&quot;
-                  </p>
-                </div>
-              ) : null}
-
-              <div>
-                <div className="mb-2 text-sm text-[var(--color-text-secondary)]">Quotes</div>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {profile.quotes.map((q) => (
-                    <button
-                      key={q.id ?? q.quote}
-                      onClick={() => setSelectedQuote(q.quote)}
-                      className="rounded-xl border border-white/10 bg-white/5 p-4 text-left font-serif italic"
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+            >
+              <DetailSection id="lifestyle" title="Lifestyle" icon={Coffee} index={2}>
+                {profile.hangout_places.length > 0 && (
+                  <div>
+                    <div
+                      className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+                      style={{ color: "var(--text-3)" }}
                     >
-                      &quot;{q.quote}&quot;
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </DetailSection>
+                      <MapPin className="h-3 w-3" /> Hangout Places
+                    </div>
+                    <PillList items={profile.hangout_places.map((p) => p.place)} />
+                  </div>
+                )}
+                {profile.food_restrictions.length > 0 && (
+                  <div>
+                    <div
+                      className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      <AlertCircle className="h-3 w-3" /> Food Restrictions
+                    </div>
+                    <PillList items={profile.food_restrictions.map((r) => r.restriction)} />
+                  </div>
+                )}
+              </DetailSection>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.4 }}
+            >
+              <DetailSection id="deep" title="Deep Dive" icon={MessageSquare} index={3}>
+                {profile.long_term_goals && (
+                  <div>
+                    <div
+                      className="mb-1.5 text-[10px] uppercase tracking-[0.12em]"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      Long-Term Goals
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
+                      {profile.long_term_goals}
+                    </p>
+                  </div>
+                )}
+
+                {profile.favorite_memory && (
+                  <div
+                    className="rounded-xl p-5 border"
+                    style={{
+                      background: "var(--fill)",
+                      borderColor: "var(--border)",
+                    }}
+                  >
+                    <div
+                      className="mb-3 flex items-center gap-2 text-[9px] uppercase tracking-[0.16em]"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      <Heart className="h-3 w-3" /> Favorite Memory
+                    </div>
+                    <p
+                      className="text-sm italic leading-relaxed"
+                      style={{ color: "var(--text-1)" }}
+                    >
+                      &ldquo;{profile.favorite_memory}&rdquo;
+                    </p>
+                  </div>
+                )}
+
+                {profile.quotes && profile.quotes.length > 0 && (
+                  <div>
+                    <div
+                      className="mb-3 text-[10px] uppercase tracking-[0.12em]"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      Their Quotes
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {profile.quotes.map((q) => (
+                        <button
+                          key={q.id ?? q.quote}
+                          onClick={() => setSelectedQuote(q.quote)}
+                          className="rounded-xl p-4 text-left italic text-sm transition-all duration-200 hover:scale-[1.01] border"
+                          style={{
+                            background: "var(--fill)",
+                            borderColor: "var(--border)",
+                            color: "var(--text-2)",
+                          }}
+                        >
+                          &ldquo;{q.quote}&rdquo;
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </DetailSection>
+            </motion.div>
           </div>
         </div>
 
-        {selectedQuote ? (
+        {selectedQuote && (
           <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />
-        ) : null}
+        )}
+        <ConfirmDialog
+          isOpen={isDeleteDialogOpen}
+          title="Delete Profile?"
+          description="This action is permanent and cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={handleDelete}
+          onCancel={() => setIsDeleteDialogOpen(false)}
+          isConfirming={isDeleting}
+        />
       </div>
     </ProtectedRoute>
   );

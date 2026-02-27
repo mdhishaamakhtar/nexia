@@ -11,6 +11,7 @@ import { createProfile } from "@/features/profiles/api";
 import { useToast } from "@/shared/ui/toast";
 import { getErrorMessage } from "@/shared/api/client";
 import type { ProfileFormValues } from "@/shared/types/profile";
+import { useQueryClient } from "@tanstack/react-query";
 
 const initialValues: ProfileFormValues = {
   full_name: "",
@@ -38,12 +39,14 @@ const initialValues: ProfileFormValues = {
 export default function NewProfilePage() {
   const router = useRouter();
   const { success, error } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (values: ProfileFormValues) => {
     setIsLoading(true);
     try {
       await createProfile(values);
+      await queryClient.invalidateQueries({ queryKey: ["profiles"] });
       success("Profile created successfully");
       router.push("/profiles");
     } catch (err: unknown) {
@@ -55,24 +58,25 @@ export default function NewProfilePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[var(--color-bg)] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-900 to-slate-900">
+      <div className="min-h-screen">
         <Navbar />
 
-        <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-12 flex items-center justify-between"
+            className="mb-10 flex items-center justify-between"
           >
             <button
               onClick={() => router.push("/profiles")}
-              className="group flex items-center gap-2 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+              className="group flex items-center gap-2 transition-colors text-sm"
+              style={{ color: "var(--text-3)" }}
             >
-              <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-              <span className="text-lg">Back to Universe</span>
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              back
             </button>
-            <h1 className="bg-gradient-to-r from-white to-slate-400 bg-clip-text text-4xl font-bold text-transparent">
-              Create New Profile
+            <h1 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
+              New Profile
             </h1>
           </motion.div>
 

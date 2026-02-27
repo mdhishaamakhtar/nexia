@@ -24,22 +24,22 @@ export default function Button({
 }: ButtonProps) {
   const variants = {
     primary:
-      "bg-gradient-to-r from-[var(--color-primary-from)] to-[var(--color-primary-to)] text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 border-transparent",
+      "bg-[var(--peach)] text-[#1f2937] border-[rgba(124,58,237,0.2)] hover:opacity-95 sticker-chip",
     secondary:
-      "bg-[var(--color-surface)] border-[var(--color-border-subtle)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-highlight)] hover:border-[var(--color-text-secondary)]",
+      "bg-[var(--fill)] border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--fill-hover)] hover:text-[var(--text-1)]",
     destructive:
-      "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/40",
+      "bg-[rgba(255,59,48,0.08)] border-[rgba(255,59,48,0.18)] text-[var(--red)] hover:bg-[rgba(255,59,48,0.15)]",
     ghost:
-      "bg-transparent border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-highlight)]",
+      "bg-transparent border-transparent text-[var(--text-3)] hover:text-[var(--text-2)] hover:bg-[var(--fill)]",
   };
 
   return (
     <motion.button
       whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.97 }}
       disabled={isLoading || disabled}
       className={cn(
-        "relative flex items-center justify-center px-6 py-3 rounded-xl font-medium transition-all duration-200 border disabled:opacity-50 disabled:cursor-not-allowed",
+        "relative flex items-center justify-center px-5 py-2.5 rounded-xl font-medium transition-all duration-200 border disabled:opacity-40 disabled:cursor-not-allowed text-sm",
         variants[variant],
         className
       )}

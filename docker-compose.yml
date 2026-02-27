@@ -41,10 +41,15 @@ services:
         condition: service_started
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        BACKEND_URL: http://backend:8080
     container_name: nexia-frontend
     ports:
       - "3000:3000"
+    environment:
+      - BACKEND_URL=http://backend:8080
     depends_on:
       - backend
 

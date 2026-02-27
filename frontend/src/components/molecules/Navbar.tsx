@@ -14,34 +14,39 @@ export default function Navbar() {
 
   return (
     <motion.nav
-      initial={{ y: -20, opacity: 0 }}
+      initial={{ y: -12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="sticky top-0 z-50 w-full glass-panel border-b border-[var(--color-border-subtle)] bg-[var(--color-bg)]/80 backdrop-blur-xl"
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="sticky top-0 z-50 w-full glass-panel border-b bg-white/80"
+      style={{ borderColor: "var(--border)" }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/profiles" className="flex items-center gap-2 group">
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-              Nexia
-            </span>
+        <div className="flex justify-between items-center h-12">
+          <Link
+            href="/profiles"
+            className="text-[15px] font-semibold tracking-tight"
+            style={{ color: "var(--text-1)" }}
+          >
+            Nexia
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
             <Link
               href="/chat"
-              className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-surface-highlight)]"
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-[var(--fill)]"
+              style={{ color: "var(--text-2)" }}
             >
-              <Sparkles className="w-4 h-4" />
-              Ask AI
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ask AI</span>
             </Link>
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-surface-highlight)]"
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-[var(--fill)]"
+              style={{ color: "var(--text-2)" }}
             >
-              <LogOut className="w-4 h-4" />
-              Sign Out
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>

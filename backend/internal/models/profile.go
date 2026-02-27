@@ -40,7 +40,7 @@ type Profile struct {
 	LongTermGoals    string           `gorm:"type:text" json:"long_term_goals"`
 	RelationshipType RelationshipType `gorm:"type:varchar(50);not null" json:"relationship_type"`
 	Birthday         *Date            `gorm:"type:date" json:"birthday"`
-	ZodiacSign       ZodiacSign       `gorm:"type:varchar(50)" json:"zodiac_sign"`
+	ZodiacSign       *ZodiacSign      `gorm:"type:varchar(50)" json:"zodiac_sign"`
 	MusicPreference  string           `gorm:"type:text" json:"music_preference"`
 	FavoriteMovie    string           `gorm:"type:varchar(200)" json:"favorite_movie"`
 	FavoriteBook     string           `gorm:"type:varchar(200)" json:"favorite_book"`
