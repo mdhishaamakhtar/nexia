@@ -62,7 +62,9 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 	sb.WriteString(fmt.Sprintf("Bio: %s\n", profile.Bio))
 	sb.WriteString(fmt.Sprintf("Profession: %s\n", profile.Profession))
 	sb.WriteString(fmt.Sprintf("Relationship Type: %s\n", profile.RelationshipType))
-	sb.WriteString(fmt.Sprintf("Zodiac Sign: %s\n", profile.ZodiacSign))
+	if profile.ZodiacSign != nil {
+		sb.WriteString(fmt.Sprintf("Zodiac Sign: %s\n", *profile.ZodiacSign))
+	}
 	if profile.Birthday != nil {
 		sb.WriteString(fmt.Sprintf("Birthday: %s\n", time.Time(*profile.Birthday).Format("January 02, 2006")))
 	}

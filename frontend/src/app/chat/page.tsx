@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, User, Bot, Sparkles, Trash2, MessageSquare, Zap } from "lucide-react";
+import { Send, User, Trash2, MessageSquare, ArrowLeft } from "lucide-react";
+import { NexiaIcon, StickerSparkle } from "@/shared/ui/AIIcons";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/molecules/Navbar";
 import ReactMarkdown from "react-markdown";
 import { useMutation } from "@tanstack/react-query";
@@ -21,17 +23,19 @@ interface Message {
 const SUGGESTED_PROMPTS = [
   "Who are my oldest friends?",
   "Who shares my zodiac sign?",
-  "Tell me something interesting about Sarah.",
+  "Tell me something interesting about someone.",
   "Recommend a song based on my friends' tastes.",
 ];
 
 export default function ChatPage() {
+  const router = useRouter();
   const { error: showError } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "assistant",
-      content: "Hi! I'm Nexia AI. I've analyzed your friends' profiles—ask me anything about them!",
+      content:
+        "Hi! I'm Nexia AI. I've analyzed your friends' profiles — ask me anything about them.",
       timestamp: new Date(),
     },
   ]);
@@ -73,14 +77,13 @@ export default function ChatPage() {
         },
       ]);
     } catch (error: unknown) {
-      showError(getErrorMessage(error, "Failed to send chat message"));
+      showError(getErrorMessage(error, "Failed to send message"));
       setMessages((prev) => [
         ...prev,
         {
           id: nextId(),
           role: "assistant",
-          content:
-            "I'm having trouble retrieving that information right now. Make sure your friends' profiles are synced!",
+          content: "I'm having trouble right now. Make sure your friends' profiles are synced!",
           timestamp: new Date(),
         },
       ]);
@@ -92,148 +95,234 @@ export default function ChatPage() {
       {
         id: String(messageIdRef.current++),
         role: "assistant",
-        content: "Chat cleared. What else can I help you discover about your friends?",
+        content: "Chat cleared. What else can I help you discover?",
         timestamp: new Date(),
       },
     ]);
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text-primary)] transition-colors duration-500">
+    <div className="min-h-screen" style={{ color: "var(--text-1)" }}>
       <Navbar />
 
-      <main className="mx-auto flex h-[calc(100vh-84px)] max-w-4xl flex-col gap-4 px-4 py-4">
-        <div className="glass-panel flex items-center justify-between rounded-2xl px-5 py-2.5 shadow-xl">
+      <main className="mx-auto flex h-[calc(100vh-48px)] max-w-3xl flex-col gap-3 px-4 py-4">
+        {/* Chat header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between rounded-2xl px-5 py-3 border relative glass-panel"
+          style={{
+            borderColor: "var(--border)",
+          }}
+        >
+          {/* Header Tape */}
+          <div className="washi-tape-accent w-20" style={{ opacity: 0.8 }} />
+
           <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] p-2.5 shadow-lg shadow-indigo-500/20">
-              <Bot size={22} className="text-white" />
+            <button
+              onClick={() => router.push("/profiles")}
+              className="rounded-lg p-1.5 transition-colors"
+              style={{ color: "var(--text-3)" }}
+              title="Back"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div className="rounded-xl p-2" style={{ background: "var(--blue)" }}>
+              <NexiaIcon size={20} className="text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight">Nexia Intel</h1>
-              <div className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"></span>
-                <p className="text-xs font-medium text-[var(--color-text-secondary)]">
-                  RAG Context Active
+              <h1 className="text-sm font-bold handwritten" style={{ color: "var(--text-1)" }}>
+                Ask about your people
+              </h1>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <p
+                  className="text-[10px] uppercase tracking-wider"
+                  style={{ color: "var(--text-3)" }}
+                >
+                  memories loaded
                 </p>
               </div>
             </div>
           </div>
           <button
             onClick={clearChat}
-            className="rounded-xl p-2.5 text-[var(--color-text-secondary)] transition-all duration-300 hover:bg-white/5 hover:text-rose-400"
+            className="rounded-xl p-2 transition-all duration-200 hover:rotate-12"
+            style={{ color: "var(--text-3)" }}
             title="Clear Chat"
           >
-            <Trash2 size={20} />
+            <Trash2 size={16} />
           </button>
-        </div>
+        </motion.div>
 
-        <div className="scrollbar-thin flex-1 space-y-6 overflow-y-auto px-2 py-4">
+        {/* Messages */}
+        <div className="flex-1 space-y-5 overflow-y-auto px-1 py-3">
           <AnimatePresence initial={false}>
-            {messages.length === 1 ? (
+            {messages.length === 1 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-center py-12 text-center"
+                className="flex flex-col items-center justify-center py-10 text-center"
               >
-                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-white/5">
-                  <Zap size={32} className="text-[var(--color-primary-from)]" />
+                <div
+                  className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border scrapbook-card"
+                  style={{
+                    background: "var(--fill)",
+                    borderColor: "var(--border)",
+                    transform: "rotate(-3deg)",
+                  }}
+                >
+                  <StickerSparkle size={28} className="text-[var(--blue)]" />
                 </div>
-                <h2 className="mb-3 text-2xl font-bold">Ask about your friends</h2>
-                <p className="mb-10 max-w-sm leading-relaxed text-[var(--color-text-secondary)]">
-                  I search through all your friend profiles to give you accurate insights and help
-                  you remember details.
+                <h2
+                  className="mb-2 text-xl font-bold handwritten"
+                  style={{ color: "var(--text-1)" }}
+                >
+                  Ask about your people
+                </h2>
+                <p
+                  className="mb-8 max-w-xs text-sm leading-relaxed"
+                  style={{ color: "var(--text-3)" }}
+                >
+                  I search through all your profiles to give you accurate insights.
                 </p>
-                <div className="grid w-full max-w-2xl grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2">
                   {SUGGESTED_PROMPTS.map((prompt) => (
                     <button
                       key={prompt}
                       onClick={() => handleSubmit(undefined, prompt)}
-                      className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] px-5 py-4 text-left text-sm text-[var(--color-text-secondary)] transition-all hover:border-white/10 hover:bg-white/[0.05]"
+                      className="group flex items-center justify-between rounded-xl px-4 py-3.5 text-left text-xs border transition-all"
+                      style={{
+                        background: "var(--fill)",
+                        borderColor: "var(--border)",
+                        color: "var(--text-2)",
+                      }}
                     >
                       {prompt}
                       <MessageSquare
-                        size={14}
-                        className="opacity-0 transition-opacity group-hover:opacity-100"
+                        size={12}
+                        className="opacity-0 transition-opacity group-hover:opacity-100 shrink-0 ml-2"
                       />
                     </button>
                   ))}
                 </div>
               </motion.div>
-            ) : null}
+            )}
 
-            {messages.map((msg) => (
+            {messages.map((msg, idx) => (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className={`flex gap-4 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                initial={{
+                  opacity: 0,
+                  x: msg.role === "user" ? 20 : -20,
+                  rotate: idx % 2 === 0 ? -1 : 1,
+                }}
+                animate={{ opacity: 1, x: 0, rotate: idx % 2 === 0 ? -0.5 : 0.5 }}
+                transition={{ duration: 0.4, ease: "easeOut", type: "spring", stiffness: 100 }}
+                className={`flex gap-3 items-end ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
               >
                 <div
-                  className={`h-9 w-9 shrink-0 rounded-xl shadow-lg ${
+                  className="h-8 w-8 shrink-0 rounded-xl flex items-center justify-center scrapbook-card"
+                  style={
                     msg.role === "user"
-                      ? "bg-slate-700 text-slate-200"
-                      : "bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] text-white"
-                  } flex items-center justify-center`}
+                      ? {
+                          background: "var(--fill)",
+                          color: "var(--text-2)",
+                          transform: "rotate(2deg)",
+                        }
+                      : { background: "var(--blue)", color: "#ffffff", transform: "rotate(-2deg)" }
+                  }
                 >
-                  {msg.role === "user" ? <User size={18} /> : <Sparkles size={18} />}
+                  {msg.role === "user" ? <User size={15} /> : <NexiaIcon size={18} />}
                 </div>
 
                 <div
-                  className={`max-w-[85%] rounded-2xl px-5 py-4 text-sm shadow-lg ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3.5 text-sm border scrapbook-card ${
                     msg.role === "user"
-                      ? "rounded-tr-none border border-white/10 bg-[var(--color-surface-highlight)] text-[var(--color-text-primary)]"
-                      : "rounded-tl-none border border-white/10 bg-[var(--color-surface)] leading-relaxed text-[var(--color-text-primary)]"
+                      ? "rounded-tr-none bg-[var(--fill-hover)]"
+                      : "rounded-tl-none bg-white/60 backdrop-blur-md"
                   }`}
+                  style={{
+                    borderColor: "var(--border)",
+                    color: "var(--text-1)",
+                  }}
                 >
-                  <div className="prose prose-invert prose-sm max-w-none">
+                  {/* Small tape for assistant messages */}
+                  {msg.role === "assistant" && (
+                    <div
+                      className="washi-tape-accent w-10 !left-4 !top-[-4px]"
+                      style={{ opacity: 0.4, background: "var(--peach)" }}
+                    />
+                  )}
+                  <div className="markdown-content max-w-none leading-relaxed">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                   </div>
-                  <span className="mt-3 block text-right font-sans text-[10px] font-light uppercase tracking-wider opacity-30" />
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
 
-          {chatMutation.isPending ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex animate-pulse gap-4"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-                <Bot size={18} className="text-[var(--color-text-secondary)]" />
+          {chatMutation.isPending && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
+              <div
+                className="h-8 w-8 shrink-0 rounded-xl flex items-center justify-center scrapbook-card rotate-[-3deg]"
+                style={{ background: "var(--blue)" }}
+              >
+                <NexiaIcon size={18} className="text-white" />
               </div>
-              <div className="flex items-center gap-2 rounded-2xl rounded-tl-none border border-white/10 bg-white/5 px-6 py-4">
-                <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--color-primary-from)]" />
-                <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--color-primary-from)] [animation-delay:150ms]" />
-                <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--color-primary-from)] [animation-delay:300ms]" />
+              <div
+                className="flex items-center gap-1.5 rounded-2xl rounded-tl-none px-5 py-4 border"
+                style={{
+                  background: "var(--fill)",
+                  borderColor: "var(--border)",
+                }}
+              >
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full"
+                  style={{ background: "var(--blue)" }}
+                />
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:150ms]"
+                  style={{ background: "var(--blue)" }}
+                />
+                <div
+                  className="h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:300ms]"
+                  style={{ background: "var(--blue)" }}
+                />
               </div>
             </motion.div>
-          ) : null}
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="relative pt-2">
-          <form onSubmit={handleSubmit} className="group relative">
-            <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[var(--color-primary-from)] to-[var(--color-primary-to)] opacity-0 blur-lg transition duration-500 group-focus-within:opacity-10"></div>
-
-            <div className="glass-panel relative flex items-center rounded-2xl border border-white/10 px-2 transition-all duration-300 focus-within:border-[var(--color-primary-from)]/40">
+        {/* Input */}
+        <div className="pb-2">
+          <form onSubmit={handleSubmit} className="relative">
+            <div
+              className="flex items-center rounded-2xl border transition-all duration-300 focus-within:border-[var(--blue)]"
+              style={{
+                background: "var(--fill)",
+                borderColor: "var(--border)",
+              }}
+            >
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about someone's hobbies, secrets, or zodiac sign..."
-                className="w-full bg-transparent px-5 py-4 text-sm text-[var(--color-text-primary)] placeholder-white/20 focus:outline-none"
+                placeholder="ask about someone's favorites, memories, or vibes..."
+                className="w-full bg-transparent px-5 py-4 text-sm focus:outline-none"
+                style={{ color: "var(--text-1)" }}
                 disabled={chatMutation.isPending}
               />
-              <div className="mr-2 flex gap-2">
+              <div className="mr-2">
                 <button
                   type="submit"
                   disabled={!input.trim() || chatMutation.isPending}
-                  className="rounded-xl bg-gradient-to-tr from-[var(--color-primary-from)] to-[var(--color-primary-to)] p-3 text-white shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:scale-100 disabled:opacity-50"
+                  className="rounded-xl p-2.5 text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-35"
+                  style={{ background: "var(--blue)" }}
                 >
-                  <Send size={18} />
+                  <Send size={16} />
                 </button>
               </div>
             </div>

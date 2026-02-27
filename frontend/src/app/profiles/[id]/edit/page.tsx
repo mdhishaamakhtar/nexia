@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ProtectedRoute from "@/components/guards/ProtectedRoute";
 import Navbar from "@/components/molecules/Navbar";
 import ProfileForm from "@/features/profiles/components/ProfileForm";
@@ -18,6 +18,7 @@ export default function EditProfilePage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
   const { success, error } = useToast();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
@@ -33,6 +34,8 @@ export default function EditProfilePage() {
     setIsSubmitting(true);
     try {
       await updateProfile(id, values);
+      await queryClient.invalidateQueries({ queryKey: ["profiles"] });
+      await queryClient.invalidateQueries({ queryKey: ["profile", id] });
       success("Profile updated successfully");
       router.push(`/profiles/${id}`);
     } catch (err: unknown) {
@@ -45,10 +48,12 @@ export default function EditProfilePage() {
   if (isLoading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-[var(--color-bg)]">
+        <div className="min-h-screen">
           <Navbar />
-          <div className="mx-auto max-w-4xl px-4 py-12">
-            <div className="glass-panel h-96 rounded-3xl bg-[var(--color-surface-highlight)]" />
+          <div className="mx-auto max-w-3xl px-4 py-12 space-y-4">
+            <div className="h-44 rounded-2xl shimmer" />
+            <div className="h-28 rounded-2xl shimmer" />
+            <div className="h-28 rounded-2xl shimmer" />
           </div>
         </div>
       </ProtectedRoute>
@@ -59,23 +64,24 @@ export default function EditProfilePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[var(--color-bg)] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-900/20 via-slate-900 to-slate-900">
+      <div className="min-h-screen">
         <Navbar />
 
-        <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-12 flex items-center justify-between"
+            className="mb-10 flex items-center justify-between"
           >
             <button
               onClick={() => router.push(`/profiles/${id}`)}
-              className="group flex items-center gap-2 text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+              className="group flex items-center gap-2 transition-colors text-sm"
+              style={{ color: "var(--text-3)" }}
             >
-              <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-              <span className="text-lg">Back to Profile</span>
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              back
             </button>
-            <h1 className="bg-gradient-to-r from-white to-slate-400 bg-clip-text text-4xl font-bold text-transparent">
+            <h1 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
               Edit Profile
             </h1>
           </motion.div>

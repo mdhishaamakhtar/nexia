@@ -95,8 +95,8 @@ func TestProfileServiceCreateProfile(t *testing.T) {
 	if profile.UserID != 77 {
 		t.Fatalf("expected user id 77, got %d", profile.UserID)
 	}
-	if profile.ZodiacSign != models.ZodiacAries {
-		t.Fatalf("expected Aries, got %s", profile.ZodiacSign)
+	if profile.ZodiacSign == nil || *profile.ZodiacSign != models.ZodiacAries {
+		t.Fatalf("expected Aries, got %v", profile.ZodiacSign)
 	}
 	if len(queue.embedded) != 1 || queue.embedded[0] != uint(profile.ID) {
 		t.Fatalf("expected enqueue for profile id %d", profile.ID)

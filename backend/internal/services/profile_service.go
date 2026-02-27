@@ -38,10 +38,7 @@ func (s *ProfileService) CreateProfile(profile *models.Profile, userID uint64) e
 		return fmt.Errorf("%w: cannot have more than 3 top songs", ErrValidation)
 	}
 
-	// Derive Zodiac
-	if profile.Birthday != nil {
-		profile.ZodiacSign = DeriveZodiac(time.Time(*profile.Birthday))
-	}
+	applyDerivedZodiac(profile)
 
 	if err := s.Repo.Create(profile); err != nil {
 		return err
@@ -82,10 +79,7 @@ func (s *ProfileService) UpdateProfile(id uint64, profile *models.Profile, userI
 		return fmt.Errorf("%w: cannot have more than 3 top songs", ErrValidation)
 	}
 
-	// Derive Zodiac
-	if profile.Birthday != nil {
-		profile.ZodiacSign = DeriveZodiac(time.Time(*profile.Birthday))
-	}
+	applyDerivedZodiac(profile)
 
 	if err := s.Repo.Update(profile); err != nil {
 		return err
@@ -97,6 +91,17 @@ func (s *ProfileService) UpdateProfile(id uint64, profile *models.Profile, userI
 	}
 
 	return nil
+}
+
+func applyDerivedZodiac(profile *models.Profile) {
+	// Normalize empty/zero birthdays so we persist NULL zodiac_sign instead of "".
+	if profile.Birthday == nil || time.Time(*profile.Birthday).IsZero() {
+		profile.Birthday = nil
+		profile.ZodiacSign = nil
+		return
+	}
+	sign := DeriveZodiac(time.Time(*profile.Birthday))
+	profile.ZodiacSign = &sign
 }
 
 func (s *ProfileService) DeleteProfile(id uint64, userID uint64) error {

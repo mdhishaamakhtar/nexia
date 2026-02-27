@@ -1,134 +1,166 @@
-@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --font-sans:
-    "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-serif: "Lora", Georgia, "Times New Roman", Times, serif;
-
-  /* Modern "Midnight Glass" Palette */
-  --color-bg: #0f172a;
-  /* Slate 900 - Deep rich blue-black */
-  --color-surface: rgba(30, 41, 59, 0.7);
-  /* Slate 800 with opacity for glass effect */
-  --color-surface-highlight: rgba(51, 65, 85, 0.5);
-  /* Slate 700 for hover states */
-
-  /* Primary Brand Gradient Colors */
-  --color-primary-from: #6366f1;
-  /* Indigo 500 */
-  --color-primary-to: #a855f7;
-  /* Purple 500 */
-
-  /* Functional Colors */
-  --color-text-primary: #f8fafc;
-  /* Slate 50 */
-  --color-text-secondary: #94a3b8;
-  /* Slate 400 */
-  --color-border-subtle: rgba(148, 163, 184, 0.1);
-  /* Slate 400 at 10% */
-  --color-border-highlight: rgba(148, 163, 184, 0.2);
-  /* Slate 400 at 20% */
-
-  /* Accent Gradients for Sections */
-  --gradient-maroon: linear-gradient(135deg, #be123c, #fb7185);
-  /* Rose 700 -> Rose 400 */
-  --gradient-blue: linear-gradient(135deg, #2563eb, #60a5fa);
-  /* Blue 600 -> Blue 400 */
-  --gradient-purple: linear-gradient(135deg, #7c3aed, #c084fc);
-  /* Violet 600 -> Violet 400 */
-  --gradient-teal: linear-gradient(135deg, #0d9488, #2dd4bf);
-  /* Teal 600 -> Teal 400 */
-
-  /* Animations */
-  --animate-float: float 6s ease-in-out infinite;
-  --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  @keyframes pulse-slow {
-    0%,
-    100% {
-      opacity: 1;
-    }
-
-    50% {
-      opacity: 0.5;
-    }
-  }
+  --font-sans: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
-/* Base Styles */
+/* ── Gen-Z Journal Tokens ── */
+:root {
+  color-scheme: light;
+
+  --bg: #fff7ed;
+  --bg-raised: #ffffff;
+
+  --glass: rgba(255, 255, 255, 0.72);
+
+  --border: rgba(148, 163, 184, 0.28);
+  --border-mid: rgba(148, 163, 184, 0.45);
+  --specular: rgba(255, 255, 255, 0.95);
+
+  --text-1: #1f2937;
+  --text-2: #374151;
+  --text-3: #6b7280;
+
+  --fill: rgba(255, 255, 255, 0.62);
+  --fill-hover: rgba(255, 255, 255, 0.9);
+
+  --input-bg: rgba(255, 255, 255, 0.75);
+
+  --blue: #93c5fd;
+  --red: #ff3b30;
+  --lavender: #c4b5fd;
+  --peach: #fdba74;
+
+  /* Aliases for semantic usage */
+  --color-bg: var(--bg);
+  --color-surface: var(--glass);
+  --color-text-primary: var(--text-1);
+  --color-text-secondary: var(--text-2);
+}
+
+/* ── Base ── */
 body {
-  background-color: var(--color-bg);
-  background-image:
-    radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08) 0%, transparent 25%);
-  color: var(--color-text-primary);
+  background-color: var(--bg);
+  color: var(--text-1);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
 
-/* Glassmorphism Utilities */
-.glass-panel {
-  background: var(--color-surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border-subtle);
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+/* ── Materials ── */
+.glass-panel,
+.glass-card {
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 var(--specular);
 }
 
 .glass-input {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid var(--color-border-subtle);
-  color: var(--color-text-primary);
+  background: var(--input-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
   transition: all 0.2s ease;
 }
 
 .glass-input:focus {
-  border-color: var(--color-primary-from);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--lavender);
+  background: var(--glass);
+  outline: none;
 }
 
-/* Serif font for quotes */
-.font-serif {
-  font-family: "Lora", Georgia, "Times New Roman", Times, serif;
+/* ── Sticker & Scrapbook System ── */
+.sticker-chip {
+  background: var(--fill-hover);
+  border: 1px solid var(--border-mid);
+  border-radius: 999px;
 }
 
-/* Scrollbar */
+.sticker-tag {
+  background: rgba(196, 181, 253, 0.24);
+  border: 1px solid rgba(124, 58, 237, 0.24);
+  color: #5b21b6;
+  border-radius: 999px;
+}
+
+.paper-scrap {
+  background: var(--bg-raised);
+  position: relative;
+  box-shadow: 2px 2px 0px var(--border-mid);
+}
+
+.scrapbook-card {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.washi-tape-accent {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 60px;
+  height: 20px;
+  background: var(--lavender);
+  opacity: 0.6;
+  clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* ── Animations ── */
+@keyframes shimmer {
+  0% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.shimmer {
+  background: var(--fill-hover);
+  animation: shimmer 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(0.5deg);
+  }
+}
+
+.floating {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ── Markdown ── */
+.markdown-content p + p {
+  margin-top: 0.5rem;
+}
+.markdown-content ul,
+.markdown-content ol {
+  padding-left: 1.2rem;
+  margin: 0.5rem 0;
+}
+.markdown-content code {
+  background: var(--fill-hover);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.3rem;
+  font-size: 0.9em;
+}
+
+/* ── Utilities ── */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 5px;
 }
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 ::-webkit-scrollbar-thumb {
-  background: var(--color-surface-highlight);
-  border-radius: 4px;
+  background: var(--border-mid);
+  border-radius: 3px;
 }
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-secondary);
-}
-
-/* Date Picker Icon Invert */
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
   cursor: pointer;
 }

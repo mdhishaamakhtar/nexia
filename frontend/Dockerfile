@@ -2,6 +2,9 @@
 FROM node:23-alpine AS builder
 WORKDIR /app
 
+ARG BACKEND_URL=http://localhost:8080
+ENV BACKEND_URL=${BACKEND_URL}
+
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
 RUN npm ci

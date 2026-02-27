@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 import Input from "@/components/atoms/Input";
 import Button from "@/components/atoms/Button";
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
 import { loginOrSignup } from "@/features/auth/api";
 import { getErrorMessage } from "@/shared/api/client";
 
@@ -33,69 +32,95 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[var(--color-bg)]">
-      {/* Background Effects */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/20 rounded-full blur-[120px] animate-[pulse_8s_ease-in-out_infinite]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-500/20 rounded-full blur-[120px] animate-[pulse_10s_ease-in-out_infinite]" />
-      </div>
-
+    <div className="min-h-screen flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-md"
+        initial={{ opacity: 0, y: 24, scale: 0.97, rotate: -2 }}
+        animate={{ opacity: 1, y: 0, scale: 1, rotate: -0.5 }}
+        transition={{ duration: 0.5, ease: "easeOut", type: "spring" }}
+        className="w-full max-w-sm relative"
       >
-        <div className="glass-panel rounded-3xl p-8 md:p-10 shadow-2xl shadow-indigo-500/10 border-t border-white/10">
-          {/* Logo & Title */}
-          <div className="text-center mb-8">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
-              className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-500/30"
+        {/* Decorative Tape for Login */}
+        <div
+          className="washi-tape-accent w-24 h-6 !top-[-10px]"
+          style={{ opacity: 0.8, background: "var(--lavender)" }}
+        />
+
+        <div className="glass-panel rounded-3xl p-7 sm:p-9 scrapbook-card">
+          {/* Brand */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+            className="text-center mb-8"
+          >
+            <h1
+              className="text-4xl sm:text-5xl font-semibold tracking-tight mb-2"
+              style={{ color: "var(--text-1)" }}
             >
-              <Sparkles className="w-8 h-8 text-white" />
-            </motion.div>
-            <h1 className="text-4xl font-bold mb-2 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
               Nexia
             </h1>
-            <p className="text-[var(--color-text-secondary)]">
-              {mode === "login"
-                ? "Welcome back to your universe"
-                : "Start your collection of memories"}
+            <p
+              className="text-[10px] font-semibold tracking-[0.22em] uppercase"
+              style={{ color: "var(--text-3)" }}
+            >
+              your digital slambook
             </p>
+          </motion.div>
+
+          {/* Mode toggle */}
+          <div
+            className="flex rounded-xl p-1 mb-6 border"
+            style={{
+              background: "var(--fill)",
+              borderColor: "var(--border)",
+            }}
+          >
+            {(["login", "signup"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className="flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-200 tracking-wide"
+                style={
+                  mode === m
+                    ? { background: "var(--blue)", color: "#ffffff" }
+                    : { color: "var(--text-3)" }
+                }
+              >
+                {m === "login" ? "Sign In" : "Create Account"}
+              </button>
+            ))}
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              <Input
-                label="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-                type="text"
-                className="bg-black/20"
-              />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="enter your username"
+              type="text"
+            />
 
-              <Input
-                label="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                type="password"
-                className="bg-black/20"
-              />
-            </div>
+            <Input
+              label="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="enter your password"
+              type="password"
+            />
 
             {error && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                className="bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+                className="px-4 py-3 rounded-xl text-xs flex items-center gap-2 border"
+                style={{
+                  background: "rgba(255,59,48,0.06)",
+                  borderColor: "rgba(255,59,48,0.15)",
+                  color: "var(--red)",
+                }}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                <span className="w-1 h-1 rounded-full bg-[var(--red)] shrink-0" />
                 {error}
               </motion.div>
             )}
@@ -104,25 +129,24 @@ export default function LoginPage() {
               type="submit"
               isLoading={isLoading}
               variant="primary"
-              className="w-full py-4 text-lg shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/30"
+              className="w-full py-3 text-sm tracking-wide mt-2"
             >
               {mode === "login" ? "Sign In" : "Create Account"}
             </Button>
           </form>
-
-          {/* Toggle mode */}
-          <div className="mt-8 text-center">
-            <button
-              type="button"
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}
-              className="text-[var(--color-text-secondary)] hover:text-white transition-colors duration-200 text-sm font-medium"
-            >
-              {mode === "login"
-                ? "New here? Create an account"
-                : "Already have an account? Sign in"}
-            </button>
-          </div>
         </div>
+
+        <p className="text-center text-xs mt-4" style={{ color: "var(--text-3)" }}>
+          {mode === "login" ? "New here? " : "Already have an account? "}
+          <button
+            type="button"
+            onClick={() => setMode(mode === "login" ? "signup" : "login")}
+            className="underline underline-offset-2 transition-colors"
+            style={{ color: "var(--text-2)" }}
+          >
+            {mode === "login" ? "Create an account" : "Sign in"}
+          </button>
+        </p>
       </motion.div>
     </div>
   );

@@ -128,7 +128,7 @@ func (r *profileRepo) FindAll(page, limit int, search, relationshipType string, 
 	if start >= len(list) {
 		return []models.Profile{}, total, nil
 	}
-	end := min(start + limit, len(list))
+	end := min(start+limit, len(list))
 	return list[start:end], total, nil
 }
 

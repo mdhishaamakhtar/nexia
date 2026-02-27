@@ -6,7 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var profilePreloads = []string{
+// profileAssociations is the source of truth for all child associations.
+var profileAssociations = []string{
 	"Tags",
 	"PoliticalViews",
 	"FoodRestrictions",
@@ -27,13 +28,15 @@ func NewProfileRepository(db *gorm.DB) *ProfileRepository {
 }
 
 func (r *ProfileRepository) Create(profile *models.Profile) error {
-	return r.DB.Create(profile).Error
+	// GORM automatically handles inserting the parent and then the children
+	// as long as the foreign keys are correctly defined in the models.
+	return r.DB.Session(&gorm.Session{FullSaveAssociations: true}).Create(profile).Error
 }
 
 func (r *ProfileRepository) FindByID(id uint64, userID uint64) (*models.Profile, error) {
 	var profile models.Profile
 	query := withProfilePreloads(r.DB.Where("id = ? AND user_id = ?", id, userID))
-	if err := query.First(&profile, id).Error; err != nil {
+	if err := query.First(&profile).Error; err != nil {
 		return nil, err
 	}
 	return &profile, nil
@@ -68,141 +71,27 @@ func (r *ProfileRepository) FindAll(page, limit int, search string, relationship
 
 func (r *ProfileRepository) Update(profile *models.Profile) error {
 	return r.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("id = ? AND user_id = ?", profile.ID, profile.UserID).First(&models.Profile{}).Error; err != nil {
+		// Ensure the profile exists and belongs to the user
+		var existing models.Profile
+		if err := tx.Where("id = ? AND user_id = ?", profile.ID, profile.UserID).First(&existing).Error; err != nil {
 			return err
 		}
 
-		// Update scalar fields only.
-		if err := tx.Model(&models.Profile{}).
-			Where("id = ? AND user_id = ?", profile.ID, profile.UserID).
-			Updates(map[string]interface{}{
-				"full_name":         profile.FullName,
-				"bio":               profile.Bio,
-				"profession":        profile.Profession,
-				"long_term_goals":   profile.LongTermGoals,
-				"relationship_type": profile.RelationshipType,
-				"birthday":          profile.Birthday,
-				"zodiac_sign":       profile.ZodiacSign,
-				"music_preference":  profile.MusicPreference,
-				"favorite_movie":    profile.FavoriteMovie,
-				"favorite_book":     profile.FavoriteBook,
-				"favorite_memory":   profile.FavoriteMemory,
-			}).Error; err != nil {
-			return err
-		}
-
-		if err := replaceTagAssociations(tx, profile); err != nil {
-			return err
-		}
-		if err := replacePoliticalViewAssociations(tx, profile); err != nil {
-			return err
-		}
-		if err := replaceFoodRestrictionAssociations(tx, profile); err != nil {
-			return err
-		}
-		if err := replaceMovieGenreAssociations(tx, profile); err != nil {
-			return err
-		}
-		if err := replaceBookGenreAssociations(tx, profile); err != nil {
-			return err
-		}
-		if err := replaceHangoutPlaceAssociations(tx, profile); err != nil {
-			return err
-		}
-		if err := replaceQuoteAssociations(tx, profile); err != nil {
-			return err
-		}
-		if err := replaceTopSongAssociations(tx, profile); err != nil {
-			return err
-		}
-		if err := replaceAssociatedSong(tx, profile); err != nil {
-			return err
-		}
-
-		return nil
+		// FullSaveAssociations: true tells GORM to automatically
+		// Delete/Update/Create associations to match the provided struct state (Replace).
+		return tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(profile).Error
 	})
 }
 
 func (r *ProfileRepository) Delete(id uint64, userID uint64) error {
-	return r.DB.Select(
-		"Tags",
-		"PoliticalViews",
-		"FoodRestrictions",
-		"MovieGenres",
-		"BookGenres",
-		"HangoutPlaces",
-		"Quotes",
-		"TopSongs",
-		"AssociatedSong",
-	).Where("id = ? AND user_id = ?", id, userID).Delete(&models.Profile{}).Error
+	// Since the database has ON DELETE CASCADE (see migrations),
+	// we only need to delete the parent record.
+	return r.DB.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Profile{}).Error
 }
 
 func withProfilePreloads(query *gorm.DB) *gorm.DB {
-	for _, preload := range profilePreloads {
+	for _, preload := range profileAssociations {
 		query = query.Preload(preload)
 	}
 	return query
-}
-
-func replaceTagAssociations(tx *gorm.DB, profile *models.Profile) error {
-	for i := range profile.Tags {
-		profile.Tags[i].ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("Tags").Replace(profile.Tags)
-}
-
-func replacePoliticalViewAssociations(tx *gorm.DB, profile *models.Profile) error {
-	for i := range profile.PoliticalViews {
-		profile.PoliticalViews[i].ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("PoliticalViews").Replace(profile.PoliticalViews)
-}
-
-func replaceFoodRestrictionAssociations(tx *gorm.DB, profile *models.Profile) error {
-	for i := range profile.FoodRestrictions {
-		profile.FoodRestrictions[i].ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("FoodRestrictions").Replace(profile.FoodRestrictions)
-}
-
-func replaceMovieGenreAssociations(tx *gorm.DB, profile *models.Profile) error {
-	for i := range profile.MovieGenres {
-		profile.MovieGenres[i].ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("MovieGenres").Replace(profile.MovieGenres)
-}
-
-func replaceBookGenreAssociations(tx *gorm.DB, profile *models.Profile) error {
-	for i := range profile.BookGenres {
-		profile.BookGenres[i].ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("BookGenres").Replace(profile.BookGenres)
-}
-
-func replaceHangoutPlaceAssociations(tx *gorm.DB, profile *models.Profile) error {
-	for i := range profile.HangoutPlaces {
-		profile.HangoutPlaces[i].ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("HangoutPlaces").Replace(profile.HangoutPlaces)
-}
-
-func replaceQuoteAssociations(tx *gorm.DB, profile *models.Profile) error {
-	for i := range profile.Quotes {
-		profile.Quotes[i].ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("Quotes").Replace(profile.Quotes)
-}
-
-func replaceTopSongAssociations(tx *gorm.DB, profile *models.Profile) error {
-	for i := range profile.TopSongs {
-		profile.TopSongs[i].ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("TopSongs").Replace(profile.TopSongs)
-}
-
-func replaceAssociatedSong(tx *gorm.DB, profile *models.Profile) error {
-	if profile.AssociatedSong != nil {
-		profile.AssociatedSong.ProfileID = profile.ID
-	}
-	return tx.Model(profile).Association("AssociatedSong").Replace(profile.AssociatedSong)
 }

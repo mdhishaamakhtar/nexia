@@ -38,23 +38,30 @@ This is the official Nexia client interface, built with **Next.js 16**, **Tailwi
 ## ⚙️ Setup & Development
 
 ### Option A: Full Docker (Recommended)
+
 From the root directory, run:
+
 ```bash
 export GEMINI_API_KEY=your_key_here
 docker-compose up --build
 ```
+
 This will automatically proxy `/api` calls to the internal backend.
 
 ### Option B: Manual Setup
+
 1. **Install Dependencies**
+
    ```bash
    npm install
    ```
 
 2. **Launch Dev Server**
+
    ```bash
    npm run dev
    ```
+
    Visit [http://localhost:3000](http://localhost:3000).
 
    > [!NOTE]
