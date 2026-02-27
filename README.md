@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD033 -->
+
 <p align="center">
   <img src="frontend/public/assets/nexia-banner.png" alt="Nexia Banner" width="400" height="200">
 </p>

@@ -17,9 +17,6 @@ func SetupRouter(profileController *controllers.ProfileController, authControlle
 	r := gin.Default()
 
 	allowOrigins := cfg.Server.CORSOrigins
-	if len(allowOrigins) == 0 {
-		allowOrigins = []string{"http://localhost:3000"}
-	}
 
 	// CORS Middleware
 	r.Use(cors.New(cors.Config{
