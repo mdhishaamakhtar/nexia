@@ -128,10 +128,7 @@ func (r *profileRepo) FindAll(page, limit int, search, relationshipType string, 
 	if start >= len(list) {
 		return []models.Profile{}, total, nil
 	}
-	end := start + limit
-	if end > len(list) {
-		end = len(list)
-	}
+	end := min(start + limit, len(list))
 	return list[start:end], total, nil
 }
 
@@ -244,14 +241,14 @@ func (fakeVector) SearchContext(ctx context.Context, userID uint64, queryEmbeddi
 		{
 			ProfileID: 1,
 			Score:     0.95,
-			Payload: map[string]interface{}{
+			Payload: map[string]any{
 				"full_name":         "Test Friend",
 				"relationship_type": "Friend",
 				"music_preference":  "Rock",
 				"favorite_movie":    "Inception",
-				"food_restrictions": []interface{}{map[string]interface{}{"restriction": "None"}},
-				"top_songs":         []interface{}{map[string]interface{}{"name": "Song A", "artist": "Artist A"}},
-				"associated_song":   map[string]interface{}{"name": "Song B", "artist": "Artist B"},
+				"food_restrictions": []any{map[string]any{"restriction": "None"}},
+				"top_songs":         []any{map[string]any{"name": "Song A", "artist": "Artist A"}},
+				"associated_song":   map[string]any{"name": "Song B", "artist": "Artist B"},
 				"created_at":        "ignored",
 				"updated_at":        "ignored",
 				"id":                1,
@@ -267,11 +264,11 @@ func buildRouter(t *testing.T, enableAI bool) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	store := newMemoryStore()
-	userRepo := &authRepo{store: store}
+	userRepository := &authRepo{store: store}
 	profileRepository := &profileRepo{store: store}
 
 	cfg := &config.Config{Server: config.ServerConfig{Mode: gin.TestMode, JWTSecret: "integration-secret", JWTExpiryMinutes: 30, CORSOrigins: []string{"http://localhost:3000"}}}
-	authService := services.NewAuthService(userRepo, cfg)
+	authService := services.NewAuthService(userRepository, cfg)
 	profileService := services.NewProfileService(profileRepository, fakeQueue{})
 
 	var chatService *services.ChatService
