@@ -372,7 +372,7 @@ npm run format    # Prettier write
 
 ```bash
 cd backend
-swag init -g cmd/server/main.go -o docs/swagger
+go tool swag init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
 ```
 
 Run this after adding or modifying Swagger annotations on any controller.
@@ -408,7 +408,7 @@ go run ./cmd/sync/main.go
 7. **Top songs limit**: max 3 is enforced in the service layer, not the DB or
    controller.
 8. **Swagger annotations**: all public endpoints must have godoc Swagger
-   comments. Re-run `swag init` after changes.
+   comments. Re-run `go tool swag init` after changes.
 9. **Unit tests**: use the fake/stub pattern (see `tests/unit/`). No real DB
    or network in unit tests.
 
