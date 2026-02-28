@@ -70,8 +70,8 @@ export default function ForgotPasswordPage() {
               className="space-y-5"
             >
               <p className="text-xs text-center" style={{ color: "var(--text-2)" }}>
-                Your reset token is ready. Copy it and use it on the next page.
-                It expires in <strong>15 minutes</strong> and can only be used once.
+                Your reset token is ready. Copy it and use it on the next page. It expires in{" "}
+                <strong>15 minutes</strong> and can only be used once.
               </p>
 
               <div
