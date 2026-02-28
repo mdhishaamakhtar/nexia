@@ -85,7 +85,7 @@ Swagger UI is available locally at:
 To regenerate or update the Swagger documentation, run:
 
 ```bash
-go run github.com/swaggo/swag/cmd/swag init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
+go tool swag init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
 ```
 
 ---
