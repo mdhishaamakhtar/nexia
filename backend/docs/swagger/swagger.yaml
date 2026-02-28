@@ -10,6 +10,13 @@ definitions:
     - password
     - username
     type: object
+  internal_controllers.AuthSessionResponse:
+    properties:
+      authenticated:
+        type: boolean
+      user_id:
+        type: integer
+    type: object
   internal_controllers.ChatRequest:
     properties:
       message:
@@ -21,6 +28,23 @@ definitions:
     properties:
       response:
         type: string
+    type: object
+  internal_controllers.ForgotPasswordRequest:
+    properties:
+      username:
+        type: string
+    required:
+    - username
+    type: object
+  internal_controllers.ResetPasswordRequest:
+    properties:
+      new_password:
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
     type: object
   nexia-backend_internal_models.AssociatedSong:
     properties:
@@ -274,6 +298,124 @@ paths:
           schema:
             $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
       summary: Login or Signup
+      tags:
+      - auth
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Generates a one-time reset token for the given username. The token
+        expires in 15 minutes.
+      parameters:
+      - description: Username
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controllers.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      summary: Request password reset
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Clears the authentication cookie.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      summary: Logout
+      tags:
+      - auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: Returns the authenticated user's ID.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controllers.AuthSessionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      summary: Get current user
+      tags:
+      - auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Validates the reset token and updates the user's password. Tokens
+        are single-use and expire after 15 minutes.
+      parameters:
+      - description: Reset token and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controllers.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      summary: Reset password using a reset token
       tags:
       - auth
   /chat:

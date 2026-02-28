@@ -76,6 +76,16 @@ func (ctrl *AuthController) LoginOrSignup(c *gin.Context) {
 	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"token": token})
 }
 
+// Me godoc
+// @Summary Get current user
+// @Description Returns the authenticated user's ID.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} AuthSessionResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /auth/me [get]
 func (ctrl *AuthController) Me(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {
@@ -89,6 +99,15 @@ func (ctrl *AuthController) Me(c *gin.Context) {
 	})
 }
 
+// Logout godoc
+// @Summary Logout
+// @Description Clears the authentication cookie.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /auth/logout [post]
 func (ctrl *AuthController) Logout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("nexia_token", "", -1, "/", "", false, true)
