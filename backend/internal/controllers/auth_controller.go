@@ -31,6 +31,15 @@ type AuthSessionResponse struct {
 	UserID        uint64 `json:"user_id"`
 }
 
+type ForgotPasswordRequest struct {
+	Username string `json:"username" binding:"required"`
+}
+
+type ResetPasswordRequest struct {
+	Token       string `json:"token"        binding:"required"`
+	NewPassword string `json:"new_password" binding:"required"`
+}
+
 // LoginOrSignup godoc
 // @Summary Login or Signup
 // @Description Authenticate user. If user does not exist, create one. Returns JWT.
@@ -84,4 +93,59 @@ func (ctrl *AuthController) Logout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("nexia_token", "", -1, "/", "", false, true)
 	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"message": "Logged out"})
+}
+
+// ForgotPassword godoc
+// @Summary Request password reset
+// @Description Generates a one-time reset token for the given username. The token expires in 15 minutes.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body ForgotPasswordRequest true "Username"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /auth/forgot-password [post]
+func (ctrl *AuthController) ForgotPassword(c *gin.Context) {
+	var req ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondWithError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+
+	token, err := ctrl.Service.ForgotPassword(req.Username)
+	if err != nil {
+		respondWithServiceError(c, err)
+		return
+	}
+
+	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"reset_token": token})
+}
+
+// ResetPassword godoc
+// @Summary Reset password using a reset token
+// @Description Validates the reset token and updates the user's password. Tokens are single-use and expire after 15 minutes.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body ResetPasswordRequest true "Reset token and new password"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /auth/reset-password [post]
+func (ctrl *AuthController) ResetPassword(c *gin.Context) {
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondWithError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+
+	if err := ctrl.Service.ResetPassword(req.Token, req.NewPassword); err != nil {
+		respondWithServiceError(c, err)
+		return
+	}
+
+	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"message": "Password updated successfully"})
 }

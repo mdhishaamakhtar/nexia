@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Input from "@/components/atoms/Input";
 import Button from "@/components/atoms/Button";
@@ -147,6 +148,18 @@ export default function LoginPage() {
             {mode === "login" ? "Create an account" : "Sign in"}
           </button>
         </p>
+
+        {mode === "login" && (
+          <p className="text-center text-xs mt-2" style={{ color: "var(--text-3)" }}>
+            <Link
+              href="/forgot-password"
+              className="underline underline-offset-2 transition-colors"
+              style={{ color: "var(--text-2)" }}
+            >
+              Forgot password?
+            </Link>
+          </p>
+        )}
       </motion.div>
     </div>
   );

@@ -97,7 +97,8 @@ func main() {
 	profileController := controllers.NewProfileController(profileService)
 
 	userRepo := repositories.NewUserRepository(db.DB)
-	authService := services.NewAuthService(userRepo, cfg)
+	passwordResetRepo := repositories.NewPasswordResetRepository(db.DB)
+	authService := services.NewAuthService(userRepo, passwordResetRepo, cfg)
 	authController := controllers.NewAuthController(authService, cfg)
 
 	chatService := services.NewChatService(geminiClient, pgvectorClient)
