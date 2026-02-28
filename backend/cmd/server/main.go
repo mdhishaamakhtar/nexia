@@ -69,7 +69,7 @@ func main() {
 		if geminiClient != nil {
 			taskHandler := queue.NewTaskHandler(db.DB, geminiClient, pgvectorClient)
 			srv := asynq.NewServer(
-				asynq.RedisClientOpt{Addr: cfg.AI.RedisURL},
+				queue.ParseRedisOpt(cfg.AI.RedisURL),
 				asynq.Config{
 					Concurrency: 10,
 					LogLevel:    asynq.WarnLevel,
