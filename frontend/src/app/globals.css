@@ -52,6 +52,28 @@ input,
 textarea,
 select {
   max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix iOS date input overflow & default styling */
+input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 1.5em; /* Ensure consistent height */
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  background: transparent;
+  bottom: 0;
+  color: transparent;
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
 }
 
 /* ── Materials ── */
