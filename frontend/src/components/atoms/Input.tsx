@@ -10,7 +10,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   ref
 ) {
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0">
       {label && (
         <label className="block text-[10px] font-semibold text-[var(--text-3)] mb-2 ml-0.5 uppercase tracking-[0.12em]">
           {label}
@@ -18,7 +18,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       )}
       <input
         ref={ref}
-        className={`w-full glass-input px-4 py-3 rounded-xl transition-all duration-200 overflow-hidden text-ellipsis ${
+        className={`w-full glass-input px-4 py-3 rounded-xl transition-all duration-200 ${
           error ? "border-red-500/50 focus:border-red-500" : ""
         } ${className}`}
         {...props}
