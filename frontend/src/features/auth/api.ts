@@ -1,9 +1,5 @@
 import { api } from "@/shared/api/client";
-import type {
-  AuthResponse,
-  AuthSessionResponse,
-  ForgotPasswordResponse,
-} from "@/shared/types/api";
+import type { AuthResponse, AuthSessionResponse, ForgotPasswordResponse } from "@/shared/types/api";
 
 export async function loginOrSignup(username: string, password: string) {
   const response = await api.post<AuthResponse>("/auth", { username, password });
