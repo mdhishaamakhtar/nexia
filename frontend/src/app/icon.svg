@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#fff7ed"/>
+  <text
+    x="50"
+    y="76"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Nunito, sans-serif"
+    font-weight="700"
+    font-size="72"
+    fill="#1f2937"
+    text-anchor="middle"
+  >N</text>
+</svg>
