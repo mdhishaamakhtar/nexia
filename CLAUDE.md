@@ -72,18 +72,29 @@ nexia/
 
 ### Dependency Injection Pattern
 
-The backend uses **constructor-based DI** with interface abstractions at every
-layer boundary. Nothing is global except the `db.DB` GORM handle.
+The backend uses **constructor-based DI**. Nothing is global except the
+`db.DB` GORM handle.
 
 ```
 main.go
-  → Repository  (implements interface defined in service package)
-  → Service     (implements interface in controller / queue)
-  → Controller  (injected into router)
+  → Repository  (concrete struct in repositories package)
+  → Service     (concrete struct; holds repository/client interfaces)
+  → Controller  (concrete struct; holds concrete service pointer)
+  → Router
 ```
 
-Services only depend on **interfaces**, not concrete types. This enables the
-unit-test fake pattern used throughout `backend/tests/unit/`.
+**Repository interfaces** are defined in the **service package** (the consuming
+package), not in the repository package. The concrete structs in `repositories/`
+implement them implicitly via Go structural typing.
+
+**Services** store their dependencies (repos, queue, AI clients) as interface
+types, which is what allows unit tests to inject local fake structs without
+touching the real DB or network. Each test file defines its own `fakeXRepo` /
+`fakeXQueue` types that satisfy the relevant service-package interface.
+
+**Controllers** hold a plain pointer to the concrete service struct
+(`*services.ProfileService`, etc.) — there is no service interface at the
+controller layer.
 
 ### Request Flow
 
