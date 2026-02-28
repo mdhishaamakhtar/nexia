@@ -41,6 +41,8 @@ func SetupRouter(profileController *controllers.ProfileController, authControlle
 		v1.POST("/auth", authController.LoginOrSignup)
 		v1.GET("/auth/me", middleware.AuthMiddleware(cfg), authController.Me)
 		v1.POST("/auth/logout", middleware.AuthMiddleware(cfg), authController.Logout)
+		v1.POST("/auth/forgot-password", authController.ForgotPassword)
+		v1.POST("/auth/reset-password", authController.ResetPassword)
 
 		// Chat (Protected)
 		v1.POST("/chat", middleware.AuthMiddleware(cfg), chatController.Chat)

@@ -26,3 +26,7 @@ func (r *UserRepository) FindByUsername(username string) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) UpdatePassword(userID uint64, hashedPassword string) error {
+	return r.DB.Model(&models.User{}).Where("id = ?", userID).Update("password", hashedPassword).Error
+}
