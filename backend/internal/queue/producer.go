@@ -23,8 +23,16 @@ type QueueClient struct {
 	client *asynq.Client
 }
 
-func NewQueueClient(redisAddr string) *QueueClient {
-	client := asynq.NewClient(asynq.RedisClientOpt{Addr: redisAddr})
+func ParseRedisOpt(redisURL string) asynq.RedisConnOpt {
+	opt, err := asynq.ParseRedisURI(redisURL)
+	if err != nil {
+		return asynq.RedisClientOpt{Addr: redisURL}
+	}
+	return opt
+}
+
+func NewQueueClient(redisURL string) *QueueClient {
+	client := asynq.NewClient(ParseRedisOpt(redisURL))
 	return &QueueClient{client: client}
 }
 
