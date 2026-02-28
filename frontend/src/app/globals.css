@@ -47,6 +47,13 @@ body {
   min-height: 100vh;
 }
 
+/* Prevent form elements from overflowing their containers on iOS */
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
 /* ── Materials ── */
 .glass-panel,
 .glass-card {
