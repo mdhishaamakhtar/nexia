@@ -1,21 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Input from "@/components/atoms/Input";
 import Button from "@/components/atoms/Button";
 import { motion } from "framer-motion";
-import { loginOrSignup } from "@/features/auth/api";
+import { login, signup } from "@/features/auth/api";
 import { getErrorMessage } from "@/shared/api/client";
+import type { ApiErrorResponse } from "@/shared/types/api";
+import type { AxiosError } from "axios";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login: authLogin } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,10 +27,21 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await loginOrSignup(username, password);
-      await login();
+      if (mode === "signup") {
+        await signup(email, password);
+        router.push("/verify-email");
+      } else {
+        await login(email, password);
+        await authLogin();
+      }
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Authentication failed"));
+      const axiosErr = err as AxiosError<ApiErrorResponse>;
+      const code = axiosErr?.response?.data?.error?.code;
+      if (code === "EMAIL_NOT_VERIFIED") {
+        setError("Please verify your email before signing in.");
+      } else {
+        setError(getErrorMessage(err, "Authentication failed"));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -95,11 +110,11 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="enter your username"
-              type="text"
+              label="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="enter your email"
+              type="email"
             />
 
             <Input

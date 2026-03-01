@@ -17,7 +17,3 @@ export interface AuthSessionResponse {
 export interface ChatResponse {
   response: string;
 }
-
-export interface ForgotPasswordResponse {
-  reset_token: string;
-}

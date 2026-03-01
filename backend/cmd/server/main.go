@@ -12,6 +12,7 @@ import (
 	"nexia-backend/pkg/db"
 
 	"nexia-backend/internal/ai"
+	"nexia-backend/internal/email"
 	"nexia-backend/internal/queue"
 
 	"github.com/gin-gonic/gin"
@@ -98,7 +99,9 @@ func main() {
 
 	userRepo := repositories.NewUserRepository(db.DB)
 	passwordResetRepo := repositories.NewPasswordResetRepository(db.DB)
-	authService := services.NewAuthService(userRepo, passwordResetRepo, cfg)
+	emailVerifyRepo := repositories.NewEmailVerificationRepository(db.DB)
+	emailSvc := email.NewEmailService(cfg)
+	authService := services.NewAuthService(userRepo, passwordResetRepo, emailVerifyRepo, emailSvc, cfg)
 	authController := controllers.NewAuthController(authService, cfg)
 
 	chatService := services.NewChatService(geminiClient, pgvectorClient)

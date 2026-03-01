@@ -1,9 +1,17 @@
 import { api } from "@/shared/api/client";
-import type { AuthResponse, AuthSessionResponse, ForgotPasswordResponse } from "@/shared/types/api";
+import type { AuthResponse, AuthSessionResponse } from "@/shared/types/api";
 
-export async function loginOrSignup(username: string, password: string) {
-  const response = await api.post<AuthResponse>("/auth", { username, password });
+export async function signup(email: string, password: string): Promise<void> {
+  await api.post("/auth/signup", { email, password });
+}
+
+export async function login(email: string, password: string): Promise<AuthResponse> {
+  const response = await api.post<AuthResponse>("/auth/login", { email, password });
   return response.data;
+}
+
+export async function verifyEmail(token: string): Promise<void> {
+  await api.get("/auth/verify-email", { params: { token } });
 }
 
 export async function getSession() {
@@ -15,9 +23,8 @@ export async function logoutSession() {
   await api.post("/auth/logout");
 }
 
-export async function forgotPassword(username: string) {
-  const response = await api.post<ForgotPasswordResponse>("/auth/forgot-password", { username });
-  return response.data;
+export async function forgotPassword(email: string): Promise<void> {
+  await api.post("/auth/forgot-password", { email });
 }
 
 export async function resetPassword(token: string, newPassword: string) {
