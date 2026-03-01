@@ -21,8 +21,13 @@ func NewAuthController(service *services.AuthService, cfg *config.Config) *AuthC
 	return &AuthController{Service: service, Config: cfg}
 }
 
-type AuthRequest struct {
-	Username string `json:"username" binding:"required"`
+type SignupRequest struct {
+	Email    string `json:"email"    binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"    binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -32,7 +37,7 @@ type AuthSessionResponse struct {
 }
 
 type ForgotPasswordRequest struct {
-	Username string `json:"username" binding:"required"`
+	Email string `json:"email" binding:"required"`
 }
 
 type ResetPasswordRequest struct {
@@ -40,26 +45,54 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password" binding:"required"`
 }
 
-// LoginOrSignup godoc
-// @Summary Login or Signup
-// @Description Authenticate user. If user does not exist, create one. Returns JWT.
+// Signup godoc
+// @Summary Register a new account
+// @Description Creates a new user account and sends a verification email.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param credentials body AuthRequest true "Credentials"
-// @Success 200 {object} map[string]string
+// @Param body body SignupRequest true "Email and password"
+// @Success 201 {object} map[string]string
 // @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
+// @Failure 409 {object} utils.ErrorResponse
 // @Failure 500 {object} utils.ErrorResponse
-// @Router /auth [post]
-func (ctrl *AuthController) LoginOrSignup(c *gin.Context) {
-	var req AuthRequest
+// @Router /auth/signup [post]
+func (ctrl *AuthController) Signup(c *gin.Context) {
+	var req SignupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondWithError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
 		return
 	}
 
-	token, err := ctrl.Service.LoginOrSignup(req.Username, req.Password)
+	if err := ctrl.Service.Signup(req.Email, req.Password); err != nil {
+		respondWithServiceError(c, err)
+		return
+	}
+
+	utils.RespondWithSuccess(c, http.StatusCreated, gin.H{"message": "Account created. Please check your email to verify your address."})
+}
+
+// Login godoc
+// @Summary Sign in to an existing account
+// @Description Authenticates a verified user and sets a session cookie.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param body body LoginRequest true "Email and password"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} utils.ErrorResponse
+// @Failure 401 {object} utils.ErrorResponse
+// @Failure 403 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /auth/login [post]
+func (ctrl *AuthController) Login(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondWithError(c, http.StatusBadRequest, "VALIDATION_ERROR", err.Error())
+		return
+	}
+
+	token, err := ctrl.Service.Login(req.Email, req.Password)
 	if err != nil {
 		respondWithServiceError(c, err)
 		return
@@ -74,6 +107,31 @@ func (ctrl *AuthController) LoginOrSignup(c *gin.Context) {
 	c.SetCookie("nexia_token", token, maxAgeSeconds, "/", "", false, true)
 
 	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"token": token})
+}
+
+// VerifyEmail godoc
+// @Summary Verify email address
+// @Description Verifies a user's email address using the token sent via email.
+// @Tags auth
+// @Produce json
+// @Param token query string true "Verification token"
+// @Success 200 {object} map[string]string
+// @Failure 404 {object} utils.ErrorResponse
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /auth/verify-email [get]
+func (ctrl *AuthController) VerifyEmail(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		utils.RespondWithError(c, http.StatusBadRequest, "VALIDATION_ERROR", "token is required")
+		return
+	}
+
+	if err := ctrl.Service.VerifyEmail(token); err != nil {
+		respondWithServiceError(c, err)
+		return
+	}
+
+	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"message": "Email verified successfully. You can now sign in."})
 }
 
 // Me godoc
@@ -116,14 +174,13 @@ func (ctrl *AuthController) Logout(c *gin.Context) {
 
 // ForgotPassword godoc
 // @Summary Request password reset
-// @Description Generates a one-time reset token for the given username. The token expires in 15 minutes.
+// @Description Sends a password reset email if the account exists. Always returns success to prevent enumeration.
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param body body ForgotPasswordRequest true "Username"
+// @Param body body ForgotPasswordRequest true "Email address"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
 // @Failure 500 {object} utils.ErrorResponse
 // @Router /auth/forgot-password [post]
 func (ctrl *AuthController) ForgotPassword(c *gin.Context) {
@@ -133,13 +190,12 @@ func (ctrl *AuthController) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	token, err := ctrl.Service.ForgotPassword(req.Username)
-	if err != nil {
+	if err := ctrl.Service.ForgotPassword(req.Email); err != nil {
 		respondWithServiceError(c, err)
 		return
 	}
 
-	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"reset_token": token})
+	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"message": "If that email is registered, you'll receive reset instructions shortly."})
 }
 
 // ResetPassword godoc

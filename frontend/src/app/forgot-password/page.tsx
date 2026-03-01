@@ -6,11 +6,10 @@ import { motion } from "framer-motion";
 import Input from "@/components/atoms/Input";
 import Button from "@/components/atoms/Button";
 import { forgotPassword } from "@/features/auth/api";
-import { getErrorMessage } from "@/shared/api/client";
 
 export default function ForgotPasswordPage() {
-  const [username, setUsername] = useState("");
-  const [resetToken, setResetToken] = useState("");
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,10 +19,10 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      const data = await forgotPassword(username);
-      setResetToken(data.reset_token);
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, "Could not generate reset token"));
+      await forgotPassword(email);
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -63,46 +62,32 @@ export default function ForgotPasswordPage() {
             </p>
           </motion.div>
 
-          {resetToken ? (
+          {submitted ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="space-y-5"
+              className="text-center space-y-3"
             >
-              <p className="text-xs text-center" style={{ color: "var(--text-2)" }}>
-                Your reset token is ready. Copy it and use it on the next page. It expires in{" "}
-                <strong>15 minutes</strong> and can only be used once.
+              <div className="text-3xl mb-2">📬</div>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
+                If that email is registered, you&apos;ll receive reset instructions shortly.
               </p>
-
-              <div
-                className="rounded-xl px-4 py-3 border break-all font-mono text-xs select-all"
-                style={{
-                  background: "var(--fill)",
-                  borderColor: "var(--border)",
-                  color: "var(--text-1)",
-                }}
-              >
-                {resetToken}
-              </div>
-
-              <Link href={`/reset-password?token=${encodeURIComponent(resetToken)}`}>
-                <Button variant="primary" className="w-full py-3 text-sm tracking-wide mt-1">
-                  Set new password
-                </Button>
-              </Link>
+              <p className="text-xs" style={{ color: "var(--text-3)" }}>
+                Check your spam folder if you don&apos;t see it.
+              </p>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <p className="text-xs text-center mb-4" style={{ color: "var(--text-3)" }}>
-                Enter your username and we&apos;ll generate a one-time reset token.
+                Enter your email and we&apos;ll send you a reset link.
               </p>
 
               <Input
-                label="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="enter your username"
-                type="text"
+                label="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="enter your email"
+                type="email"
               />
 
               {error && (
@@ -127,7 +112,7 @@ export default function ForgotPasswordPage() {
                 variant="primary"
                 className="w-full py-3 text-sm tracking-wide mt-2"
               >
-                Generate reset token
+                Send reset link
               </Button>
             </form>
           )}

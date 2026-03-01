@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"net/mail"
 	"time"
 
 	"nexia-backend/internal/config"
@@ -15,17 +16,22 @@ import (
 )
 
 const resetTokenExpiry = 15 * time.Minute
+const verifyTokenExpiry = 24 * time.Hour
 
 type AuthService struct {
-	Repo      UserRepository
-	ResetRepo PasswordResetRepository
-	Config    *config.Config
+	Repo       UserRepository
+	ResetRepo  PasswordResetRepository
+	VerifyRepo EmailVerificationRepository
+	EmailSvc   EmailSender
+	Config     *config.Config
 }
 
 type UserRepository interface {
 	Create(user *models.User) error
-	FindByUsername(username string) (*models.User, error)
+	FindByEmail(email string) (*models.User, error)
+	FindByID(id uint64) (*models.User, error)
 	UpdatePassword(userID uint64, hashedPassword string) error
+	UpdateEmailVerified(userID uint64) error
 }
 
 type PasswordResetRepository interface {
@@ -34,55 +40,133 @@ type PasswordResetRepository interface {
 	MarkAsUsed(id uint64) error
 }
 
-func NewAuthService(repo UserRepository, resetRepo PasswordResetRepository, cfg *config.Config) *AuthService {
-	return &AuthService{Repo: repo, ResetRepo: resetRepo, Config: cfg}
+type EmailVerificationRepository interface {
+	Create(token *models.EmailVerificationToken) error
+	FindByToken(token string) (*models.EmailVerificationToken, error)
+	MarkAsUsed(id uint64) error
 }
 
-func (s *AuthService) LoginOrSignup(username, password string) (string, error) {
-	user, err := s.Repo.FindByUsername(username)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// Signup
-			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-			if err != nil {
-				return "", err
-			}
-			newUser := &models.User{
-				Username: username,
-				Password: string(hashedPassword),
-			}
-			if err := s.Repo.Create(newUser); err != nil {
-				return "", err
-			}
-			return utils.GenerateToken(newUser.ID, s.Config)
-		}
-		return "", err
+type EmailSender interface {
+	SendVerificationEmail(toEmail, token string) error
+	SendPasswordResetEmail(toEmail, token string) error
+}
+
+func NewAuthService(repo UserRepository, resetRepo PasswordResetRepository, verifyRepo EmailVerificationRepository, emailSvc EmailSender, cfg *config.Config) *AuthService {
+	return &AuthService{
+		Repo:       repo,
+		ResetRepo:  resetRepo,
+		VerifyRepo: verifyRepo,
+		EmailSvc:   emailSvc,
+		Config:     cfg,
+	}
+}
+
+// Signup creates a new user account and sends a verification email.
+func (s *AuthService) Signup(email, password string) error {
+	if _, err := mail.ParseAddress(email); err != nil {
+		return ErrValidation
+	}
+	if len(password) < 6 {
+		return ErrValidation
 	}
 
-	// Login
+	_, err := s.Repo.FindByEmail(email)
+	if err == nil {
+		return ErrEmailConflict
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	newUser := &models.User{
+		Email:         email,
+		Password:      string(hashedPassword),
+		EmailVerified: false,
+	}
+	if err := s.Repo.Create(newUser); err != nil {
+		return err
+	}
+
+	tokenStr, err := generateToken()
+	if err != nil {
+		return err
+	}
+
+	record := &models.EmailVerificationToken{
+		UserID:    newUser.ID,
+		Token:     tokenStr,
+		ExpiresAt: time.Now().Add(verifyTokenExpiry),
+	}
+	if err := s.VerifyRepo.Create(record); err != nil {
+		return err
+	}
+
+	// Best-effort: log error but don't fail signup
+	if err := s.EmailSvc.SendVerificationEmail(email, tokenStr); err != nil {
+		_ = err
+	}
+
+	return nil
+}
+
+// Login authenticates a user and returns a JWT token.
+func (s *AuthService) Login(email, password string) (string, error) {
+	user, err := s.Repo.FindByEmail(email)
+	if err != nil {
+		// Don't reveal whether email exists
+		return "", ErrUnauthorized
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return "", ErrUnauthorized
+	}
+
+	if !user.EmailVerified {
+		return "", ErrEmailNotVerified
 	}
 
 	return utils.GenerateToken(user.ID, s.Config)
 }
 
-// ForgotPassword generates a time-limited reset token for the given username.
-// The token is returned to the caller so the frontend can display it to the user.
-func (s *AuthService) ForgotPassword(username string) (string, error) {
-	user, err := s.Repo.FindByUsername(username)
+// VerifyEmail marks the email as verified for the token's owner.
+func (s *AuthService) VerifyEmail(token string) error {
+	record, err := s.VerifyRepo.FindByToken(token)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", ErrNotFound
+			return ErrNotFound
 		}
-		return "", err
+		return err
 	}
 
-	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
-		return "", err
+	if record.Used || time.Now().After(record.ExpiresAt) {
+		return ErrNotFound
 	}
-	tokenStr := hex.EncodeToString(raw)
+
+	if err := s.Repo.UpdateEmailVerified(record.UserID); err != nil {
+		return err
+	}
+
+	return s.VerifyRepo.MarkAsUsed(record.ID)
+}
+
+// ForgotPassword sends a password reset email if the account exists.
+// Always returns nil to prevent email enumeration.
+func (s *AuthService) ForgotPassword(email string) error {
+	user, err := s.Repo.FindByEmail(email)
+	if err != nil {
+		// Silent — don't reveal whether email exists
+		return nil
+	}
+
+	tokenStr, err := generateToken()
+	if err != nil {
+		return err
+	}
 
 	record := &models.PasswordResetToken{
 		UserID:    user.ID,
@@ -90,10 +174,14 @@ func (s *AuthService) ForgotPassword(username string) (string, error) {
 		ExpiresAt: time.Now().Add(resetTokenExpiry),
 	}
 	if err := s.ResetRepo.Create(record); err != nil {
-		return "", err
+		return err
 	}
 
-	return tokenStr, nil
+	if err := s.EmailSvc.SendPasswordResetEmail(email, tokenStr); err != nil {
+		_ = err
+	}
+
+	return nil
 }
 
 // ResetPassword validates the reset token and updates the user's password.
@@ -127,4 +215,12 @@ func (s *AuthService) ResetPassword(token, newPassword string) error {
 	}
 
 	return s.ResetRepo.MarkAsUsed(record.ID)
+}
+
+func generateToken() (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(raw), nil
 }

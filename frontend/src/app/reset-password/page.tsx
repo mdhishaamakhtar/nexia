@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Input from "@/components/atoms/Input";
 import Button from "@/components/atoms/Button";
 import { resetPassword } from "@/features/auth/api";
 import { getErrorMessage } from "@/shared/api/client";
 
-function ResetPasswordForm() {
-  const searchParams = useSearchParams();
+export default function ResetPasswordPage() {
   const router = useRouter();
 
   const [token, setToken] = useState("");
@@ -19,11 +18,6 @@ function ResetPasswordForm() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    const t = searchParams.get("token");
-    if (t) setToken(t);
-  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +99,7 @@ function ResetPasswordForm() {
                 label="Reset token"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                placeholder="paste your reset token"
+                placeholder="paste the token from your email"
                 type="text"
               />
 
@@ -155,7 +149,7 @@ function ResetPasswordForm() {
 
         {!success && (
           <p className="text-center text-xs mt-4" style={{ color: "var(--text-3)" }}>
-            Need a token?{" "}
+            Need a reset link?{" "}
             <Link
               href="/forgot-password"
               className="underline underline-offset-2 transition-colors"
@@ -167,13 +161,5 @@ function ResetPasswordForm() {
         )}
       </motion.div>
     </div>
-  );
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <Suspense>
-      <ResetPasswordForm />
-    </Suspense>
   );
 }
