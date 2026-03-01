@@ -20,5 +20,5 @@ ai:
 
 email:
   resend_api_key: "" # empty = disabled locally; set NEXIA_EMAIL_RESEND_API_KEY in prod
-  from_address: "noreply@nexia.hishaam.dev"
+  from_address: "Nexia <noreply@nexia.hishaam.dev>"
   app_base_url: "http://localhost:3000"

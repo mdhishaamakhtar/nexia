@@ -19,5 +19,5 @@ ai:
 
 email:
   resend_api_key: "" # Set via NEXIA_EMAIL_RESEND_API_KEY
-  from_address: "noreply@nexia.hishaam.dev"
+  from_address: "Nexia <noreply@nexia.hishaam.dev>"
   app_base_url: "" # Set via NEXIA_EMAIL_APP_BASE_URL

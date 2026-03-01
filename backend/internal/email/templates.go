@@ -12,6 +12,8 @@ func buildVerificationEmailHTML(verifyURL string) string {
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:#fff7ed;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <!-- Preheader -->
+  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">Verify your email to activate your Nexia account &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;</div>
   <table width="100%%" cellpadding="0" cellspacing="0" style="background:#fff7ed;padding:48px 16px;">
     <tr>
       <td align="center">
@@ -79,6 +81,8 @@ func buildPasswordResetEmailHTML(token, resetURL string) string {
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:#fff7ed;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <!-- Preheader -->
+  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">Reset your Nexia password — expires in 15 minutes &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;</div>
   <table width="100%%" cellpadding="0" cellspacing="0" style="background:#fff7ed;padding:48px 16px;">
     <tr>
       <td align="center">
