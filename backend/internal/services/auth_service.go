@@ -118,8 +118,10 @@ func (s *AuthService) Signup(email, password string) error {
 func (s *AuthService) Login(email, password string) (string, error) {
 	user, err := s.Repo.FindByEmail(email)
 	if err != nil {
-		// Don't reveal whether email exists
-		return "", ErrUnauthorized
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", ErrAccountNotFound
+		}
+		return "", err
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {

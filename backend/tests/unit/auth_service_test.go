@@ -268,8 +268,8 @@ func TestLoginUserNotFound(t *testing.T) {
 	svc := newAuthServiceDefaults(repo)
 
 	_, err := svc.Login("nobody@example.com", "pass")
-	if !errors.Is(err, services.ErrUnauthorized) {
-		t.Fatalf("expected ErrUnauthorized (no enumeration), got %v", err)
+	if !errors.Is(err, services.ErrAccountNotFound) {
+		t.Fatalf("expected ErrAccountNotFound, got %v", err)
 	}
 }
 
