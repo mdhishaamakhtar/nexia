@@ -16,11 +16,12 @@ import (
 // ── fakes ──────────────────────────────────────────────────────────────────
 
 type fakeUserRepo struct {
-	user             *models.User
-	createFn         func(*models.User) error
-	findErr          error
-	updatedPassword  string
-	updatePasswordFn func(uint64, string) error
+	user                *models.User
+	createFn            func(*models.User) error
+	findErr             error
+	updatedPassword     string
+	updatePasswordFn    func(uint64, string) error
+	emailVerifiedUserID uint64
 }
 
 func (f *fakeUserRepo) Create(user *models.User) error {
@@ -32,11 +33,18 @@ func (f *fakeUserRepo) Create(user *models.User) error {
 	return nil
 }
 
-func (f *fakeUserRepo) FindByUsername(username string) (*models.User, error) {
+func (f *fakeUserRepo) FindByEmail(email string) (*models.User, error) {
 	if f.findErr != nil {
 		return nil, f.findErr
 	}
-	if f.user == nil || f.user.Username != username {
+	if f.user == nil || f.user.Email != email {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return f.user, nil
+}
+
+func (f *fakeUserRepo) FindByID(id uint64) (*models.User, error) {
+	if f.user == nil || f.user.ID != id {
 		return nil, gorm.ErrRecordNotFound
 	}
 	return f.user, nil
@@ -47,6 +55,11 @@ func (f *fakeUserRepo) UpdatePassword(userID uint64, hashedPassword string) erro
 		return f.updatePasswordFn(userID, hashedPassword)
 	}
 	f.updatedPassword = hashedPassword
+	return nil
+}
+
+func (f *fakeUserRepo) UpdateEmailVerified(userID uint64) error {
+	f.emailVerifiedUserID = userID
 	return nil
 }
 
@@ -85,93 +98,251 @@ func (f *fakeResetRepo) MarkAsUsed(id uint64) error {
 	return nil
 }
 
+type fakeVerifyRepo struct {
+	stored    *models.EmailVerificationToken
+	createErr error
+	findErr   error
+	markErr   error
+	markedID  uint64
+}
+
+func (f *fakeVerifyRepo) Create(t *models.EmailVerificationToken) error {
+	if f.createErr != nil {
+		return f.createErr
+	}
+	t.ID = 1
+	f.stored = t
+	return nil
+}
+
+func (f *fakeVerifyRepo) FindByToken(token string) (*models.EmailVerificationToken, error) {
+	if f.findErr != nil {
+		return nil, f.findErr
+	}
+	if f.stored == nil || f.stored.Token != token {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return f.stored, nil
+}
+
+func (f *fakeVerifyRepo) MarkAsUsed(id uint64) error {
+	if f.markErr != nil {
+		return f.markErr
+	}
+	f.markedID = id
+	return nil
+}
+
+type fakeEmailSvc struct {
+	sentVerification []string
+	sentReset        []string
+	sendErr          error
+}
+
+func (f *fakeEmailSvc) SendVerificationEmail(toEmail, token string) error {
+	if f.sendErr != nil {
+		return f.sendErr
+	}
+	f.sentVerification = append(f.sentVerification, toEmail)
+	return nil
+}
+
+func (f *fakeEmailSvc) SendPasswordResetEmail(toEmail, token string) error {
+	if f.sendErr != nil {
+		return f.sendErr
+	}
+	f.sentReset = append(f.sentReset, toEmail)
+	return nil
+}
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
-func newAuthService(userRepo *fakeUserRepo, resetRepo *fakeResetRepo) *services.AuthService {
+func newAuthService(userRepo *fakeUserRepo, resetRepo *fakeResetRepo, verifyRepo *fakeVerifyRepo, emailSvc *fakeEmailSvc) *services.AuthService {
 	return services.NewAuthService(
 		userRepo,
 		resetRepo,
+		verifyRepo,
+		emailSvc,
 		&config.Config{Server: config.ServerConfig{JWTSecret: "test-secret", JWTExpiryMinutes: 60}},
 	)
 }
 
 func newAuthServiceDefaults(userRepo *fakeUserRepo) *services.AuthService {
-	return newAuthService(userRepo, &fakeResetRepo{})
+	return newAuthService(userRepo, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 }
 
-// ── LoginOrSignup tests ────────────────────────────────────────────────────
+// ── Signup tests ───────────────────────────────────────────────────────────
 
-func TestAuthServiceSignup(t *testing.T) {
+func TestSignupSuccess(t *testing.T) {
 	repo := &fakeUserRepo{}
+	emailSvc := &fakeEmailSvc{}
+	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, emailSvc)
+
+	err := svc.Signup("alice@example.com", "password123")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if repo.user == nil {
+		t.Fatal("expected user to be created")
+	}
+	if repo.user.Password == "password123" {
+		t.Fatal("expected password to be hashed")
+	}
+	if repo.user.EmailVerified {
+		t.Fatal("new user should not have email verified")
+	}
+	if len(emailSvc.sentVerification) != 1 {
+		t.Fatal("expected verification email to be sent")
+	}
+}
+
+func TestSignupEmailConflict(t *testing.T) {
+	existing := &models.User{ID: 1, Email: "alice@example.com", Password: "hash"}
+	repo := &fakeUserRepo{user: existing}
 	svc := newAuthServiceDefaults(repo)
 
-	token, err := svc.LoginOrSignup("newuser", "password123")
+	err := svc.Signup("alice@example.com", "password123")
+	if !errors.Is(err, services.ErrEmailConflict) {
+		t.Fatalf("expected ErrEmailConflict, got %v", err)
+	}
+}
+
+func TestSignupValidationErrorBadEmail(t *testing.T) {
+	svc := newAuthServiceDefaults(&fakeUserRepo{})
+
+	err := svc.Signup("not-an-email", "password123")
+	if !errors.Is(err, services.ErrValidation) {
+		t.Fatalf("expected ErrValidation, got %v", err)
+	}
+}
+
+func TestSignupValidationErrorShortPassword(t *testing.T) {
+	svc := newAuthServiceDefaults(&fakeUserRepo{})
+
+	err := svc.Signup("alice@example.com", "abc")
+	if !errors.Is(err, services.ErrValidation) {
+		t.Fatalf("expected ErrValidation, got %v", err)
+	}
+}
+
+// ── Login tests ────────────────────────────────────────────────────────────
+
+func TestLoginSuccess(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
+	repo := &fakeUserRepo{user: &models.User{ID: 9, Email: "alice@example.com", Password: string(hash), EmailVerified: true}}
+	svc := newAuthServiceDefaults(repo)
+
+	token, err := svc.Login("alice@example.com", "validpass")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if token == "" {
 		t.Fatal("expected non-empty token")
 	}
-	if repo.user == nil || repo.user.Password == "password123" {
-		t.Fatal("expected hashed password to be stored")
+}
+
+func TestLoginEmailNotVerified(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
+	repo := &fakeUserRepo{user: &models.User{ID: 9, Email: "alice@example.com", Password: string(hash), EmailVerified: false}}
+	svc := newAuthServiceDefaults(repo)
+
+	_, err := svc.Login("alice@example.com", "validpass")
+	if !errors.Is(err, services.ErrEmailNotVerified) {
+		t.Fatalf("expected ErrEmailNotVerified, got %v", err)
 	}
 }
 
-func TestAuthServiceInvalidCredentials(t *testing.T) {
+func TestLoginWrongPassword(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
-	repo := &fakeUserRepo{user: &models.User{ID: 7, Username: "existing", Password: string(hash)}}
+	repo := &fakeUserRepo{user: &models.User{ID: 9, Email: "alice@example.com", Password: string(hash), EmailVerified: true}}
 	svc := newAuthServiceDefaults(repo)
 
-	_, err := svc.LoginOrSignup("existing", "wrongpass")
+	_, err := svc.Login("alice@example.com", "wrongpass")
 	if !errors.Is(err, services.ErrUnauthorized) {
 		t.Fatalf("expected ErrUnauthorized, got %v", err)
 	}
 }
 
-func TestAuthServiceLoginSuccess(t *testing.T) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
-	repo := &fakeUserRepo{user: &models.User{ID: 9, Username: "existing", Password: string(hash)}}
+func TestLoginUserNotFound(t *testing.T) {
+	repo := &fakeUserRepo{} // no user stored
 	svc := newAuthServiceDefaults(repo)
 
-	token, err := svc.LoginOrSignup("existing", "validpass")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if token == "" {
-		t.Fatal("expected token")
+	_, err := svc.Login("nobody@example.com", "pass")
+	if !errors.Is(err, services.ErrUnauthorized) {
+		t.Fatalf("expected ErrUnauthorized (no enumeration), got %v", err)
 	}
 }
 
-func TestAuthServiceRepoErrors(t *testing.T) {
-	repoErr := errors.New("repo failed")
-	repo := &fakeUserRepo{findErr: repoErr}
-	svc := newAuthServiceDefaults(repo)
+// ── VerifyEmail tests ──────────────────────────────────────────────────────
 
-	_, err := svc.LoginOrSignup("any", "pass")
-	if !errors.Is(err, repoErr) {
-		t.Fatalf("expected repo error, got %v", err)
+func TestVerifyEmailSuccess(t *testing.T) {
+	stored := &models.EmailVerificationToken{
+		ID:        1,
+		UserID:    5,
+		Token:     "validtoken",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+		Used:      false,
+	}
+	userRepo := &fakeUserRepo{user: &models.User{ID: 5}}
+	verifyRepo := &fakeVerifyRepo{stored: stored}
+	svc := newAuthService(userRepo, &fakeResetRepo{}, verifyRepo, &fakeEmailSvc{})
+
+	err := svc.VerifyEmail("validtoken")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if userRepo.emailVerifiedUserID != 5 {
+		t.Fatal("expected user email to be marked verified")
+	}
+	if verifyRepo.markedID != 1 {
+		t.Fatal("expected token to be marked as used")
+	}
+}
+
+func TestVerifyEmailExpired(t *testing.T) {
+	stored := &models.EmailVerificationToken{
+		ID:        1,
+		Token:     "expiredtoken",
+		ExpiresAt: time.Now().Add(-1 * time.Hour),
+		Used:      false,
+	}
+	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{stored: stored}, &fakeEmailSvc{})
+
+	err := svc.VerifyEmail("expiredtoken")
+	if !errors.Is(err, services.ErrNotFound) {
+		t.Fatalf("expected ErrNotFound for expired token, got %v", err)
+	}
+}
+
+func TestVerifyEmailAlreadyUsed(t *testing.T) {
+	stored := &models.EmailVerificationToken{
+		ID:        1,
+		Token:     "usedtoken",
+		ExpiresAt: time.Now().Add(1 * time.Hour),
+		Used:      true,
+	}
+	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{stored: stored}, &fakeEmailSvc{})
+
+	err := svc.VerifyEmail("usedtoken")
+	if !errors.Is(err, services.ErrNotFound) {
+		t.Fatalf("expected ErrNotFound for used token, got %v", err)
 	}
 }
 
 // ── ForgotPassword tests ───────────────────────────────────────────────────
 
-func TestForgotPasswordSuccess(t *testing.T) {
-	repo := &fakeUserRepo{user: &models.User{ID: 1, Username: "alice", Password: "hash"}}
+func TestForgotPasswordSendsEmail(t *testing.T) {
+	repo := &fakeUserRepo{user: &models.User{ID: 1, Email: "alice@example.com", Password: "hash"}}
 	resetRepo := &fakeResetRepo{}
-	svc := newAuthService(repo, resetRepo)
+	emailSvc := &fakeEmailSvc{}
+	svc := newAuthService(repo, resetRepo, &fakeVerifyRepo{}, emailSvc)
 
-	token, err := svc.ForgotPassword("alice")
+	err := svc.ForgotPassword("alice@example.com")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if token == "" {
-		t.Fatal("expected a reset token")
-	}
 	if resetRepo.stored == nil {
 		t.Fatal("expected token to be stored")
-	}
-	if resetRepo.stored.Token != token {
-		t.Fatal("stored token does not match returned token")
 	}
 	if resetRepo.stored.Used {
 		t.Fatal("new token should not be marked used")
@@ -179,25 +350,19 @@ func TestForgotPasswordSuccess(t *testing.T) {
 	if !resetRepo.stored.ExpiresAt.After(time.Now()) {
 		t.Fatal("token should expire in the future")
 	}
-}
-
-func TestForgotPasswordUserNotFound(t *testing.T) {
-	repo := &fakeUserRepo{}
-	svc := newAuthService(repo, &fakeResetRepo{})
-
-	_, err := svc.ForgotPassword("nobody")
-	if !errors.Is(err, services.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound, got %v", err)
+	if len(emailSvc.sentReset) != 1 {
+		t.Fatal("expected password reset email to be sent")
 	}
 }
 
-func TestForgotPasswordRepoError(t *testing.T) {
-	repo := &fakeUserRepo{findErr: errors.New("db down")}
-	svc := newAuthService(repo, &fakeResetRepo{})
+func TestForgotPasswordUserNotFound(t *testing.T) {
+	repo := &fakeUserRepo{} // no user
+	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
-	_, err := svc.ForgotPassword("alice")
-	if err == nil {
-		t.Fatal("expected error from repo")
+	// Should return nil silently (no enumeration)
+	err := svc.ForgotPassword("nobody@example.com")
+	if err != nil {
+		t.Fatalf("expected nil (silent), got %v", err)
 	}
 }
 
@@ -213,7 +378,7 @@ func TestResetPasswordSuccess(t *testing.T) {
 	}
 	userRepo := &fakeUserRepo{}
 	resetRepo := &fakeResetRepo{stored: stored}
-	svc := newAuthService(userRepo, resetRepo)
+	svc := newAuthService(userRepo, resetRepo, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("validtoken", "newpassword123")
 	if err != nil {
@@ -225,15 +390,13 @@ func TestResetPasswordSuccess(t *testing.T) {
 	if resetRepo.markedID != stored.ID {
 		t.Fatal("expected token to be marked as used")
 	}
-	// Verify the stored password is hashed, not plaintext
 	if err := bcrypt.CompareHashAndPassword([]byte(userRepo.updatedPassword), []byte("newpassword123")); err != nil {
 		t.Fatal("stored password is not a valid bcrypt hash of the new password")
 	}
 }
 
 func TestResetPasswordTokenNotFound(t *testing.T) {
-	resetRepo := &fakeResetRepo{}
-	svc := newAuthService(&fakeUserRepo{}, resetRepo)
+	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("nosuchtoken", "newpass123")
 	if !errors.Is(err, services.ErrNotFound) {
@@ -248,7 +411,7 @@ func TestResetPasswordTokenAlreadyUsed(t *testing.T) {
 		ExpiresAt: time.Now().Add(10 * time.Minute),
 		Used:      true,
 	}
-	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{stored: stored})
+	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{stored: stored}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("usedtoken", "newpass123")
 	if !errors.Is(err, services.ErrNotFound) {
@@ -263,7 +426,7 @@ func TestResetPasswordTokenExpired(t *testing.T) {
 		ExpiresAt: time.Now().Add(-1 * time.Minute),
 		Used:      false,
 	}
-	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{stored: stored})
+	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{stored: stored}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("expiredtoken", "newpass123")
 	if !errors.Is(err, services.ErrNotFound) {
@@ -272,7 +435,7 @@ func TestResetPasswordTokenExpired(t *testing.T) {
 }
 
 func TestResetPasswordTooShort(t *testing.T) {
-	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{})
+	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("anytoken", "abc")
 	if !errors.Is(err, services.ErrValidation) {

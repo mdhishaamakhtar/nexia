@@ -22,6 +22,10 @@ func respondWithServiceError(c *gin.Context, err error) {
 		utils.RespondWithError(c, http.StatusNotFound, "NOT_FOUND", "Resource not found")
 	case errors.Is(err, services.ErrAIUnavailable):
 		utils.RespondWithError(c, http.StatusServiceUnavailable, "AI_UNAVAILABLE", "AI service unavailable")
+	case errors.Is(err, services.ErrEmailNotVerified):
+		utils.RespondWithError(c, http.StatusForbidden, "EMAIL_NOT_VERIFIED", "Please verify your email before signing in")
+	case errors.Is(err, services.ErrEmailConflict):
+		utils.RespondWithError(c, http.StatusConflict, "EMAIL_CONFLICT", "An account with that email already exists")
 	default:
 		utils.RespondWithError(c, http.StatusInternalServerError, "SERVER_ERROR", err.Error())
 	}

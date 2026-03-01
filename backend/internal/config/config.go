@@ -11,6 +11,13 @@ type Config struct {
 	Server ServerConfig `mapstructure:"server"`
 	DB     DBConfig     `mapstructure:"db"`
 	AI     AIConfig     `mapstructure:"ai"`
+	Email  EmailConfig  `mapstructure:"email"`
+}
+
+type EmailConfig struct {
+	ResendAPIKey string `mapstructure:"resend_api_key"`
+	FromAddress  string `mapstructure:"from_address"`
+	AppBaseURL   string `mapstructure:"app_base_url"`
 }
 
 type AIConfig struct {

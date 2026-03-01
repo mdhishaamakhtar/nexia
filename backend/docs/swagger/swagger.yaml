@@ -1,15 +1,5 @@
 basePath: /api/v1
 definitions:
-  internal_controllers.AuthRequest:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    required:
-    - password
-    - username
-    type: object
   internal_controllers.AuthSessionResponse:
     properties:
       authenticated:
@@ -31,10 +21,20 @@ definitions:
     type: object
   internal_controllers.ForgotPasswordRequest:
     properties:
-      username:
+      email:
         type: string
     required:
-    - username
+    - email
+    type: object
+  internal_controllers.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
     type: object
   internal_controllers.ResetPasswordRequest:
     properties:
@@ -45,6 +45,16 @@ definitions:
     required:
     - new_password
     - token
+    type: object
+  internal_controllers.SignupRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
     type: object
   nexia-backend_internal_models.AssociatedSong:
     properties:
@@ -263,51 +273,14 @@ info:
   title: Nexia Backend API
   version: "1.0"
 paths:
-  /auth:
-    post:
-      consumes:
-      - application/json
-      description: Authenticate user. If user does not exist, create one. Returns
-        JWT.
-      parameters:
-      - description: Credentials
-        in: body
-        name: credentials
-        required: true
-        schema:
-          $ref: '#/definitions/internal_controllers.AuthRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
-      summary: Login or Signup
-      tags:
-      - auth
   /auth/forgot-password:
     post:
       consumes:
       - application/json
-      description: Generates a one-time reset token for the given username. The token
-        expires in 15 minutes.
+      description: Sends a password reset email if the account exists. Always returns
+        success to prevent enumeration.
       parameters:
-      - description: Username
+      - description: Email address
         in: body
         name: body
         required: true
@@ -326,15 +299,51 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
-        "404":
-          description: Not Found
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      summary: Request password reset
+      tags:
+      - auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a verified user and sets a session cookie.
+      parameters:
+      - description: Email and password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controllers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
-      summary: Request password reset
+      summary: Sign in to an existing account
       tags:
       - auth
   /auth/logout:
@@ -416,6 +425,71 @@ paths:
           schema:
             $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
       summary: Reset password using a reset token
+      tags:
+      - auth
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account and sends a verification email.
+      parameters:
+      - description: Email and password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controllers.SignupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      summary: Register a new account
+      tags:
+      - auth
+  /auth/verify-email:
+    get:
+      description: Verifies a user's email address using the token sent via email.
+      parameters:
+      - description: Verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/nexia-backend_internal_utils.ErrorResponse'
+      summary: Verify email address
       tags:
       - auth
   /chat:
