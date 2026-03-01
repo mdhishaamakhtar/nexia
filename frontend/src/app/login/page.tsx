@@ -37,7 +37,9 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const axiosErr = err as AxiosError<ApiErrorResponse>;
       const code = axiosErr?.response?.data?.error?.code;
-      if (code === "EMAIL_NOT_VERIFIED") {
+      if (code === "ACCOUNT_NOT_FOUND") {
+        setError("No account found with that email. Try signing up instead.");
+      } else if (code === "EMAIL_NOT_VERIFIED") {
         setError("Please verify your email before signing in.");
       } else {
         setError(getErrorMessage(err, "Authentication failed"));
