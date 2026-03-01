@@ -14,6 +14,8 @@ import (
 
 func respondWithServiceError(c *gin.Context, err error) {
 	switch {
+	case errors.Is(err, services.ErrAccountNotFound):
+		utils.RespondWithError(c, http.StatusUnauthorized, "ACCOUNT_NOT_FOUND", "No account found with that email")
 	case errors.Is(err, services.ErrUnauthorized):
 		utils.RespondWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid credentials")
 	case errors.Is(err, services.ErrValidation):
