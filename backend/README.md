@@ -95,7 +95,6 @@ go tool swag init -g cmd/server/main.go -o docs/swagger --parseDependency --pars
 ### Format Code (`go fmt`)
 
 ```bash
-cd backend
 go fmt ./...
 ```
 
@@ -109,28 +108,24 @@ All backend tests are centralized under `backend/tests`:
 ### Run All Tests
 
 ```bash
-cd backend
 go test ./...
 ```
 
 ### Run Integration Tests Only
 
 ```bash
-cd backend
 go test ./tests/integration -v
 ```
 
 ### Run Unit Tests Only
 
 ```bash
-cd backend
 go test ./tests/unit -v
 ```
 
 ### Coverage (All Packages)
 
 ```bash
-cd backend
 go test ./... -coverpkg=./... -coverprofile=coverage.out
 go tool cover -func=coverage.out
 ```
@@ -140,7 +135,6 @@ go tool cover -func=coverage.out
 This excludes external-adapter style packages (for example `internal/ai`) and is the recommended quality target for day-to-day development.
 
 ```bash
-cd backend
 go test ./tests/... \
   -coverpkg=./internal/config,./internal/controllers,./internal/middleware,./internal/models,./internal/routes,./internal/services,./internal/utils \
   -coverprofile=coverage.core.out
@@ -150,7 +144,6 @@ go tool cover -func=coverage.core.out
 ### Open HTML Coverage Report
 
 ```bash
-cd backend
 go tool cover -html=coverage.core.out -o coverage.html
 ```
 

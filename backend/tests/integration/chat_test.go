@@ -9,7 +9,7 @@ import (
 
 func TestChatFlowIntegration(t *testing.T) {
 	r := buildRouter(t, true)
-	token, _ := signupAndGetToken(t, r, "chat-user")
+	token, _ := signupAndGetToken(t, r, "chat-user@example.com")
 
 	t.Run("chat succeeds", func(t *testing.T) {
 		w := postJSON(t, r, "/api/v1/chat", map[string]any{"message": "Who likes rock music?"}, token)
@@ -51,7 +51,7 @@ func TestChatFlowIntegration(t *testing.T) {
 
 func TestChatUnavailableIntegration(t *testing.T) {
 	r := buildRouter(t, false)
-	token, _ := signupAndGetToken(t, r, "chat-unavailable")
+	token, _ := signupAndGetToken(t, r, "chat-unavailable@example.com")
 
 	w := postJSON(t, r, "/api/v1/chat", map[string]any{"message": "hello"}, token)
 	if w.Code != http.StatusServiceUnavailable {

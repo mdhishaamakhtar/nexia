@@ -8,7 +8,7 @@ import (
 
 func TestProfileCRUDFlowIntegration(t *testing.T) {
 	r := buildRouter(t, true)
-	token, authCookie := signupAndGetToken(t, r, "profile-user")
+	token, authCookie := signupAndGetToken(t, r, "profile-user@example.com")
 
 	t.Run("protected endpoint rejects without auth", func(t *testing.T) {
 		resp := doRequest(t, r, http.MethodGet, "/api/v1/profiles", nil, "")
@@ -84,6 +84,41 @@ func TestProfileCRUDFlowIntegration(t *testing.T) {
 		errObj := result["error"].(map[string]any)
 		if errObj["code"] != "VALIDATION_ERROR" {
 			t.Fatalf("expected VALIDATION_ERROR got %v", errObj["code"])
+		}
+	})
+
+	t.Run("update replaces associations not appends", func(t *testing.T) {
+		// First update: set 2 tags
+		p1 := newProfilePayload()
+		p1["tags"] = []map[string]string{{"tag": "original-a"}, {"tag": "original-b"}}
+		w := doRequest(t, r, http.MethodPut, fmt.Sprintf("/api/v1/profiles/%d", profileID), mustJSON(t, p1), token)
+		if w.Code != http.StatusOK {
+			t.Fatalf("first update: expected 200 got %d body=%s", w.Code, w.Body.String())
+		}
+
+		// Second update: replace with 1 different tag — must NOT accumulate the previous 2
+		p2 := newProfilePayload()
+		p2["tags"] = []map[string]string{{"tag": "replaced"}}
+		w = doRequest(t, r, http.MethodPut, fmt.Sprintf("/api/v1/profiles/%d", profileID), mustJSON(t, p2), token)
+		if w.Code != http.StatusOK {
+			t.Fatalf("second update: expected 200 got %d body=%s", w.Code, w.Body.String())
+		}
+
+		// GET and verify exactly 1 tag with the new value
+		getResp := doRequest(t, r, http.MethodGet, fmt.Sprintf("/api/v1/profiles/%d", profileID), nil, token)
+		if getResp.Code != http.StatusOK {
+			t.Fatalf("get after update: expected 200 got %d", getResp.Code)
+		}
+		body := decodeJSONMap(t, getResp)
+		tags, ok := body["tags"].([]any)
+		if !ok {
+			t.Fatalf("expected tags array, got %T", body["tags"])
+		}
+		if len(tags) != 1 {
+			t.Fatalf("expected exactly 1 tag after update (got %d) — duplicate associations bug!", len(tags))
+		}
+		if tags[0].(map[string]any)["tag"] != "replaced" {
+			t.Fatalf("expected tag value 'replaced', got %v", tags[0].(map[string]any)["tag"])
 		}
 	})
 
