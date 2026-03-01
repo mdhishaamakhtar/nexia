@@ -16,3 +16,8 @@ db:
 ai:
   gemini_api_key: ""
   redis_url: "127.0.0.1:6379"
+
+email:
+  resend_api_key: "" # Set via NEXIA_EMAIL_RESEND_API_KEY
+  from_address: "noreply@nexia.hishaam.dev"
+  app_base_url: "" # Set via NEXIA_EMAIL_APP_BASE_URL
