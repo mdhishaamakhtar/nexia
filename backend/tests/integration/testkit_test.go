@@ -24,19 +24,23 @@ import (
 )
 
 type memoryStore struct {
-	mu           sync.RWMutex
-	nextUserID   uint64
-	nextProfile  uint64
-	usersByName  map[string]*models.User
-	profilesByID map[uint64]*models.Profile
+	mu                  sync.RWMutex
+	nextUserID          uint64
+	nextProfile         uint64
+	usersByEmail        map[string]*models.User
+	profilesByID        map[uint64]*models.Profile
+	verifyTokensByToken map[string]*models.EmailVerificationToken
+	resetTokensByToken  map[string]*models.PasswordResetToken
 }
 
 func newMemoryStore() *memoryStore {
 	return &memoryStore{
-		nextUserID:   1,
-		nextProfile:  1,
-		usersByName:  make(map[string]*models.User),
-		profilesByID: make(map[uint64]*models.Profile),
+		nextUserID:          1,
+		nextProfile:         1,
+		usersByEmail:        make(map[string]*models.User),
+		profilesByID:        make(map[uint64]*models.Profile),
+		verifyTokensByToken: make(map[string]*models.EmailVerificationToken),
+		resetTokensByToken:  make(map[string]*models.PasswordResetToken),
 	}
 }
 
@@ -48,34 +52,215 @@ type profileRepo struct {
 	store *memoryStore
 }
 
+type emailVerifyRepo struct {
+	store *memoryStore
+}
+
+type passwordResetRepo struct {
+	store *memoryStore
+}
+
+type fakeEmailSender struct{}
+
+func (f *fakeEmailSender) SendVerificationEmail(toEmail, token string) error {
+	return nil
+}
+
+func (f *fakeEmailSender) SendPasswordResetEmail(toEmail, token string) error {
+	return nil
+}
+
 func (r *authRepo) Create(user *models.User) error {
 	s := r.store
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.usersByName[user.Username]; exists {
-		return errors.New("username already exists")
+	if _, exists := s.usersByEmail[user.Email]; exists {
+		return errors.New("email already exists")
 	}
 
 	cloned := *user
 	cloned.ID = s.nextUserID
 	s.nextUserID++
-	s.usersByName[user.Username] = &cloned
+	s.usersByEmail[user.Email] = &cloned
 	user.ID = cloned.ID
 	return nil
 }
 
-func (r *authRepo) FindByUsername(username string) (*models.User, error) {
+func (r *authRepo) FindByEmail(email string) (*models.User, error) {
 	s := r.store
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	user, ok := s.usersByName[username]
+	user, ok := s.usersByEmail[email]
 	if !ok {
 		return nil, gorm.ErrRecordNotFound
 	}
 	cloned := *user
 	return &cloned, nil
+}
+
+func (r *authRepo) FindByID(id uint64) (*models.User, error) {
+	s := r.store
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, user := range s.usersByEmail {
+		if user.ID == id {
+			cloned := *user
+			return &cloned, nil
+		}
+	}
+	return nil, gorm.ErrRecordNotFound
+}
+
+func (r *authRepo) UpdatePassword(userID uint64, hashedPassword string) error {
+	s := r.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, user := range s.usersByEmail {
+		if user.ID == userID {
+			user.Password = hashedPassword
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
+func (r *authRepo) UpdateEmailVerified(userID uint64) error {
+	s := r.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, user := range s.usersByEmail {
+		if user.ID == userID {
+			user.EmailVerified = true
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
+// verifyUserEmail is a helper for tests to mark a user's email as verified without going through the email flow
+func (s *memoryStore) verifyUserEmail(email string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, ok := s.usersByEmail[email]
+	if !ok {
+		return gorm.ErrRecordNotFound
+	}
+	user.EmailVerified = true
+	return nil
+}
+
+// getVerifyTokenForEmail returns the verification token string for a given email (for test assertions)
+func (s *memoryStore) getVerifyTokenForEmail(email string) string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	user, ok := s.usersByEmail[email]
+	if !ok {
+		return ""
+	}
+	for tok, t := range s.verifyTokensByToken {
+		if t.UserID == user.ID {
+			return tok
+		}
+	}
+	return ""
+}
+
+// getResetTokenForEmail returns the password reset token string for a given email (for test assertions)
+func (s *memoryStore) getResetTokenForEmail(email string) string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	user, ok := s.usersByEmail[email]
+	if !ok {
+		return ""
+	}
+	for tok, t := range s.resetTokensByToken {
+		if t.UserID == user.ID {
+			return tok
+		}
+	}
+	return ""
+}
+
+func (r *emailVerifyRepo) Create(token *models.EmailVerificationToken) error {
+	s := r.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	token.ID = 1
+	s.verifyTokensByToken[token.Token] = token
+	return nil
+}
+
+func (r *emailVerifyRepo) FindByToken(token string) (*models.EmailVerificationToken, error) {
+	s := r.store
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	t, ok := s.verifyTokensByToken[token]
+	if !ok {
+		return nil, gorm.ErrRecordNotFound
+	}
+	cloned := *t
+	return &cloned, nil
+}
+
+func (r *emailVerifyRepo) MarkAsUsed(id uint64) error {
+	s := r.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, t := range s.verifyTokensByToken {
+		if t.ID == id {
+			t.Used = true
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
+}
+
+func (r *passwordResetRepo) Create(token *models.PasswordResetToken) error {
+	s := r.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	token.ID = 1
+	s.resetTokensByToken[token.Token] = token
+	return nil
+}
+
+func (r *passwordResetRepo) FindByToken(token string) (*models.PasswordResetToken, error) {
+	s := r.store
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	t, ok := s.resetTokensByToken[token]
+	if !ok {
+		return nil, gorm.ErrRecordNotFound
+	}
+	cloned := *t
+	return &cloned, nil
+}
+
+func (r *passwordResetRepo) MarkAsUsed(id uint64) error {
+	s := r.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, t := range s.resetTokensByToken {
+		if t.ID == id {
+			t.Used = true
+			return nil
+		}
+	}
+	return gorm.ErrRecordNotFound
 }
 
 func (r *profileRepo) Create(profile *models.Profile) error {
@@ -264,11 +449,16 @@ func buildRouter(t *testing.T, enableAI bool) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 
 	store := newMemoryStore()
+	testStore = store // Make store available to test helpers
+
 	userRepository := &authRepo{store: store}
 	profileRepository := &profileRepo{store: store}
+	resetTokenRepo := &passwordResetRepo{store: store}
+	verifyTokenRepo := &emailVerifyRepo{store: store}
+	emailSender := &fakeEmailSender{}
 
 	cfg := &config.Config{Server: config.ServerConfig{Mode: gin.TestMode, JWTSecret: "integration-secret", JWTExpiryMinutes: 30, CORSOrigins: []string{"http://localhost:3000"}}}
-	authService := services.NewAuthService(userRepository, cfg)
+	authService := services.NewAuthService(userRepository, resetTokenRepo, verifyTokenRepo, emailSender, cfg)
 	profileService := services.NewProfileService(profileRepository, fakeQueue{})
 
 	var chatService *services.ChatService
@@ -327,22 +517,39 @@ func mustJSON(t *testing.T, v any) []byte {
 	return b
 }
 
-func signupAndGetToken(t *testing.T, r *gin.Engine, username string) (string, *http.Cookie) {
+var testStore *memoryStore // Package-level store for test helpers
+
+func signupAndGetToken(t *testing.T, r *gin.Engine, email string) (string, *http.Cookie) {
 	t.Helper()
-	resp := postJSON(t, r, "/api/v1/auth", map[string]any{"username": username, "password": "pass123"}, "")
-	if resp.Code != http.StatusOK {
-		t.Fatalf("auth expected 200, got %d body=%s", resp.Code, resp.Body.String())
+	// Signup
+	signupResp := postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": email, "password": "pass123"}, "")
+	if signupResp.Code != http.StatusCreated {
+		t.Fatalf("signup expected 201, got %d body=%s", signupResp.Code, signupResp.Body.String())
+	}
+
+	// For testing: mark email as verified to proceed with login.
+	// In production, users verify via the email link.
+	if testStore != nil {
+		if err := testStore.verifyUserEmail(email); err != nil {
+			t.Fatalf("failed to verify email in test: %v", err)
+		}
+	}
+
+	// Login
+	loginResp := postJSON(t, r, "/api/v1/auth/login", map[string]any{"email": email, "password": "pass123"}, "")
+	if loginResp.Code != http.StatusOK {
+		t.Fatalf("login expected 200, got %d body=%s", loginResp.Code, loginResp.Body.String())
 	}
 	var out struct {
 		Token string `json:"token"`
 	}
-	if err := json.Unmarshal(resp.Body.Bytes(), &out); err != nil {
+	if err := json.Unmarshal(loginResp.Body.Bytes(), &out); err != nil {
 		t.Fatalf("decode auth: %v", err)
 	}
 	if out.Token == "" {
 		t.Fatalf("expected token")
 	}
-	cookies := resp.Result().Cookies()
+	cookies := loginResp.Result().Cookies()
 	var authCookie *http.Cookie
 	for _, c := range cookies {
 		if c.Name == "nexia_token" {

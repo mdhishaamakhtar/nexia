@@ -169,27 +169,100 @@ func TestProfileServiceRepositoryAndQueueErrorPaths(t *testing.T) {
 	}
 }
 
+func TestProfileServiceUpdateValidation(t *testing.T) {
+	svc := services.NewProfileService(&fakeProfileRepo{}, &fakeEmbeddingQueue{})
+	profile := &models.Profile{TopSongs: []models.TopSong{{}, {}, {}, {}}}
+
+	err := svc.UpdateProfile(1, profile, 1)
+	if !errors.Is(err, services.ErrValidation) {
+		t.Fatalf("expected ErrValidation on update, got %v", err)
+	}
+}
+
+func TestProfileServiceListProfilesLimitZero(t *testing.T) {
+	repo := &fakeProfileRepo{findAllResp: []models.Profile{{ID: 1}}, findAllTotal: 1}
+	svc := services.NewProfileService(repo, nil)
+
+	profiles, total, err := svc.ListProfiles(1, 0, "", "", 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(profiles) != 1 || total != 1 {
+		t.Fatalf("unexpected result: profiles=%d total=%d", len(profiles), total)
+	}
+}
+
+func TestProfileServiceDeleteQueueError(t *testing.T) {
+	// repo succeeds but queue fails — DeleteProfile should still return nil (logs and continues)
+	repo := &fakeProfileRepo{}
+	queue := &fakeEmbeddingQueue{err: errors.New("queue unavailable")}
+	svc := services.NewProfileService(repo, queue)
+
+	err := svc.DeleteProfile(5, 1)
+	if err != nil {
+		t.Fatalf("expected nil (queue error is logged, not returned), got %v", err)
+	}
+	if repo.deleted.id != 5 {
+		t.Fatalf("expected delete called for id 5")
+	}
+}
+
+func TestProfileServiceUpdatePassesAssociationsThrough(t *testing.T) {
+	// Service must pass the caller's associations unchanged to the repo — no accumulation.
+	repo := &fakeProfileRepo{}
+	queue := &fakeEmbeddingQueue{}
+	svc := services.NewProfileService(repo, queue)
+
+	p := &models.Profile{
+		FullName: "Bob",
+		TopSongs: []models.TopSong{{Name: "Only Song", Artist: "Artist"}},
+		Tags:     []models.Tag{{Tag: "cool"}},
+	}
+	if err := svc.UpdateProfile(10, p, 3); err != nil {
+		t.Fatalf("unexpected update error: %v", err)
+	}
+	if len(repo.updated.TopSongs) != 1 {
+		t.Fatalf("expected 1 top song passed to repo, got %d", len(repo.updated.TopSongs))
+	}
+	if len(repo.updated.Tags) != 1 {
+		t.Fatalf("expected 1 tag passed to repo, got %d", len(repo.updated.Tags))
+	}
+	if repo.updated.Tags[0].Tag != "cool" {
+		t.Fatalf("expected tag 'cool', got %q", repo.updated.Tags[0].Tag)
+	}
+}
+
 func TestDeriveZodiacBoundaries(t *testing.T) {
 	tests := []struct {
 		name     string
 		date     time.Time
 		expected models.ZodiacSign
 	}{
-		{name: "January Capricorn", date: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCapricorn},
-		{name: "Aries starts", date: time.Date(2024, time.March, 21, 0, 0, 0, 0, time.UTC), expected: models.ZodiacAries},
-		{name: "April Taurus", date: time.Date(2024, time.April, 21, 0, 0, 0, 0, time.UTC), expected: models.ZodiacTaurus},
-		{name: "May Gemini", date: time.Date(2024, time.May, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacGemini},
-		{name: "June Cancer", date: time.Date(2024, time.June, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCancer},
-		{name: "July Leo", date: time.Date(2024, time.July, 24, 0, 0, 0, 0, time.UTC), expected: models.ZodiacLeo},
-		{name: "August Virgo", date: time.Date(2024, time.August, 24, 0, 0, 0, 0, time.UTC), expected: models.ZodiacVirgo},
-		{name: "September Libra", date: time.Date(2024, time.September, 24, 0, 0, 0, 0, time.UTC), expected: models.ZodiacLibra},
-		{name: "October Scorpio", date: time.Date(2024, time.October, 24, 0, 0, 0, 0, time.UTC), expected: models.ZodiacScorpio},
-		{name: "November Sagittarius", date: time.Date(2024, time.November, 23, 0, 0, 0, 0, time.UTC), expected: models.ZodiacSagittarius},
-		{name: "December Capricorn", date: time.Date(2024, time.December, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCapricorn},
-		{name: "Pisces ends", date: time.Date(2024, time.March, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacPisces},
-		{name: "Capricorn starts", date: time.Date(2024, time.December, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCapricorn},
-		{name: "Aquarius starts", date: time.Date(2024, time.January, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacAquarius},
-		{name: "February Pisces", date: time.Date(2024, time.February, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacPisces},
+		// Late-month (sign starts mid-month)
+		{name: "January Capricorn (early)", date: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCapricorn},
+		{name: "January Aquarius (late)", date: time.Date(2024, time.January, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacAquarius},
+		{name: "February Aquarius (early)", date: time.Date(2024, time.February, 18, 0, 0, 0, 0, time.UTC), expected: models.ZodiacAquarius},
+		{name: "February Pisces (late)", date: time.Date(2024, time.February, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacPisces},
+		{name: "March Pisces (early)", date: time.Date(2024, time.March, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacPisces},
+		{name: "March Aries (late)", date: time.Date(2024, time.March, 21, 0, 0, 0, 0, time.UTC), expected: models.ZodiacAries},
+		{name: "April Aries (early)", date: time.Date(2024, time.April, 19, 0, 0, 0, 0, time.UTC), expected: models.ZodiacAries},
+		{name: "April Taurus (late)", date: time.Date(2024, time.April, 21, 0, 0, 0, 0, time.UTC), expected: models.ZodiacTaurus},
+		{name: "May Taurus (early)", date: time.Date(2024, time.May, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacTaurus},
+		{name: "May Gemini (late)", date: time.Date(2024, time.May, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacGemini},
+		{name: "June Gemini (early)", date: time.Date(2024, time.June, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacGemini},
+		{name: "June Cancer (late)", date: time.Date(2024, time.June, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCancer},
+		{name: "July Cancer (early)", date: time.Date(2024, time.July, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCancer},
+		{name: "July Leo (late)", date: time.Date(2024, time.July, 24, 0, 0, 0, 0, time.UTC), expected: models.ZodiacLeo},
+		{name: "August Leo (early)", date: time.Date(2024, time.August, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacLeo},
+		{name: "August Virgo (late)", date: time.Date(2024, time.August, 24, 0, 0, 0, 0, time.UTC), expected: models.ZodiacVirgo},
+		{name: "September Virgo (early)", date: time.Date(2024, time.September, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacVirgo},
+		{name: "September Libra (late)", date: time.Date(2024, time.September, 24, 0, 0, 0, 0, time.UTC), expected: models.ZodiacLibra},
+		{name: "October Libra (early)", date: time.Date(2024, time.October, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacLibra},
+		{name: "October Scorpio (late)", date: time.Date(2024, time.October, 24, 0, 0, 0, 0, time.UTC), expected: models.ZodiacScorpio},
+		{name: "November Scorpio (early)", date: time.Date(2024, time.November, 21, 0, 0, 0, 0, time.UTC), expected: models.ZodiacScorpio},
+		{name: "November Sagittarius (late)", date: time.Date(2024, time.November, 23, 0, 0, 0, 0, time.UTC), expected: models.ZodiacSagittarius},
+		{name: "December Sagittarius (early)", date: time.Date(2024, time.December, 21, 0, 0, 0, 0, time.UTC), expected: models.ZodiacSagittarius},
+		{name: "December Capricorn (late)", date: time.Date(2024, time.December, 22, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCapricorn},
 	}
 
 	for _, tt := range tests {

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"nexia-backend/internal/ai"
+	"nexia-backend/internal/config"
 	"nexia-backend/internal/controllers"
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/services"
@@ -161,5 +162,212 @@ func TestChatControllerMissingUserContext(t *testing.T) {
 
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401 got %d", w.Code)
+	}
+}
+
+func newAuthController() *controllers.AuthController {
+	cfg := &config.Config{Server: config.ServerConfig{JWTSecret: "test-secret", JWTExpiryMinutes: 60}}
+	repo := &fakeAuthUserRepo{}
+	resetRepo := &fakeAuthResetRepo{}
+	verifyRepo := &fakeAuthVerifyRepo{}
+	emailSvc := &fakeAuthEmailSvc{}
+	svc := services.NewAuthService(repo, resetRepo, verifyRepo, emailSvc, cfg)
+	return controllers.NewAuthController(svc, cfg)
+}
+
+// Minimal fakes for auth controller unit tests
+type fakeAuthUserRepo struct{}
+
+func (f *fakeAuthUserRepo) Create(user *models.User) error { return nil }
+func (f *fakeAuthUserRepo) FindByEmail(email string) (*models.User, error) {
+	return nil, errors.New("not found")
+}
+func (f *fakeAuthUserRepo) FindByID(id uint64) (*models.User, error)     { return nil, nil }
+func (f *fakeAuthUserRepo) UpdatePassword(userID uint64, h string) error { return nil }
+func (f *fakeAuthUserRepo) UpdateEmailVerified(userID uint64) error      { return nil }
+
+type fakeAuthResetRepo struct{}
+
+func (f *fakeAuthResetRepo) Create(t *models.PasswordResetToken) error { return nil }
+func (f *fakeAuthResetRepo) FindByToken(token string) (*models.PasswordResetToken, error) {
+	return nil, errors.New("not found")
+}
+func (f *fakeAuthResetRepo) MarkAsUsed(id uint64) error { return nil }
+
+type fakeAuthVerifyRepo struct{}
+
+func (f *fakeAuthVerifyRepo) Create(t *models.EmailVerificationToken) error { return nil }
+func (f *fakeAuthVerifyRepo) FindByToken(token string) (*models.EmailVerificationToken, error) {
+	return nil, errors.New("not found")
+}
+func (f *fakeAuthVerifyRepo) MarkAsUsed(id uint64) error { return nil }
+
+type fakeAuthEmailSvc struct{}
+
+func (f *fakeAuthEmailSvc) SendVerificationEmail(toEmail, token string) error  { return nil }
+func (f *fakeAuthEmailSvc) SendPasswordResetEmail(toEmail, token string) error { return nil }
+
+func TestAuthControllerMissingUserIDInMe(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newAuthController()
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	ctrl.Me(c)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 got %d", w.Code)
+	}
+}
+
+func TestAuthControllerSignupBindError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newAuthController()
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/auth/signup", bytes.NewBufferString(`{bad json`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	ctrl.Signup(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 got %d", w.Code)
+	}
+}
+
+func TestAuthControllerLoginBindError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newAuthController()
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/auth/login", bytes.NewBufferString(`{bad json`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	ctrl.Login(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 got %d", w.Code)
+	}
+}
+
+func TestAuthControllerVerifyEmailMissingToken(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newAuthController()
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/auth/verify-email", nil)
+	ctrl.VerifyEmail(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 got %d", w.Code)
+	}
+}
+
+func TestAuthControllerForgotPasswordBindError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newAuthController()
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/auth/forgot-password", bytes.NewBufferString(`{bad json`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	ctrl.ForgotPassword(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 got %d", w.Code)
+	}
+}
+
+func TestAuthControllerResetPasswordBindError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newAuthController()
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/auth/reset-password", bytes.NewBufferString(`{bad json`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	ctrl.ResetPassword(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 got %d", w.Code)
+	}
+}
+
+func TestProfileControllerMissingUserID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newProfileController(nil)
+
+	cases := []struct {
+		name string
+		fn   func(*gin.Context)
+		req  *http.Request
+	}{
+		{
+			name: "get missing userID",
+			fn:   ctrl.GetProfile,
+			req:  httptest.NewRequest(http.MethodGet, "/profiles/1", nil),
+		},
+		{
+			name: "list missing userID",
+			fn:   ctrl.ListProfiles,
+			req:  httptest.NewRequest(http.MethodGet, "/profiles", nil),
+		},
+		{
+			name: "update missing userID",
+			fn:   ctrl.UpdateProfile,
+			req:  httptest.NewRequest(http.MethodPut, "/profiles/1", nil),
+		},
+		{
+			name: "delete missing userID",
+			fn:   ctrl.DeleteProfile,
+			req:  httptest.NewRequest(http.MethodDelete, "/profiles/1", nil),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = tc.req
+			tc.fn(c)
+			if w.Code != http.StatusUnauthorized {
+				t.Fatalf("%s: expected 401 got %d", tc.name, w.Code)
+			}
+		})
+	}
+}
+
+func TestProfileControllerUpdateBadJSON(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newProfileController(nil)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Set("userID", uint64(1))
+	c.Params = gin.Params{{Key: "id", Value: "1"}}
+	c.Request = httptest.NewRequest(http.MethodPut, "/profiles/1", bytes.NewBufferString(`{bad json`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	ctrl.UpdateProfile(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 got %d", w.Code)
+	}
+}
+
+func TestProfileControllerDeleteServiceError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := newProfileController(errors.New("delete failed"))
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Set("userID", uint64(1))
+	c.Params = gin.Params{{Key: "id", Value: "1"}}
+	c.Request = httptest.NewRequest(http.MethodDelete, "/profiles/1", nil)
+	ctrl.DeleteProfile(c)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected 500 got %d", w.Code)
 	}
 }

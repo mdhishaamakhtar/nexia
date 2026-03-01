@@ -442,3 +442,73 @@ func TestResetPasswordTooShort(t *testing.T) {
 		t.Fatalf("expected ErrValidation, got %v", err)
 	}
 }
+
+func TestResetPasswordUpdatePasswordError(t *testing.T) {
+	stored := &models.PasswordResetToken{
+		ID:        1,
+		UserID:    5,
+		Token:     "validtoken",
+		ExpiresAt: time.Now().Add(10 * time.Minute),
+		Used:      false,
+	}
+	updateErr := errors.New("db write failed")
+	userRepo := &fakeUserRepo{updatePasswordFn: func(userID uint64, h string) error { return updateErr }}
+	svc := newAuthService(userRepo, &fakeResetRepo{stored: stored}, &fakeVerifyRepo{}, &fakeEmailSvc{})
+
+	err := svc.ResetPassword("validtoken", "newpass123")
+	if !errors.Is(err, updateErr) {
+		t.Fatalf("expected updateErr, got %v", err)
+	}
+}
+
+// ── Signup additional error paths ──────────────────────────────────────────
+
+func TestSignupFindEmailGenericError(t *testing.T) {
+	dbErr := errors.New("connection timeout")
+	repo := &fakeUserRepo{findErr: dbErr}
+	svc := newAuthServiceDefaults(repo)
+
+	err := svc.Signup("alice@example.com", "password123")
+	if !errors.Is(err, dbErr) {
+		t.Fatalf("expected db error propagated, got %v", err)
+	}
+}
+
+func TestSignupVerifyRepoError(t *testing.T) {
+	repoErr := errors.New("verify repo failed")
+	repo := &fakeUserRepo{}
+	verifyRepo := &fakeVerifyRepo{createErr: repoErr}
+	svc := newAuthService(repo, &fakeResetRepo{}, verifyRepo, &fakeEmailSvc{})
+
+	err := svc.Signup("alice@example.com", "password123")
+	if !errors.Is(err, repoErr) {
+		t.Fatalf("expected verifyRepo error, got %v", err)
+	}
+}
+
+// ── VerifyEmail additional error paths ─────────────────────────────────────
+
+func TestVerifyEmailFindTokenGenericError(t *testing.T) {
+	dbErr := errors.New("db read failed")
+	verifyRepo := &fakeVerifyRepo{findErr: dbErr}
+	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, verifyRepo, &fakeEmailSvc{})
+
+	err := svc.VerifyEmail("anytoken")
+	if !errors.Is(err, dbErr) {
+		t.Fatalf("expected db error propagated, got %v", err)
+	}
+}
+
+// ── ForgotPassword additional error paths ──────────────────────────────────
+
+func TestForgotPasswordResetRepoError(t *testing.T) {
+	repoErr := errors.New("reset repo failed")
+	userRepo := &fakeUserRepo{user: &models.User{ID: 1, Email: "alice@example.com"}}
+	resetRepo := &fakeResetRepo{createErr: repoErr}
+	svc := newAuthService(userRepo, resetRepo, &fakeVerifyRepo{}, &fakeEmailSvc{})
+
+	err := svc.ForgotPassword("alice@example.com")
+	if !errors.Is(err, repoErr) {
+		t.Fatalf("expected resetRepo error, got %v", err)
+	}
+}

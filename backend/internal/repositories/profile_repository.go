@@ -77,10 +77,123 @@ func (r *ProfileRepository) Update(profile *models.Profile) error {
 			return err
 		}
 
-		// FullSaveAssociations: true tells GORM to automatically
-		// Delete/Update/Create associations to match the provided struct state (Replace).
-		return tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(profile).Error
+		// Save scalar profile fields only — associations are handled separately
+		// to avoid GORM's Save+FullSaveAssociations appending duplicates instead of replacing.
+		if err := tx.Omit(profileAssociations...).Save(profile).Error; err != nil {
+			return err
+		}
+
+		return replaceProfileAssociations(tx, profile)
 	})
+}
+
+// replaceProfileAssociations deletes all existing child rows for a profile then
+// batch-inserts the new ones from the profile struct. This is the correct
+// replace-semantics for GORM has-many associations when incoming items have ID=0.
+func replaceProfileAssociations(tx *gorm.DB, profile *models.Profile) error {
+	pid := profile.ID
+
+	// Delete all existing children for every has-many association type.
+	for _, model := range []any{
+		&models.Tag{}, &models.PoliticalView{}, &models.FoodRestriction{},
+		&models.MovieGenre{}, &models.BookGenre{}, &models.HangoutPlace{},
+		&models.Quote{}, &models.TopSong{}, &models.AssociatedSong{},
+	} {
+		if err := tx.Where("profile_id = ?", pid).Delete(model).Error; err != nil {
+			return err
+		}
+	}
+
+	// Re-insert has-many slices with fresh IDs and correct ProfileID.
+	for i := range profile.Tags {
+		profile.Tags[i].ID = 0
+		profile.Tags[i].ProfileID = pid
+	}
+	if len(profile.Tags) > 0 {
+		if err := tx.Create(&profile.Tags).Error; err != nil {
+			return err
+		}
+	}
+
+	for i := range profile.PoliticalViews {
+		profile.PoliticalViews[i].ID = 0
+		profile.PoliticalViews[i].ProfileID = pid
+	}
+	if len(profile.PoliticalViews) > 0 {
+		if err := tx.Create(&profile.PoliticalViews).Error; err != nil {
+			return err
+		}
+	}
+
+	for i := range profile.FoodRestrictions {
+		profile.FoodRestrictions[i].ID = 0
+		profile.FoodRestrictions[i].ProfileID = pid
+	}
+	if len(profile.FoodRestrictions) > 0 {
+		if err := tx.Create(&profile.FoodRestrictions).Error; err != nil {
+			return err
+		}
+	}
+
+	for i := range profile.MovieGenres {
+		profile.MovieGenres[i].ID = 0
+		profile.MovieGenres[i].ProfileID = pid
+	}
+	if len(profile.MovieGenres) > 0 {
+		if err := tx.Create(&profile.MovieGenres).Error; err != nil {
+			return err
+		}
+	}
+
+	for i := range profile.BookGenres {
+		profile.BookGenres[i].ID = 0
+		profile.BookGenres[i].ProfileID = pid
+	}
+	if len(profile.BookGenres) > 0 {
+		if err := tx.Create(&profile.BookGenres).Error; err != nil {
+			return err
+		}
+	}
+
+	for i := range profile.HangoutPlaces {
+		profile.HangoutPlaces[i].ID = 0
+		profile.HangoutPlaces[i].ProfileID = pid
+	}
+	if len(profile.HangoutPlaces) > 0 {
+		if err := tx.Create(&profile.HangoutPlaces).Error; err != nil {
+			return err
+		}
+	}
+
+	for i := range profile.Quotes {
+		profile.Quotes[i].ID = 0
+		profile.Quotes[i].ProfileID = pid
+	}
+	if len(profile.Quotes) > 0 {
+		if err := tx.Create(&profile.Quotes).Error; err != nil {
+			return err
+		}
+	}
+
+	for i := range profile.TopSongs {
+		profile.TopSongs[i].ID = 0
+		profile.TopSongs[i].ProfileID = pid
+	}
+	if len(profile.TopSongs) > 0 {
+		if err := tx.Create(&profile.TopSongs).Error; err != nil {
+			return err
+		}
+	}
+
+	// AssociatedSong uses ProfileID as its primary key (has-one).
+	if profile.AssociatedSong != nil {
+		profile.AssociatedSong.ProfileID = pid
+		if err := tx.Create(profile.AssociatedSong).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (r *ProfileRepository) Delete(id uint64, userID uint64) error {
