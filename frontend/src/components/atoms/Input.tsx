@@ -12,7 +12,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <div className="w-full min-w-0">
       {label && (
-        <label className="block text-[10px] font-semibold text-[var(--text-3)] mb-2 ml-0.5 uppercase tracking-[0.12em]">
+        <label className="block text-[10px] font-semibold text-(--text-3) mb-2 ml-0.5 uppercase tracking-[0.12em]">
           {label}
         </label>
       )}
@@ -23,7 +23,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         } ${className}`}
         {...props}
       />
-      {error && <p className="mt-1.5 text-xs text-[var(--red)] ml-0.5 opacity-80">{error}</p>}
+      {error && <p className="mt-1.5 text-xs text-(--red) ml-0.5 opacity-80">{error}</p>}
     </div>
   );
 });

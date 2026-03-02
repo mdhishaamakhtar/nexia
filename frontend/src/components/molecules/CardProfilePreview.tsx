@@ -75,7 +75,7 @@ export default function CardProfilePreview({
             </span>
             {profile.zodiac_sign && (
               <span className="sticker-chip inline-flex items-center gap-1 px-2 py-0.5 text-[11px]">
-                <ZodiacIcon sign={profile.zodiac_sign} size={10} className="text-[var(--blue)]" />
+                <ZodiacIcon sign={profile.zodiac_sign} size={10} className="text-(--blue)" />
                 {profile.zodiac_sign}
               </span>
             )}

@@ -223,11 +223,11 @@ export default function ProfileDetailPage() {
             className="glass-panel mb-8 rounded-3xl p-8 sm:p-10 relative scrapbook-card"
           >
             {/* Big Washi Tape */}
-            <div className="washi-tape-accent w-32 h-8 !top-[-15px]" style={{ opacity: 0.7 }} />
+            <div className="washi-tape-accent w-32 h-8 -top-[15px]!" style={{ opacity: 0.7 }} />
 
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
               <div
-                className="h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center rounded-2xl text-3xl sm:text-4xl font-semibold shrink-0 scrapbook-card rotate-[-2deg]"
+                className="h-20 w-20 sm:h-24 sm:w-24 flex items-center justify-center rounded-2xl text-3xl sm:text-4xl font-semibold shrink-0 scrapbook-card -rotate-2"
                 style={{ background: "var(--lavender)", color: "var(--text-1)" }}
               >
                 {profile.full_name?.charAt(0)?.toUpperCase() || "?"}
@@ -269,11 +269,7 @@ export default function ProfileDetailPage() {
                       className="flex items-center gap-1.5 text-xs"
                       style={{ color: "var(--text-3)" }}
                     >
-                      <ZodiacIcon
-                        sign={profile.zodiac_sign}
-                        size={12}
-                        className="text-[var(--blue)]"
-                      />
+                      <ZodiacIcon sign={profile.zodiac_sign} size={12} className="text-(--blue)" />
                       {profile.zodiac_sign}
                     </span>
                   )}
@@ -314,7 +310,7 @@ export default function ProfileDetailPage() {
                       <ZodiacIcon
                         sign={profile.zodiac_sign!}
                         size={12}
-                        className="text-[var(--blue)] mr-1"
+                        className="text-(--blue) mr-1"
                       />
                     )}
                   />

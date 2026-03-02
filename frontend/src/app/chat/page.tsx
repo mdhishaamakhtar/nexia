@@ -172,7 +172,7 @@ export default function ChatPage() {
                     transform: "rotate(-3deg)",
                   }}
                 >
-                  <StickerSparkle size={28} className="text-[var(--blue)]" />
+                  <StickerSparkle size={28} className="text-(--blue)" />
                 </div>
                 <h2
                   className="mb-2 text-xl font-bold handwritten"
@@ -239,7 +239,7 @@ export default function ChatPage() {
                 <div
                   className={`max-w-[85%] rounded-2xl px-4 py-3.5 text-sm border scrapbook-card ${
                     msg.role === "user"
-                      ? "rounded-tr-none bg-[var(--fill-hover)]"
+                      ? "rounded-tr-none bg-(--fill-hover)"
                       : "rounded-tl-none bg-white/60 backdrop-blur-md"
                   }`}
                   style={{
@@ -250,7 +250,7 @@ export default function ChatPage() {
                   {/* Small tape for assistant messages */}
                   {msg.role === "assistant" && (
                     <div
-                      className="washi-tape-accent w-10 !left-4 !top-[-4px]"
+                      className="washi-tape-accent w-10 left-4! -top-1!"
                       style={{ opacity: 0.4, background: "var(--peach)" }}
                     />
                   )}
@@ -265,7 +265,7 @@ export default function ChatPage() {
           {chatMutation.isPending && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
               <div
-                className="h-8 w-8 shrink-0 rounded-xl flex items-center justify-center scrapbook-card rotate-[-3deg]"
+                className="h-8 w-8 shrink-0 rounded-xl flex items-center justify-center scrapbook-card -rotate-3"
                 style={{ background: "var(--blue)" }}
               >
                 <NexiaIcon size={18} className="text-white" />
@@ -300,7 +300,7 @@ export default function ChatPage() {
         <div className="pb-2">
           <form onSubmit={handleSubmit} className="relative">
             <div
-              className="flex items-center rounded-2xl border transition-all duration-300 focus-within:border-[var(--blue)]"
+              className="flex items-center rounded-2xl border transition-all duration-300 focus-within:border-(--blue)"
               style={{
                 background: "var(--fill)",
                 borderColor: "var(--border)",

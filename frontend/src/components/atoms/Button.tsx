@@ -24,13 +24,13 @@ export default function Button({
 }: ButtonProps) {
   const variants = {
     primary:
-      "bg-[var(--peach)] text-[#1f2937] border-[rgba(124,58,237,0.2)] hover:opacity-95 sticker-chip",
+      "bg-(--peach) text-[#1f2937] border-[rgba(124,58,237,0.2)] hover:opacity-95 sticker-chip",
     secondary:
-      "bg-[var(--fill)] border-[var(--border)] text-[var(--text-2)] hover:bg-[var(--fill-hover)] hover:text-[var(--text-1)]",
+      "bg-(--fill) border-(--border) text-(--text-2) hover:bg-(--fill-hover) hover:text-(--text-1)",
     destructive:
-      "bg-[rgba(255,59,48,0.08)] border-[rgba(255,59,48,0.18)] text-[var(--red)] hover:bg-[rgba(255,59,48,0.15)]",
+      "bg-[rgba(255,59,48,0.08)] border-[rgba(255,59,48,0.18)] text-(--red) hover:bg-[rgba(255,59,48,0.15)]",
     ghost:
-      "bg-transparent border-transparent text-[var(--text-3)] hover:text-[var(--text-2)] hover:bg-[var(--fill)]",
+      "bg-transparent border-transparent text-(--text-3) hover:text-(--text-2) hover:bg-(--fill)",
   };
 
   return (
