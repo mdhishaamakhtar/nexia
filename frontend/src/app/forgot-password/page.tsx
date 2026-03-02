@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
         className="w-full max-w-sm relative"
       >
         <div
-          className="washi-tape-accent w-24 h-6 !top-[-10px]"
+          className="washi-tape-accent w-24 h-6 -top-2.5!"
           style={{ opacity: 0.8, background: "var(--mint)" }}
         />
 
@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
                     color: "var(--red)",
                   }}
                 >
-                  <span className="w-1 h-1 rounded-full bg-[var(--red)] shrink-0" />
+                  <span className="w-1 h-1 rounded-full bg-(--red) shrink-0" />
                   {error}
                 </motion.div>
               )}
