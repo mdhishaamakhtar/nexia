@@ -24,7 +24,7 @@ export default function Button({
 }: ButtonProps) {
   const variants = {
     primary:
-      "!bg-(--peach) text-[#1f2937] border-[rgba(124,58,237,0.2)] hover:opacity-95 sticker-chip",
+      "!bg-(--peach) text-[#7c2d12] border-[rgba(124,58,237,0.2)] hover:opacity-95 sticker-chip",
     secondary:
       "bg-(--fill) border-(--border) text-(--text-2) hover:bg-(--fill-hover) hover:text-(--text-1)",
     destructive:
