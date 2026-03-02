@@ -30,7 +30,7 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
   label: string;
   placeholder: string;
   fieldKey: string;
-  items: FieldArrayWithId<ProfileFormValues, TFieldName, "id">[];
+  items: FieldArrayWithId<ProfileFormValues, TFieldName, "_key">[];
   append: UseFieldArrayAppend<ProfileFormValues, TFieldName>;
   remove: UseFieldArrayRemove;
   badgeClassName?: string; // optional; falls back to CSS-var-based styling
@@ -39,14 +39,14 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
+      <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
         {label}
       </label>
       <div className="mb-2 flex flex-wrap gap-2">
         <AnimatePresence mode="popLayout">
           {items.map((item, index) => (
             <motion.span
-              key={item.id}
+              key={item._key}
               layout
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

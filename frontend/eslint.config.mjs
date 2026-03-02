@@ -3,6 +3,7 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import prettier from "eslint-config-prettier";
 import prettierPlugin from "eslint-plugin-prettier";
+import reactCompiler from "eslint-plugin-react-compiler";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -10,10 +11,12 @@ const eslintConfig = defineConfig([
   {
     plugins: {
       prettier: prettierPlugin,
+      "react-compiler": reactCompiler,
     },
     rules: {
       "prettier/prettier": "error",
       "@typescript-eslint/no-explicit-any": "warn",
+      "react-compiler/react-compiler": "error",
     },
   },
   prettier, // Must be last to override other configs

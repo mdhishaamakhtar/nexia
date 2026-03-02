@@ -32,14 +32,43 @@ const schema = z.object({
   favorite_movie: z.string(),
   favorite_book: z.string(),
   favorite_memory: z.string(),
-  tags: z.array(z.object({ tag: z.string() })),
-  top_songs: z.array(z.object({ name: z.string(), artist: z.string() })).max(3, "Max 3 top songs"),
-  quotes: z.array(z.object({ quote: z.string() })),
-  movie_genres: z.array(z.object({ genre: z.string() })),
-  book_genres: z.array(z.object({ genre: z.string() })),
-  hangout_places: z.array(z.object({ place: z.string() })),
-  food_restrictions: z.array(z.object({ restriction: z.string() })),
-  political_views: z.array(z.object({ view: z.string() })),
+  // id and profile_id must be included so Zod (strip mode) doesn't discard them on submit.
+  // GORM uses id for ON CONFLICT upserts — losing it causes duplicate rows on every update.
+  tags: z.array(
+    z.object({ id: z.number().optional(), profile_id: z.number().optional(), tag: z.string() })
+  ),
+  top_songs: z
+    .array(
+      z.object({
+        id: z.number().optional(),
+        profile_id: z.number().optional(),
+        name: z.string(),
+        artist: z.string(),
+      })
+    )
+    .max(3, "Max 3 top songs"),
+  quotes: z.array(
+    z.object({ id: z.number().optional(), profile_id: z.number().optional(), quote: z.string() })
+  ),
+  movie_genres: z.array(
+    z.object({ id: z.number().optional(), profile_id: z.number().optional(), genre: z.string() })
+  ),
+  book_genres: z.array(
+    z.object({ id: z.number().optional(), profile_id: z.number().optional(), genre: z.string() })
+  ),
+  hangout_places: z.array(
+    z.object({ id: z.number().optional(), profile_id: z.number().optional(), place: z.string() })
+  ),
+  food_restrictions: z.array(
+    z.object({
+      id: z.number().optional(),
+      profile_id: z.number().optional(),
+      restriction: z.string(),
+    })
+  ),
+  political_views: z.array(
+    z.object({ id: z.number().optional(), profile_id: z.number().optional(), view: z.string() })
+  ),
   associated_song_name: z.string(),
   associated_song_artist: z.string(),
 });
@@ -65,14 +94,19 @@ export default function ProfileForm({
     defaultValues: initialValues,
   });
 
-  const tagsField = useFieldArray({ control, name: "tags" });
-  const quotesField = useFieldArray({ control, name: "quotes" });
-  const movieGenresField = useFieldArray({ control, name: "movie_genres" });
-  const bookGenresField = useFieldArray({ control, name: "book_genres" });
-  const hangoutPlacesField = useFieldArray({ control, name: "hangout_places" });
-  const foodRestrictionsField = useFieldArray({ control, name: "food_restrictions" });
-  const politicalViewsField = useFieldArray({ control, name: "political_views" });
-  const songsField = useFieldArray({ control, name: "top_songs" });
+  // keyName "_key" avoids RHF overwriting the data's own "id" field with its internal UUID.
+  const tagsField = useFieldArray({ control, name: "tags", keyName: "_key" });
+  const quotesField = useFieldArray({ control, name: "quotes", keyName: "_key" });
+  const movieGenresField = useFieldArray({ control, name: "movie_genres", keyName: "_key" });
+  const bookGenresField = useFieldArray({ control, name: "book_genres", keyName: "_key" });
+  const hangoutPlacesField = useFieldArray({ control, name: "hangout_places", keyName: "_key" });
+  const foodRestrictionsField = useFieldArray({
+    control,
+    name: "food_restrictions",
+    keyName: "_key",
+  });
+  const politicalViewsField = useFieldArray({ control, name: "political_views", keyName: "_key" });
+  const songsField = useFieldArray({ control, name: "top_songs", keyName: "_key" });
   const songNameInputRef = useRef<HTMLInputElement>(null);
   const songArtistInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,7 +133,7 @@ export default function ProfileForm({
       transition={{ duration: 0.5 }}
     >
       <div className="flex justify-end">
-        <Button type="submit" isLoading={isSubmitting} className="!px-8">
+        <Button type="submit" isLoading={isSubmitting} className="px-8!">
           <Save className="mr-2 h-4 w-4" /> {submitLabel}
         </Button>
       </div>
@@ -109,13 +143,13 @@ export default function ProfileForm({
           <Input label="Full Name" {...register("full_name")} error={errors.full_name?.message} />
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
+            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
               Relationship Type
             </label>
             <div className="relative">
               <select
                 {...register("relationship_type")}
-                className="glass-input w-full appearance-none rounded-xl border border-[var(--color-border-subtle)] px-4 py-3 pr-10"
+                className="glass-input w-full appearance-none rounded-xl border border-(--color-border-subtle) px-4 py-3 pr-10"
               >
                 <option value="Friend">Friend</option>
                 <option value="Family">Family</option>
@@ -137,7 +171,7 @@ export default function ProfileForm({
           <Input label="Profession" {...register("profession")} />
 
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
+            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
               Bio
             </label>
             <textarea
@@ -182,13 +216,13 @@ export default function ProfileForm({
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
+            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
               Top Songs (max 3)
             </label>
             <div className="space-y-2">
               {songsField.fields.map((field, index) => (
                 <div
-                  key={field.id}
+                  key={field._key}
                   className="flex items-center justify-between rounded-lg border p-3"
                   style={{ background: "var(--fill)", borderColor: "var(--border)" }}
                 >
@@ -279,7 +313,7 @@ export default function ProfileForm({
       <ProfileFormSection id="deep" title="Deep Dive" icon={MessageSquare} index={3}>
         <div className="space-y-6">
           <div>
-            <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
+            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
               Long Term Goals
             </label>
             <textarea
@@ -289,7 +323,7 @@ export default function ProfileForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
+            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
               Favorite Memory
             </label>
             <textarea

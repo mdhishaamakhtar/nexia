@@ -77,123 +77,72 @@ func (r *ProfileRepository) Update(profile *models.Profile) error {
 			return err
 		}
 
-		// Save scalar profile fields only — associations are handled separately
-		// to avoid GORM's Save+FullSaveAssociations appending duplicates instead of replacing.
-		if err := tx.Omit(profileAssociations...).Save(profile).Error; err != nil {
+		// UPSERT: items with a known id update in-place (ON CONFLICT DO UPDATE),
+		// new items (id=0) are inserted and get fresh auto-increment ids.
+		// After Save, GORM populates the fresh ids back into the slice elements.
+		if err := tx.Session(&gorm.Session{FullSaveAssociations: true}).Save(profile).Error; err != nil {
 			return err
 		}
 
-		return replaceProfileAssociations(tx, profile)
+		// Prune stale children: rows that were in the DB but removed from the payload.
+		return pruneStaleAssociations(tx, profile)
 	})
 }
 
-// replaceProfileAssociations deletes all existing child rows for a profile then
-// batch-inserts the new ones from the profile struct. This is the correct
-// replace-semantics for GORM has-many associations when incoming items have ID=0.
-func replaceProfileAssociations(tx *gorm.DB, profile *models.Profile) error {
-	pid := profile.ID
+// pruneStaleAssociations deletes has-many child rows whose id is not present in the
+// incoming payload. This handles the case where the user removed items — the UPSERT
+// above does not delete stale rows on its own.
+// GORM populates fresh ids into the struct after the UPSERT (via RETURNING), so
+// we can safely collect "which ids to keep" from the struct itself.
+func pruneStaleAssociations(tx *gorm.DB, p *models.Profile) error {
+	pid := p.ID
 
-	// Delete all existing children for every has-many association type.
-	for _, model := range []any{
-		&models.Tag{}, &models.PoliticalView{}, &models.FoodRestriction{},
-		&models.MovieGenre{}, &models.BookGenre{}, &models.HangoutPlace{},
-		&models.Quote{}, &models.TopSong{}, &models.AssociatedSong{},
-	} {
-		if err := tx.Where("profile_id = ?", pid).Delete(model).Error; err != nil {
+	type pruneTarget struct {
+		model any
+		ids   []uint64
+	}
+
+	targets := []pruneTarget{
+		{&models.Tag{}, extractIDs(len(p.Tags), func(i int) uint64 { return p.Tags[i].ID })},
+		{&models.PoliticalView{}, extractIDs(len(p.PoliticalViews), func(i int) uint64 { return p.PoliticalViews[i].ID })},
+		{&models.FoodRestriction{}, extractIDs(len(p.FoodRestrictions), func(i int) uint64 { return p.FoodRestrictions[i].ID })},
+		{&models.MovieGenre{}, extractIDs(len(p.MovieGenres), func(i int) uint64 { return p.MovieGenres[i].ID })},
+		{&models.BookGenre{}, extractIDs(len(p.BookGenres), func(i int) uint64 { return p.BookGenres[i].ID })},
+		{&models.HangoutPlace{}, extractIDs(len(p.HangoutPlaces), func(i int) uint64 { return p.HangoutPlaces[i].ID })},
+		{&models.Quote{}, extractIDs(len(p.Quotes), func(i int) uint64 { return p.Quotes[i].ID })},
+		{&models.TopSong{}, extractIDs(len(p.TopSongs), func(i int) uint64 { return p.TopSongs[i].ID })},
+	}
+
+	for _, t := range targets {
+		q := tx.Where("profile_id = ?", pid)
+		if len(t.ids) > 0 {
+			q = q.Where("id NOT IN ?", t.ids)
+		}
+		if err := q.Delete(t.model).Error; err != nil {
 			return err
 		}
 	}
 
-	// Re-insert has-many slices with fresh IDs and correct ProfileID.
-	for i := range profile.Tags {
-		profile.Tags[i].ID = 0
-		profile.Tags[i].ProfileID = pid
-	}
-	if len(profile.Tags) > 0 {
-		if err := tx.Create(&profile.Tags).Error; err != nil {
-			return err
-		}
-	}
-
-	for i := range profile.PoliticalViews {
-		profile.PoliticalViews[i].ID = 0
-		profile.PoliticalViews[i].ProfileID = pid
-	}
-	if len(profile.PoliticalViews) > 0 {
-		if err := tx.Create(&profile.PoliticalViews).Error; err != nil {
-			return err
-		}
-	}
-
-	for i := range profile.FoodRestrictions {
-		profile.FoodRestrictions[i].ID = 0
-		profile.FoodRestrictions[i].ProfileID = pid
-	}
-	if len(profile.FoodRestrictions) > 0 {
-		if err := tx.Create(&profile.FoodRestrictions).Error; err != nil {
-			return err
-		}
-	}
-
-	for i := range profile.MovieGenres {
-		profile.MovieGenres[i].ID = 0
-		profile.MovieGenres[i].ProfileID = pid
-	}
-	if len(profile.MovieGenres) > 0 {
-		if err := tx.Create(&profile.MovieGenres).Error; err != nil {
-			return err
-		}
-	}
-
-	for i := range profile.BookGenres {
-		profile.BookGenres[i].ID = 0
-		profile.BookGenres[i].ProfileID = pid
-	}
-	if len(profile.BookGenres) > 0 {
-		if err := tx.Create(&profile.BookGenres).Error; err != nil {
-			return err
-		}
-	}
-
-	for i := range profile.HangoutPlaces {
-		profile.HangoutPlaces[i].ID = 0
-		profile.HangoutPlaces[i].ProfileID = pid
-	}
-	if len(profile.HangoutPlaces) > 0 {
-		if err := tx.Create(&profile.HangoutPlaces).Error; err != nil {
-			return err
-		}
-	}
-
-	for i := range profile.Quotes {
-		profile.Quotes[i].ID = 0
-		profile.Quotes[i].ProfileID = pid
-	}
-	if len(profile.Quotes) > 0 {
-		if err := tx.Create(&profile.Quotes).Error; err != nil {
-			return err
-		}
-	}
-
-	for i := range profile.TopSongs {
-		profile.TopSongs[i].ID = 0
-		profile.TopSongs[i].ProfileID = pid
-	}
-	if len(profile.TopSongs) > 0 {
-		if err := tx.Create(&profile.TopSongs).Error; err != nil {
-			return err
-		}
-	}
-
-	// AssociatedSong uses ProfileID as its primary key (has-one).
-	if profile.AssociatedSong != nil {
-		profile.AssociatedSong.ProfileID = pid
-		if err := tx.Create(profile.AssociatedSong).Error; err != nil {
+	// AssociatedSong uses ProfileID as its PK (has-one). The UPSERT above handles the
+	// non-nil case. If nil, explicitly delete so removal is persisted.
+	if p.AssociatedSong == nil {
+		if err := tx.Where("profile_id = ?", pid).Delete(&models.AssociatedSong{}).Error; err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+// extractIDs returns the non-zero ids from a slice, accessed via an index closure.
+func extractIDs(n int, id func(int) uint64) []uint64 {
+	result := make([]uint64, 0, n)
+	for i := range n {
+		if v := id(i); v > 0 {
+			result = append(result, v)
+		}
+	}
+	return result
 }
 
 func (r *ProfileRepository) Delete(id uint64, userID uint64) error {
