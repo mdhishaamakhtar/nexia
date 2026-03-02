@@ -93,24 +93,25 @@ export default function LoginPage() {
               borderColor: "var(--border)",
             }}
           >
+            {/* Pure GPU Slider */}
+            <motion.div
+              className="absolute top-1 bottom-1 w-[calc(50%-4px)] left-1 rounded-lg shadow-sm z-0"
+              style={{ background: "var(--blue)" }}
+              initial={false}
+              animate={{ x: mode === "login" ? "0%" : "100%" }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            />
+
             {(["login", "signup"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className="flex-1 py-2.5 text-xs font-bold rounded-lg transition-colors duration-200 tracking-wide cursor-pointer relative z-10"
+                className="flex-1 py-2.5 text-xs font-bold rounded-lg transition-colors duration-150 tracking-wide cursor-pointer relative z-10 hover:opacity-80 active:scale-[0.98]"
                 style={{
                   color: mode === m ? "var(--bg-raised)" : "var(--text-3)",
                 }}
               >
                 {m === "login" ? "Sign In" : "Create Account"}
-                {mode === m && (
-                  <motion.div
-                    layoutId="active-tab"
-                    className="absolute inset-0 rounded-lg shadow-sm z-[-1]"
-                    style={{ background: "var(--blue)" }}
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
               </button>
             ))}
           </div>
@@ -173,8 +174,8 @@ export default function LoginPage() {
           </button>
         </p>
 
-        {mode === "login" && (
-          <p className="text-center text-xs mt-2" style={{ color: "var(--text-3)" }}>
+        <div className="text-center text-xs mt-2 h-[18px]" style={{ color: "var(--text-3)" }}>
+          {mode === "login" && (
             <Link
               href="/forgot-password"
               className="underline underline-offset-2 transition-colors cursor-pointer"
@@ -182,8 +183,8 @@ export default function LoginPage() {
             >
               Forgot password?
             </Link>
-          </p>
-        )}
+          )}
+        </div>
       </motion.div>
     </div>
   );
