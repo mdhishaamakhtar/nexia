@@ -87,7 +87,7 @@ export default function LoginPage() {
 
           {/* Mode toggle */}
           <div
-            className="flex rounded-xl p-1 mb-6 border"
+            className="flex rounded-xl p-1 mb-8 border relative"
             style={{
               background: "var(--fill)",
               borderColor: "var(--border)",
@@ -97,14 +97,20 @@ export default function LoginPage() {
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className="flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-200 tracking-wide cursor-pointer active:scale-95"
-                style={
-                  mode === m
-                    ? { background: "var(--blue)", color: "#ffffff" }
-                    : { color: "var(--text-3)" }
-                }
+                className="flex-1 py-2.5 text-xs font-bold rounded-lg transition-colors duration-200 tracking-wide cursor-pointer relative z-10"
+                style={{
+                  color: mode === m ? "var(--bg-raised)" : "var(--text-3)",
+                }}
               >
                 {m === "login" ? "Sign In" : "Create Account"}
+                {mode === m && (
+                  <motion.div
+                    layoutId="active-tab"
+                    className="absolute inset-0 rounded-lg shadow-sm z-[-1]"
+                    style={{ background: "var(--blue)" }}
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
               </button>
             ))}
           </div>
