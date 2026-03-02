@@ -191,7 +191,7 @@ export default function ChatPage() {
                     <button
                       key={prompt}
                       onClick={() => handleSubmit(undefined, prompt)}
-                      className="group flex items-center justify-between rounded-xl px-4 py-3.5 text-left text-xs border transition-all"
+                      className="group flex items-center justify-between rounded-xl px-4 py-3.5 text-left text-xs border transition-all cursor-pointer active:scale-[0.97]"
                       style={{
                         background: "var(--fill)",
                         borderColor: "var(--border)",
@@ -316,14 +316,16 @@ export default function ChatPage() {
                 disabled={chatMutation.isPending}
               />
               <div className="mr-2">
-                <button
+                <motion.button
                   type="submit"
                   disabled={!input.trim() || chatMutation.isPending}
-                  className="rounded-xl p-2.5 text-white transition-all hover:opacity-90 active:scale-95 disabled:opacity-35"
+                  whileTap={{ scale: 0.90 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  className="rounded-xl p-2.5 text-white transition-all hover:opacity-90 disabled:opacity-35 cursor-pointer"
                   style={{ background: "var(--blue)" }}
                 >
                   <Send size={16} />
-                </button>
+                </motion.button>
               </div>
             </div>
           </form>

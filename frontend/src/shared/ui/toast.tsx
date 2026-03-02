@@ -48,7 +48,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             animate={{ opacity: 1, x: 0, rotate: idx % 2 === 0 ? -2 : 2, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8, x: -20 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`glass-panel scrapbook-card rounded-2xl px-5 py-3.5 text-xs font-bold tracking-tight flex items-center gap-3 relative overflow-hidden`}
+            className="glass-panel scrapbook-card rounded-2xl px-5 py-3.5 text-xs font-bold tracking-tight flex items-center gap-3 relative overflow-hidden"
             style={{
               borderColor: toast.type === "error" ? "rgba(239, 68, 68, 0.4)" : "var(--lavender)",
               color: "var(--text-1)",

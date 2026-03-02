@@ -170,11 +170,11 @@ export default function ProfilesPage() {
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.4, type: "spring", stiffness: 280, damping: 18 }}
-          whileHover={{ scale: 1.1, rotate: 90 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 22 }}
+          whileHover={{ scale: 1.1, rotate: 90, transition: { type: "spring", stiffness: 400, damping: 22 } }}
           whileTap={{ scale: 0.9 }}
           onClick={() => router.push("/profiles/new")}
-          className="fixed bottom-6 right-6 w-14 h-14 text-white rounded-full z-40 flex items-center justify-center"
+          className="fixed bottom-6 right-6 w-14 h-14 text-white rounded-full z-40 flex items-center justify-center cursor-pointer"
           style={{ background: "var(--blue)" }}
         >
           <Plus className="w-6 h-6" />
