@@ -28,7 +28,7 @@ export default function QuoteModal({ quote, onClose }: { quote: string; onClose:
             </h3>
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 transition-colors -mt-1 -mr-1 hover:bg-[var(--fill)] hover:text-[var(--text-1)]"
+              className="rounded-lg p-1.5 transition-colors -mt-1 -mr-1 hover:bg-(--fill) hover:text-(--text-1)"
               style={{ color: "var(--text-3)" }}
             >
               <X className="w-4 h-4" />

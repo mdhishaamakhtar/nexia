@@ -33,7 +33,7 @@ export default function Navbar() {
           <div className="flex items-center gap-1">
             <Link
               href="/chat"
-              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-[var(--fill)]"
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill)"
               style={{ color: "var(--text-2)" }}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -42,7 +42,7 @@ export default function Navbar() {
 
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-[var(--fill)]"
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill)"
               style={{ color: "var(--text-2)" }}
             >
               <LogOut className="w-3.5 h-3.5" />

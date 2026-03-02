@@ -30,7 +30,7 @@ function VerifyEmailConfirmContent() {
         className="w-full max-w-sm relative"
       >
         <div
-          className="washi-tape-accent w-24 h-6 !top-[-10px]"
+          className="washi-tape-accent w-24 h-6 -top-2.5!"
           style={{ opacity: 0.8, background: "var(--blue)" }}
         />
 

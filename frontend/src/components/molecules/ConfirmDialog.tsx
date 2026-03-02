@@ -40,7 +40,7 @@ export default function ConfirmDialog({
             animate={{ opacity: 1, scale: 1, rotate: 0.5, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, rotate: -2, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="w-full max-w-sm rounded-[2rem] p-8 relative glass-panel scrapbook-card"
+            className="w-full max-w-sm rounded-4xl p-8 relative glass-panel scrapbook-card"
             style={{
               borderColor: "var(--border-mid)",
             }}
@@ -48,7 +48,7 @@ export default function ConfirmDialog({
           >
             {/* Scrapbook Tape */}
             <div
-              className="washi-tape-accent w-24 h-6 !top-[-10px]"
+              className="washi-tape-accent w-24 h-6 -top-2.5!"
               style={{ background: "var(--peach)", opacity: 0.9 }}
             />
 
