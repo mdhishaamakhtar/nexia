@@ -12,7 +12,7 @@ export default function Chip({ label, onDelete }: ChipProps) {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      className="sticker-chip inline-flex items-center gap-1.5 px-3 py-1 text-xs text-(--text-2) hover:border-(--border-mid) hover:text-(--text-1) transition-all duration-200"
+      className="sticker-chip inline-flex items-center gap-1.5 px-3 py-1 text-xs text-(--text-2) hover:border-(--border-mid) hover:text-(--text-1)"
     >
       <span>{label}</span>
       {onDelete && (
