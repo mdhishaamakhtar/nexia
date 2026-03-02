@@ -24,7 +24,7 @@ export default function Button({
 }: ButtonProps) {
   const variants = {
     primary:
-      "!bg-(--peach) text-(--bg-raised) border-[rgba(124,58,237,0.2)] sticker-chip",
+      "!bg-(--peach) text-[#7c2d12] border-[rgba(124,58,237,0.2)] sticker-chip",
     secondary:
       "bg-(--fill) border-(--border) text-(--text-2) hover:bg-(--fill-hover) hover:text-(--text-1)",
     destructive:
@@ -37,7 +37,7 @@ export default function Button({
     <motion.button
       whileHover={{ scale: 1.015 }}
       whileTap={{ scale: 0.985 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+      transition={{ type: "spring", stiffness: 800, damping: 20 }}
       disabled={isLoading || disabled}
       className={cn(
         "relative flex items-center justify-center px-5 py-2.5 rounded-xl font-medium border disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer text-sm",
