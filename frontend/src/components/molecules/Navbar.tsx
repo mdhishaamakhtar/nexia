@@ -33,21 +33,23 @@ export default function Navbar() {
           <div className="flex items-center gap-1">
             <Link
               href="/chat"
-              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill)"
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill) cursor-pointer active:scale-95"
               style={{ color: "var(--text-2)" }}
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Ask AI</span>
             </Link>
 
-            <button
+            <motion.button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill)"
+              whileTap={{ scale: 0.93 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill) cursor-pointer"
               style={{ color: "var(--text-2)" }}
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sign Out</span>
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>

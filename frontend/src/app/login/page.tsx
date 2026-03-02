@@ -97,7 +97,7 @@ export default function LoginPage() {
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className="flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-200 tracking-wide"
+                className="flex-1 py-2 text-xs font-semibold rounded-lg transition-all duration-200 tracking-wide cursor-pointer active:scale-95"
                 style={
                   mode === m
                     ? { background: "var(--blue)", color: "#ffffff" }
@@ -129,9 +129,10 @@ export default function LoginPage() {
 
             {error && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="px-4 py-3 rounded-xl text-xs flex items-center gap-2 border"
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: "auto", marginTop: 0 }}
+                transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                className="px-4 py-3 rounded-xl text-xs flex items-center gap-2 border overflow-hidden"
                 style={{
                   background: "rgba(255,59,48,0.06)",
                   borderColor: "rgba(255,59,48,0.15)",
@@ -159,7 +160,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            className="underline underline-offset-2 transition-colors"
+            className="underline underline-offset-2 transition-colors cursor-pointer"
             style={{ color: "var(--text-2)" }}
           >
             {mode === "login" ? "Create an account" : "Sign in"}
@@ -170,7 +171,7 @@ export default function LoginPage() {
           <p className="text-center text-xs mt-2" style={{ color: "var(--text-3)" }}>
             <Link
               href="/forgot-password"
-              className="underline underline-offset-2 transition-colors"
+              className="underline underline-offset-2 transition-colors cursor-pointer"
               style={{ color: "var(--text-2)" }}
             >
               Forgot password?
