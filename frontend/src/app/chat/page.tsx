@@ -319,7 +319,7 @@ export default function ChatPage() {
                 <motion.button
                   type="submit"
                   disabled={!input.trim() || chatMutation.isPending}
-                  whileTap={{ scale: 0.90 }}
+                  whileTap={{ scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   className="rounded-xl p-2.5 text-white transition-all hover:opacity-90 disabled:opacity-35 cursor-pointer"
                   style={{ background: "var(--blue)" }}
