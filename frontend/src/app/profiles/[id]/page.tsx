@@ -11,6 +11,7 @@ import {
   Edit,
   Film,
   Heart,
+  ListMusic,
   MapPin,
   MessageSquare,
   Music,
@@ -381,6 +382,40 @@ export default function ProfileDetailPage() {
                       <div className="text-xs" style={{ color: "var(--text-2)" }}>
                         {profile.associated_song.artist}
                       </div>
+                    </div>
+                  </div>
+                )}
+                {profile.top_songs && profile.top_songs.length > 0 && (
+                  <div>
+                    <div
+                      className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      <ListMusic className="h-3 w-3" /> Top Songs
+                    </div>
+                    <div className="space-y-2">
+                      {profile.top_songs.map((song, i) => (
+                        <div
+                          key={song.id ?? i}
+                          className="flex items-center gap-3 rounded-xl p-3 border"
+                          style={{ background: "var(--fill)", borderColor: "var(--border)" }}
+                        >
+                          <div
+                            className="rounded-full shrink-0 text-xs font-bold w-7 h-7 flex items-center justify-center"
+                            style={{ background: "var(--fill-hover)", color: "var(--text-3)" }}
+                          >
+                            {i + 1}
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
+                              {song.name}
+                            </div>
+                            <div className="text-xs" style={{ color: "var(--text-2)" }}>
+                              {song.artist}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
