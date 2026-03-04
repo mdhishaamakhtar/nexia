@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ChevronDown, Coffee, Heart, MessageSquare, Save, Star, Trash2, User } from "lucide-react";
+import { ChevronDown, Coffee, Heart, MessageSquare, Plus, Save, Star, Trash2, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRef } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -245,29 +245,44 @@ export default function ProfileForm({
                 {errors.top_songs.message}
               </p>
             )}
-            <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <input
                 ref={songNameInputRef}
                 placeholder="Song Name"
+                disabled={songs.length >= 3}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
                     addTopSong();
                   }
                 }}
-                className="glass-input w-full rounded-xl px-4 py-3"
+                className="glass-input w-full rounded-xl px-4 py-3 disabled:opacity-40"
               />
               <input
                 ref={songArtistInputRef}
                 placeholder="Artist"
+                disabled={songs.length >= 3}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
                     addTopSong();
                   }
                 }}
-                className="glass-input w-full rounded-xl px-4 py-3"
+                className="glass-input w-full rounded-xl px-4 py-3 disabled:opacity-40"
               />
+              <button
+                type="button"
+                onClick={addTopSong}
+                disabled={songs.length >= 3}
+                className="rounded-xl px-3 border transition-colors sm:shrink-0 disabled:opacity-40"
+                style={{
+                  background: "var(--fill)",
+                  borderColor: "var(--border)",
+                  color: "var(--text-2)",
+                }}
+              >
+                <Plus className="h-5 w-5 mx-auto" />
+              </button>
             </div>
           </div>
         </div>
