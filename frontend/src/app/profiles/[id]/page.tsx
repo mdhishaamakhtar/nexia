@@ -407,7 +407,10 @@ export default function ProfileDetailPage() {
                             {i + 1}
                           </div>
                           <div>
-                            <div className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
+                            <div
+                              className="text-sm font-semibold"
+                              style={{ color: "var(--text-1)" }}
+                            >
                               {song.name}
                             </div>
                             <div className="text-xs" style={{ color: "var(--text-2)" }}>
