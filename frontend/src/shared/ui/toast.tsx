@@ -57,7 +57,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               className="sticker-chip pointer-events-auto flex items-center gap-3 px-4 py-2.5 shadow-[0_4px_12px_rgba(0,0,0,0.08)] relative group overflow-hidden"
               style={{
                 background: "var(--bg-raised)",
-                borderColor: toast.type === "error" ? "rgba(239, 68, 68, 0.2)" : "var(--border-mid)",
+                borderColor:
+                  toast.type === "error" ? "rgba(239, 68, 68, 0.2)" : "var(--border-mid)",
               }}
             >
               {/* Glass subtle shimmer on top */}
@@ -66,7 +67,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <div
                 className="flex items-center justify-center w-6 h-6 rounded-full shrink-0"
                 style={{
-                  background: toast.type === "error" ? "rgba(239, 68, 68, 0.1)" : "rgba(147, 197, 253, 0.15)",
+                  background:
+                    toast.type === "error" ? "rgba(239, 68, 68, 0.1)" : "rgba(147, 197, 253, 0.15)",
                 }}
               >
                 {toast.type === "success" ? (
