@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
@@ -63,14 +64,15 @@ export default function EditProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-10 flex items-center justify-between"
         >
-          <button
-            onClick={() => router.push(`/profiles/${id}`)}
+          <Link
+            href={`/profiles/${id}`}
+            prefetch
             className="group flex items-center gap-2 transition-colors text-sm"
             style={{ color: "var(--text-3)" }}
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             back
-          </button>
+          </Link>
           <h1 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
             Edit Profile
           </h1>

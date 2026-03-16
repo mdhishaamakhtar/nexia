@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -178,23 +179,22 @@ export default function ProfileDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8 flex items-center justify-between"
         >
-          <button
-            onClick={() => router.push("/profiles")}
+          <Link
+            href="/profiles"
+            prefetch
             className="group flex items-center gap-2 transition-colors text-sm"
             style={{ color: "var(--text-3)" }}
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
             back
-          </button>
+          </Link>
 
           <div className="flex gap-2">
-            <Button
-              onClick={() => router.push(`/profiles/${id}/edit`)}
-              variant="secondary"
-              className="text-xs px-3 py-2"
-            >
-              <Edit className="mr-1.5 h-3.5 w-3.5" /> Edit
-            </Button>
+            <Link href={`/profiles/${id}/edit`} prefetch>
+              <Button variant="secondary" className="text-xs px-3 py-2">
+                <Edit className="mr-1.5 h-3.5 w-3.5" /> Edit
+              </Button>
+            </Link>
             <Button
               onClick={() => setIsDeleteDialogOpen(true)}
               variant="destructive"

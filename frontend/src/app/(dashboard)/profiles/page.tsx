@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +21,6 @@ const RELATIONSHIP_TYPES = [
 ];
 
 export default function ProfilesPage() {
-  const router = useRouter();
   const [search, setSearch] = useState("");
   const [relationshipFilter, setRelationshipFilter] = useState("");
 
@@ -133,13 +132,14 @@ export default function ProfilesPage() {
                 : "start adding the people who matter most"}
             </p>
             {!search && (
-              <button
-                onClick={() => router.push("/profiles/new")}
-                className="text-sm font-medium text-white px-6 py-2.5 rounded-xl transition-all hover:opacity-90 active:scale-[0.98]"
+              <Link
+                href="/profiles/new"
+                prefetch
+                className="text-sm font-medium text-white px-6 py-2.5 rounded-xl transition-all hover:opacity-90 active:scale-[0.98] inline-block"
                 style={{ background: "var(--blue)" }}
               >
                 Add your first person
-              </button>
+              </Link>
             )}
           </motion.div>
         ) : (
@@ -154,7 +154,7 @@ export default function ProfilesPage() {
                 key={profile.id}
                 profile={profile}
                 index={index}
-                onClick={() => router.push(`/profiles/${profile.id}`)}
+                href={`/profiles/${profile.id}`}
               />
             ))}
           </motion.div>
@@ -162,22 +162,23 @@ export default function ProfilesPage() {
       </div>
 
       {/* FAB */}
-      <motion.button
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 22 }}
-        whileHover={{
-          scale: 1.1,
-          rotate: 90,
-          transition: { type: "spring", stiffness: 400, damping: 22 },
-        }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => router.push("/profiles/new")}
-        className="fixed bottom-6 right-6 w-14 h-14 text-white rounded-full z-40 flex items-center justify-center cursor-pointer"
-        style={{ background: "var(--blue)" }}
-      >
-        <Plus className="w-6 h-6" />
-      </motion.button>
+      <Link href="/profiles/new" prefetch className="fixed bottom-6 right-6 z-40">
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1, type: "spring", stiffness: 400, damping: 22 }}
+          whileHover={{
+            scale: 1.1,
+            rotate: 90,
+            transition: { type: "spring", stiffness: 400, damping: 22 },
+          }}
+          whileTap={{ scale: 0.9 }}
+          className="w-14 h-14 text-white rounded-full flex items-center justify-center cursor-pointer"
+          style={{ background: "var(--blue)" }}
+        >
+          <Plus className="w-6 h-6" />
+        </motion.div>
+      </Link>
     </div>
   );
 }
