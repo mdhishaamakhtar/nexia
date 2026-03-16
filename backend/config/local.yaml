@@ -5,6 +5,7 @@ server:
   jwt_expiry_minutes: 1440
   cors_origins:
     - "http://localhost:3000"
+  cookie_domain: "" # empty = browser defaults to request host (fine for localhost)
 
 db:
   host: localhost
