@@ -31,6 +31,7 @@ type ServerConfig struct {
 	JWTSecret        string   `mapstructure:"jwt_secret"`
 	JWTExpiryMinutes int      `mapstructure:"jwt_expiry_minutes"`
 	CORSOrigins      []string `mapstructure:"cors_origins"`
+	CookieDomain     string   `mapstructure:"cookie_domain"`
 }
 
 type DBConfig struct {

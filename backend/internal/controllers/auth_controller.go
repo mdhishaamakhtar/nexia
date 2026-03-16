@@ -103,8 +103,8 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 		maxAgeSeconds = int((24 * time.Hour).Seconds())
 	}
 
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("nexia_token", token, maxAgeSeconds, "/", "", false, true)
+	c.SetSameSite(http.SameSiteNoneMode)
+	c.SetCookie("nexia_token", token, maxAgeSeconds, "/", ctrl.Config.Server.CookieDomain, true, true)
 
 	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"token": token})
 }
@@ -167,8 +167,8 @@ func (ctrl *AuthController) Me(c *gin.Context) {
 // @Failure 500 {object} utils.ErrorResponse
 // @Router /auth/logout [post]
 func (ctrl *AuthController) Logout(c *gin.Context) {
-	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("nexia_token", "", -1, "/", "", false, true)
+	c.SetSameSite(http.SameSiteNoneMode)
+	c.SetCookie("nexia_token", "", -1, "/", ctrl.Config.Server.CookieDomain, true, true)
 	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"message": "Logged out"})
 }
 

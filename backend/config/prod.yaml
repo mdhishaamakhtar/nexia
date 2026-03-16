@@ -4,6 +4,7 @@ server:
   jwt_secret: "" # MUST be set via NEXIA_SERVER_JWT_SECRET
   jwt_expiry_minutes: 60
   cors_origins: [] # Set via NEXIA_SERVER_CORS_ORIGINS (comma-separated)
+  cookie_domain: "" # Set via NEXIA_SERVER_COOKIE_DOMAIN (e.g. .hishaam.dev)
 
 db:
   host: ""
