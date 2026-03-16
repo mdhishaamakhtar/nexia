@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import Navbar from "@/components/molecules/Navbar";
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
@@ -17,14 +18,20 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="shimmer-bg w-16 h-16 rounded-full animate-[shimmer_2s_linear_infinite]" />
+        <div
+          className="w-6 h-6 rounded-full border-2 animate-spin"
+          style={{ borderColor: "var(--border)", borderTopColor: "var(--blue)" }}
+        />
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
-  return <>{children}</>;
+  return (
+    <>
+      <Navbar />
+      {children}
+    </>
+  );
 }

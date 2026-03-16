@@ -110,8 +110,9 @@ HTTP Request
 
 ### Authentication
 
-- **Single endpoint**: `POST /api/v1/auth` — login-or-signup in one call.
-  If the username does not exist, the account is created automatically.
+- **Separate endpoints**: `POST /api/v1/auth/signup` (create account) and
+  `POST /api/v1/auth/login` (authenticate). Email verification is required
+  before login succeeds.
 - JWT tokens are HS256-signed, configurable expiry (default 1440 min = 24 h).
 - Tokens are accepted via `Authorization: Bearer <token>` header **or** the
   `nexia_token` HTTP cookie (the frontend uses the cookie path).
@@ -135,6 +136,7 @@ Key config fields:
 | `server.jwt_secret` | HMAC secret for JWT signing |
 | `server.jwt_expiry_minutes` | Token TTL |
 | `server.cors_origins` | Allowed CORS origins (list) |
+| `server.cookie_domain` | Cookie domain (e.g. `.hishaam.dev` for cross-subdomain auth) |
 | `db.*` | PostgreSQL connection details |
 | `ai.gemini_api_key` | Gemini API key (optional; RAG disabled if empty) |
 | `ai.redis_url` | Redis URL for Asynq queue (optional; RAG disabled if empty) |
@@ -244,17 +246,39 @@ files — add a new numbered one instead.
 
 ## Frontend Architecture
 
+### Route Groups
+
+The app is split into three route groups. Groups are organisational only — they
+do **not** change URLs.
+
+| Group | Layout | Purpose |
+|---|---|---|
+| `app/(marketing)/` | none (inherits root) | SSR landing page — Server Component, no auth |
+| `app/(auth)/` | none (inherits root) | Login, signup, verify-email, forgot/reset password |
+| `app/(dashboard)/` | `layout.tsx` (client) | All authenticated pages — auth guard + Navbar live here |
+
+The `(dashboard)/layout.tsx` is a `"use client"` component that:
+1. Reads `useAuth()` and redirects to `/login` if unauthenticated.
+2. Renders `<Navbar />` once, persistently, for every dashboard page.
+3. Renders `{children}` — individual pages contain **no** Navbar or auth guard.
+
+This means navigating within the dashboard never remounts the layout — no
+redundant auth checks, no Navbar flicker.
+
 ### Pages (App Router)
 
-| Route | File | Purpose |
-|---|---|---|
-| `/` | `app/page.tsx` | Landing / redirect |
-| `/login` | `app/login/page.tsx` | Auth form (login + signup) |
-| `/profiles` | `app/profiles/page.tsx` | Profile list (scrapbook view) |
-| `/profiles/new` | `app/profiles/new/page.tsx` | Create profile form |
-| `/profiles/[id]` | `app/profiles/[id]/page.tsx` | Profile detail view |
-| `/profiles/[id]/edit` | `app/profiles/[id]/edit/page.tsx` | Edit profile form |
-| `/chat` | `app/chat/page.tsx` | AI chat interface |
+| Route | File | SSR? | Purpose |
+|---|---|---|---|
+| `/` | `app/page.tsx` | Yes | Static landing page (Server Component) |
+| `/login` | `app/(auth)/login/page.tsx` | No | Auth form (login + signup) |
+| `/verify-email` | `app/(auth)/verify-email/page.tsx` | No | Post-signup info |
+| `/forgot-password` | `app/(auth)/forgot-password/page.tsx` | No | Forgot password form |
+| `/reset-password` | `app/(auth)/reset-password/page.tsx` | No | Reset password form |
+| `/profiles` | `app/(dashboard)/profiles/page.tsx` | No | Profile list (scrapbook view) |
+| `/profiles/new` | `app/(dashboard)/profiles/new/page.tsx` | No | Create profile form |
+| `/profiles/[id]` | `app/(dashboard)/profiles/[id]/page.tsx` | No | Profile detail view |
+| `/profiles/[id]/edit` | `app/(dashboard)/profiles/[id]/edit/page.tsx` | No | Edit profile form |
+| `/chat` | `app/(dashboard)/chat/page.tsx` | No | AI chat interface |
 
 ### Component Hierarchy
 
@@ -262,7 +286,6 @@ files — add a new numbered one instead.
 components/
   atoms/        — Primitive UI: Button, Input, Chip
   molecules/    — Composed UI: Navbar, CardProfilePreview, ConfirmDialog, QuoteModal, SectionWrapper
-  guards/       — ProtectedRoute (redirects unauthenticated users to /login)
 
 features/
   auth/api.ts         — Auth API calls
@@ -291,13 +314,15 @@ arrays (tags, songs, genres, etc.) use `useFieldArray`.
 ### API Client
 
 `src/shared/api/client.ts` exports a pre-configured Axios instance:
-- Base URL from `BACKEND_URL` env var (injected at Docker build time via Next.js config).
+- Base URL from `NEXT_PUBLIC_BACKEND_URL` env var — browser calls the backend
+  **directly** (no Vercel proxy). Falls back to `http://localhost:8080`.
 - `withCredentials: true` so the `nexia_token` cookie is sent on every request.
 
 ### Auth
 
-`AuthContext` wraps the app with `isAuthenticated` state, `login`, and `logout`
-helpers. `ProtectedRoute` redirects unauthenticated users to `/login`.
+`AuthContext` (root layout) manages `isAuthenticated`, `login`, and `logout`.
+The `(dashboard)/layout.tsx` enforces auth for all dashboard routes — there is
+no separate `ProtectedRoute` component.
 
 ---
 
