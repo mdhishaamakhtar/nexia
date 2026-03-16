@@ -2,8 +2,8 @@
 FROM node:23-alpine AS builder
 WORKDIR /app
 
-ARG BACKEND_URL=http://localhost:8080
-ENV BACKEND_URL=${BACKEND_URL}
+ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./

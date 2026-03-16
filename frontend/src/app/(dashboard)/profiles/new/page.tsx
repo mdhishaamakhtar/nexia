@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import ProtectedRoute from "@/components/guards/ProtectedRoute";
-import Navbar from "@/components/molecules/Navbar";
 import ProfileForm from "@/features/profiles/components/ProfileForm";
 import { createProfile } from "@/features/profiles/api";
 import { useToast } from "@/shared/ui/toast";
@@ -57,37 +55,33 @@ export default function NewProfilePage() {
   };
 
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen">
-        <Navbar />
-
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-10 flex items-center justify-between"
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-10 flex items-center justify-between"
+        >
+          <button
+            onClick={() => router.push("/profiles")}
+            className="group flex items-center gap-2 transition-colors text-sm"
+            style={{ color: "var(--text-3)" }}
           >
-            <button
-              onClick={() => router.push("/profiles")}
-              className="group flex items-center gap-2 transition-colors text-sm"
-              style={{ color: "var(--text-3)" }}
-            >
-              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-              back
-            </button>
-            <h1 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
-              New Profile
-            </h1>
-          </motion.div>
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            back
+          </button>
+          <h1 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
+            New Profile
+          </h1>
+        </motion.div>
 
-          <ProfileForm
-            initialValues={initialValues}
-            onSubmit={handleSubmit}
-            isSubmitting={isLoading}
-            submitLabel="Save Profile"
-          />
-        </div>
+        <ProfileForm
+          initialValues={initialValues}
+          onSubmit={handleSubmit}
+          isSubmitting={isLoading}
+          submitLabel="Save Profile"
+        />
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }
