@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Send, User, Trash2, MessageSquare, ArrowLeft } from "lucide-react";
 import { NexiaIcon, StickerSparkle } from "@/shared/ui/AIIcons";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { useMutation } from "@tanstack/react-query";
 import remarkGfm from "remark-gfm";
@@ -27,7 +27,6 @@ const SUGGESTED_PROMPTS = [
 ];
 
 export default function ChatPage() {
-  const router = useRouter();
   const { error: showError } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -115,14 +114,15 @@ export default function ChatPage() {
         <div className="washi-tape-accent w-20" style={{ opacity: 0.8 }} />
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/profiles")}
+          <Link
+            href="/profiles"
+            prefetch
             className="rounded-lg p-1.5 transition-colors"
             style={{ color: "var(--text-3)" }}
             title="Back"
           >
             <ArrowLeft size={16} />
-          </button>
+          </Link>
           <div className="rounded-xl p-2" style={{ background: "var(--blue)" }}>
             <NexiaIcon size={20} className="text-white" />
           </div>
