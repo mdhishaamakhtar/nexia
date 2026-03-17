@@ -353,7 +353,7 @@ export default function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="ask about someone's favorites, memories, or vibes…"
               aria-label="Ask about your people"
-              className="min-w-0 flex-1 bg-transparent py-2 text-sm focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent py-2 text-base sm:text-sm focus:outline-none"
               style={{ color: "var(--text-1)" }}
               disabled={chatMutation.isPending}
             />
