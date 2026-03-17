@@ -39,7 +39,10 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
+      <label
+        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
+        style={{ color: "var(--text-3)" }}
+      >
         {label}
       </label>
       <div className="mb-2 flex flex-wrap gap-2">
@@ -48,10 +51,10 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
             <motion.span
               key={item._key}
               layout
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", damping: 15, stiffness: 300 }}
+              initial={{ scale: 0.7, opacity: 0, rotate: -10 }}
+              animate={{ scale: 1, opacity: 1, rotate: -2 }}
+              exit={{ scale: 0.7, opacity: 0, rotate: -10 }}
+              transition={{ type: "spring", stiffness: 380, damping: 22 }}
               className={`sticker-chip flex items-center gap-2 rounded-full px-3 py-1 text-sm border ${badgeClassName ?? ""}`}
               style={
                 !badgeClassName
@@ -67,9 +70,10 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
               <button
                 type="button"
                 onClick={() => remove(index)}
+                aria-label="Remove"
                 className="hover:rotate-90 transition-transform"
               >
-                <X className="h-3 w-3" />
+                <X className="h-3 w-3" aria-hidden="true" />
               </button>
             </motion.span>
           ))}
@@ -92,19 +96,20 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
         />
         <button
           type="button"
+          aria-label="Add"
           onClick={() => {
             if (!value.trim()) return;
             append({ [fieldKey]: value.trim() } as FieldArray<ProfileFormValues, TFieldName>);
             setValue("");
           }}
-          className="rounded-xl px-3 border transition-colors"
+          className="rounded-xl px-3 border transition-colors hover:bg-(--fill-hover) active:scale-[0.97]"
           style={{
             background: "var(--fill)",
             borderColor: "var(--border)",
             color: "var(--text-2)",
           }}
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
     </div>

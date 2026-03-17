@@ -36,6 +36,7 @@ export default function ProfileFormSection({
           clipPath: "polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%)",
           transform: `rotate(${index % 2 === 0 ? -2 : 2}deg)`,
         }}
+        aria-hidden="true"
       />
 
       <div className="glass-panel rounded-2xl p-6 sm:p-7 relative overflow-hidden">

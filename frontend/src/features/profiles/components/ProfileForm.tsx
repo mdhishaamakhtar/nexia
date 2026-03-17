@@ -138,13 +138,13 @@ export default function ProfileForm({
     <motion.form
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-10"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
+      initial={{ opacity: 0, y: 12, rotate: -0.5 }}
+      animate={{ opacity: 1, y: 0, rotate: 0 }}
+      transition={{ type: "spring", stiffness: 140, damping: 22 }}
     >
       <div className="flex justify-end">
         <Button type="submit" isLoading={isSubmitting} className="px-8!">
-          <Save className="mr-2 h-4 w-4" /> {submitLabel}
+          <Save className="mr-2 h-4 w-4" aria-hidden="true" /> {submitLabel}
         </Button>
       </div>
 
@@ -153,7 +153,10 @@ export default function ProfileForm({
           <Input label="Full Name" {...register("full_name")} error={errors.full_name?.message} />
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
+            <label
+              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--text-3)" }}
+            >
               Relationship Type
             </label>
             <div className="relative">
@@ -181,7 +184,10 @@ export default function ProfileForm({
           <Input label="Profession" {...register("profession")} />
 
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
+            <label
+              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--text-3)" }}
+            >
               Bio
             </label>
             <textarea
@@ -226,8 +232,11 @@ export default function ProfileForm({
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
-              Top Songs (max 3)
+            <label
+              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--text-3)" }}
+            >
+              Top Songs
             </label>
             <div className="space-y-2">
               {songsField.fields.map((field, index) => (
@@ -244,8 +253,16 @@ export default function ProfileForm({
                       {songs[index]?.artist}
                     </div>
                   </div>
-                  <button type="button" onClick={() => songsField.remove(index)}>
-                    <Trash2 className="h-4 w-4" style={{ color: "var(--red)" }} />
+                  <button
+                    type="button"
+                    onClick={() => songsField.remove(index)}
+                    aria-label="Remove song"
+                  >
+                    <Trash2
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                      style={{ color: "var(--red)" }}
+                    />
                   </button>
                 </div>
               ))}
@@ -258,7 +275,7 @@ export default function ProfileForm({
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <input
                 ref={songNameInputRef}
-                placeholder="Song Name"
+                placeholder="song name"
                 disabled={songs.length >= 3}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -270,7 +287,7 @@ export default function ProfileForm({
               />
               <input
                 ref={songArtistInputRef}
-                placeholder="Artist"
+                placeholder="artist"
                 disabled={songs.length >= 3}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -284,14 +301,15 @@ export default function ProfileForm({
                 type="button"
                 onClick={addTopSong}
                 disabled={songs.length >= 3}
-                className="rounded-xl px-3 border transition-colors sm:shrink-0 disabled:opacity-40"
+                aria-label="Add song"
+                className="rounded-xl px-3 border transition-colors hover:bg-(--fill-hover) active:scale-[0.97] sm:shrink-0 disabled:opacity-40"
                 style={{
                   background: "var(--fill)",
                   borderColor: "var(--border)",
                   color: "var(--text-2)",
                 }}
               >
-                <Plus className="h-5 w-5 mx-auto" />
+                <Plus className="h-5 w-5 mx-auto" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -338,7 +356,10 @@ export default function ProfileForm({
       <ProfileFormSection id="deep" title="Deep Dive" icon={MessageSquare} index={3}>
         <div className="space-y-6">
           <div>
-            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
+            <label
+              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--text-3)" }}
+            >
               Long Term Goals
             </label>
             <textarea
@@ -348,7 +369,10 @@ export default function ProfileForm({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-(--color-text-secondary)">
+            <label
+              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--text-3)" }}
+            >
               Favorite Memory
             </label>
             <textarea

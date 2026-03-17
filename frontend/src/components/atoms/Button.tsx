@@ -23,11 +23,10 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const variants = {
-    primary: "!bg-(--peach) text-[#7c2d12] border-[rgba(124,58,237,0.2)] sticker-chip",
+    primary: "!bg-(--peach) text-(--peach-text) border-(--lavender-border) sticker-chip",
     secondary:
       "bg-(--fill) border-(--border) text-(--text-2) hover:bg-(--fill-hover) hover:text-(--text-1)",
-    destructive:
-      "bg-[rgba(255,59,48,0.08)] border-[rgba(255,59,48,0.18)] text-(--red) hover:bg-[rgba(255,59,48,0.15)]",
+    destructive: "bg-(--red-bg) border-(--red-border) text-(--red) hover:bg-(--red-bg-hover)",
     ghost:
       "bg-transparent border-transparent text-(--text-3) hover:text-(--text-2) hover:bg-(--fill)",
   };

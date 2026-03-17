@@ -61,6 +61,7 @@ export default function LoginPage() {
         <div
           className="washi-tape-accent w-24 h-6 -top-2.5!"
           style={{ opacity: 0.8, background: "var(--lavender)" }}
+          aria-hidden="true"
         />
 
         <div className="glass-panel rounded-3xl p-7 sm:p-9 scrapbook-card">
@@ -78,7 +79,7 @@ export default function LoginPage() {
               Nexia
             </h1>
             <p
-              className="text-[10px] font-semibold tracking-[0.22em] uppercase"
+              className="text-[11px] font-semibold tracking-[0.22em] uppercase"
               style={{ color: "var(--text-3)" }}
             >
               your digital slambook
@@ -141,8 +142,8 @@ export default function LoginPage() {
                 transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                 className="px-4 py-3 rounded-xl text-xs flex items-center gap-2 border overflow-hidden"
                 style={{
-                  background: "rgba(255,59,48,0.06)",
-                  borderColor: "rgba(255,59,48,0.15)",
+                  background: "var(--red-bg)",
+                  borderColor: "var(--red-border)",
                   color: "var(--red)",
                 }}
               >

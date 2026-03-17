@@ -48,16 +48,17 @@ function DetailSection({
     <motion.div
       initial={{ opacity: 0, x: -15, rotate: index % 2 === 0 ? -1 : 1 }}
       animate={{ opacity: 1, x: 0, rotate: index % 2 === 0 ? -0.5 : 0.5 }}
-      transition={{ delay: 0.1 + index * 0.08, type: "spring", damping: 20 }}
+      transition={{ type: "spring", stiffness: 140, damping: 22, delay: 0.1 + index * 0.08 }}
       id={id}
       className="scroll-mt-20 relative group"
     >
       <div
         className="washi-tape-accent w-20 opacity-30 group-hover:opacity-100 transition-opacity"
         style={{ background: index % 2 === 0 ? "var(--peach)" : "var(--lavender)", top: "-10px" }}
+        aria-hidden="true"
       />
 
-      <div className="glass-panel rounded-2xl p-6 sm:p-7 scrapbook-card overflow-hidden">
+      <div className="glass-panel rounded-2xl p-6 sm:p-7 scrapbook-card">
         <div className="mb-6 flex items-center gap-3">
           <div
             className="rounded-xl p-2"
@@ -91,7 +92,7 @@ function Field({
   return (
     <div className="mb-3">
       <div
-        className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+        className="mb-1 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
         style={{ color: "var(--text-3)" }}
       >
         {Icon ? <Icon className="h-3 w-3" /> : null}
@@ -199,20 +200,25 @@ export default function ProfileDetailPage() {
               onClick={() => setIsDeleteDialogOpen(true)}
               variant="destructive"
               className="px-3 py-2"
+              aria-label="Delete profile"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             </Button>
           </div>
         </motion.div>
 
         {/* Hero Card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, rotate: -0.5 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-          transition={{ duration: 0.5, type: "spring" }}
+          initial={{ opacity: 0, scale: 0.95, rotate: -2 }}
+          animate={{ opacity: 1, scale: 1, rotate: -0.5 }}
+          transition={{ type: "spring", stiffness: 140, damping: 22 }}
           className="glass-panel mb-8 rounded-3xl p-8 sm:p-10 relative scrapbook-card"
         >
-          <div className="washi-tape-accent w-32 h-8 -top-[15px]!" style={{ opacity: 0.7 }} />
+          <div
+            className="washi-tape-accent w-32 h-8 -top-[15px]!"
+            style={{ opacity: 0.7 }}
+            aria-hidden="true"
+          />
 
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
             <div
@@ -224,7 +230,7 @@ export default function ProfileDetailPage() {
 
             <div className="flex-1">
               <h1
-                className="text-3xl sm:text-4xl font-semibold mb-2.5 leading-tight"
+                className="text-3xl sm:text-4xl font-semibold mb-2.5 leading-tight break-words"
                 style={{ color: "var(--text-1)" }}
               >
                 {profile.full_name}
@@ -277,11 +283,7 @@ export default function ProfileDetailPage() {
 
         {/* Sections */}
         <div className="space-y-4">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-          >
+          <div>
             <DetailSection id="overview" title="Overview" icon={User} index={0}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Profession" value={profile.profession} />
@@ -305,7 +307,7 @@ export default function ProfileDetailPage() {
               {profile.tags && profile.tags.length > 0 && (
                 <div className="pt-1">
                   <div
-                    className="mb-2 text-[10px] uppercase tracking-[0.12em]"
+                    className="mb-2 text-[11px] uppercase tracking-[0.12em]"
                     style={{ color: "var(--text-3)" }}
                   >
                     Tags
@@ -328,13 +330,9 @@ export default function ProfileDetailPage() {
                 </div>
               )}
             </DetailSection>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
-          >
+          <div>
             <DetailSection id="favorites" title="Favorites & Interests" icon={Star} index={1}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Favorite Movie" value={profile.favorite_movie} icon={Film} />
@@ -357,7 +355,7 @@ export default function ProfileDetailPage() {
                   </div>
                   <div>
                     <div
-                      className="text-[9px] uppercase tracking-[0.18em] mb-0.5"
+                      className="text-[11px] uppercase tracking-[0.12em] mb-0.5"
                       style={{ color: "var(--text-3)" }}
                     >
                       Associated Song
@@ -374,7 +372,7 @@ export default function ProfileDetailPage() {
               {profile.top_songs && profile.top_songs.length > 0 && (
                 <div>
                   <div
-                    className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+                    className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
                     style={{ color: "var(--text-3)" }}
                   >
                     <ListMusic className="h-3 w-3" /> Top Songs
@@ -406,18 +404,14 @@ export default function ProfileDetailPage() {
                 </div>
               )}
             </DetailSection>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-          >
+          <div>
             <DetailSection id="lifestyle" title="Lifestyle" icon={Coffee} index={2}>
               {profile.hangout_places.length > 0 && (
                 <div>
                   <div
-                    className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+                    className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
                     style={{ color: "var(--text-3)" }}
                   >
                     <MapPin className="h-3 w-3" /> Hangout Places
@@ -428,7 +422,7 @@ export default function ProfileDetailPage() {
               {profile.food_restrictions.length > 0 && (
                 <div>
                   <div
-                    className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em]"
+                    className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
                     style={{ color: "var(--text-3)" }}
                   >
                     <AlertCircle className="h-3 w-3" /> Food Restrictions
@@ -437,18 +431,14 @@ export default function ProfileDetailPage() {
                 </div>
               )}
             </DetailSection>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25, duration: 0.4 }}
-          >
+          <div>
             <DetailSection id="deep" title="Deep Dive" icon={MessageSquare} index={3}>
               {profile.long_term_goals && (
                 <div>
                   <div
-                    className="mb-1.5 text-[10px] uppercase tracking-[0.12em]"
+                    className="mb-1.5 text-[11px] uppercase tracking-[0.12em]"
                     style={{ color: "var(--text-3)" }}
                   >
                     Long-Term Goals
@@ -468,7 +458,7 @@ export default function ProfileDetailPage() {
                   }}
                 >
                   <div
-                    className="mb-3 flex items-center gap-2 text-[9px] uppercase tracking-[0.16em]"
+                    className="mb-3 flex items-center gap-2 text-[11px] uppercase tracking-[0.12em]"
                     style={{ color: "var(--text-3)" }}
                   >
                     <Heart className="h-3 w-3" /> Favorite Memory
@@ -482,7 +472,7 @@ export default function ProfileDetailPage() {
               {profile.quotes && profile.quotes.length > 0 && (
                 <div>
                   <div
-                    className="mb-3 text-[10px] uppercase tracking-[0.12em]"
+                    className="mb-3 text-[11px] uppercase tracking-[0.12em]"
                     style={{ color: "var(--text-3)" }}
                   >
                     Their Quotes
@@ -506,7 +496,7 @@ export default function ProfileDetailPage() {
                 </div>
               )}
             </DetailSection>
-          </motion.div>
+          </div>
         </div>
       </div>
 

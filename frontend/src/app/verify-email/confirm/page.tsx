@@ -42,7 +42,7 @@ function VerifyEmailConfirmContent() {
             className="text-center mb-6"
           >
             <p
-              className="text-[10px] font-semibold tracking-[0.22em] uppercase mb-4"
+              className="text-[11px] font-semibold tracking-[0.22em] uppercase mb-4"
               style={{ color: "var(--text-3)" }}
             >
               nexia account

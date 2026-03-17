@@ -73,7 +73,7 @@ export default function ResetPasswordPage() {
               Reset Password
             </h1>
             <p
-              className="text-[10px] font-semibold tracking-[0.22em] uppercase"
+              className="text-[11px] font-semibold tracking-[0.22em] uppercase"
               style={{ color: "var(--text-3)" }}
             >
               nexia account recovery
@@ -125,8 +125,8 @@ export default function ResetPasswordPage() {
                   animate={{ opacity: 1, height: "auto" }}
                   className="px-4 py-3 rounded-xl text-xs flex items-center gap-2 border"
                   style={{
-                    background: "rgba(255,59,48,0.06)",
-                    borderColor: "rgba(255,59,48,0.15)",
+                    background: "var(--red-bg)",
+                    borderColor: "var(--red-border)",
                     color: "var(--red)",
                   }}
                 >
