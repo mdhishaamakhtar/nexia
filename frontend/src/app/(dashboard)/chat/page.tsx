@@ -26,14 +26,27 @@ const SUGGESTED_PROMPTS = [
   "Recommend a song based on my friends' tastes.",
 ];
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) {
+    return "Good morning! Your people are all here — ask me anything about them.";
+  }
+  if (hour >= 12 && hour < 17) {
+    return "Hey! I've got all your profiles loaded up. What do you want to know?";
+  }
+  if (hour >= 17 && hour < 21) {
+    return "Evening! I've been keeping tabs on your people. Ask me anything.";
+  }
+  return "Late night Nexia session? I'm here. Ask me about anyone in your slambook.";
+}
+
 export default function ChatPage() {
   const { error: showError } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "assistant",
-      content:
-        "Hi! I'm Nexia AI. I've analyzed your friends' profiles — ask me anything about them.",
+      content: getGreeting(),
       timestamp: new Date(),
     },
   ]);
@@ -101,7 +114,7 @@ export default function ChatPage() {
 
   return (
     <main
-      className="mx-auto flex h-[calc(100vh-48px)] max-w-3xl flex-col gap-3 px-4 py-4"
+      className="mx-auto flex h-[calc(100dvh-48px)] max-w-3xl flex-col gap-3 px-4 py-4"
       style={{ color: "var(--text-1)" }}
     >
       {/* Chat header */}
@@ -111,7 +124,7 @@ export default function ChatPage() {
         className="flex items-center justify-between rounded-2xl px-5 py-3 border relative glass-panel"
         style={{ borderColor: "var(--border)" }}
       >
-        <div className="washi-tape-accent w-20" style={{ opacity: 0.8 }} />
+        <div className="washi-tape-accent w-20" style={{ opacity: 0.8 }} aria-hidden="true" />
 
         <div className="flex items-center gap-3">
           <Link
@@ -119,9 +132,9 @@ export default function ChatPage() {
             prefetch
             className="rounded-lg p-1.5 transition-colors"
             style={{ color: "var(--text-3)" }}
-            title="Back"
+            aria-label="Back to profiles"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} aria-hidden="true" />
           </Link>
           <div className="rounded-xl p-2" style={{ background: "var(--blue)" }}>
             <NexiaIcon size={20} className="text-white" />
@@ -131,9 +144,12 @@ export default function ChatPage() {
               Ask about your people
             </h1>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span
+                className="h-1.5 w-1.5 rounded-full animate-pulse"
+                style={{ background: "var(--green)" }}
+              />
               <p
-                className="text-[10px] uppercase tracking-wider"
+                className="text-[11px] uppercase tracking-wider"
                 style={{ color: "var(--text-3)" }}
               >
                 memories loaded
@@ -145,14 +161,19 @@ export default function ChatPage() {
           onClick={clearChat}
           className="rounded-xl p-2 transition-all duration-200 hover:rotate-12"
           style={{ color: "var(--text-3)" }}
-          title="Clear Chat"
+          aria-label="Clear chat"
         >
-          <Trash2 size={16} />
+          <Trash2 size={16} aria-hidden="true" />
         </button>
       </motion.div>
 
       {/* Messages */}
-      <div className="flex-1 space-y-5 overflow-y-auto px-1 py-3">
+      <div
+        role="log"
+        aria-label="Chat messages"
+        aria-live="polite"
+        className="flex-1 space-y-5 overflow-y-auto px-1 py-3"
+      >
         <AnimatePresence initial={false}>
           {messages.length === 1 && (
             <motion.div
@@ -211,7 +232,7 @@ export default function ChatPage() {
                 rotate: idx % 2 === 0 ? -1 : 1,
               }}
               animate={{ opacity: 1, x: 0, rotate: idx % 2 === 0 ? -0.5 : 0.5 }}
-              transition={{ duration: 0.4, ease: "easeOut", type: "spring", stiffness: 100 }}
+              transition={{ type: "spring", stiffness: 120, damping: 20 }}
               className={`flex gap-3 items-end ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
             >
               <div
@@ -233,7 +254,7 @@ export default function ChatPage() {
                 className={`max-w-[85%] rounded-2xl px-4 py-3.5 text-sm border scrapbook-card ${
                   msg.role === "user"
                     ? "rounded-tr-none bg-(--fill-hover)"
-                    : "rounded-tl-none bg-white/60 backdrop-blur-md"
+                    : "rounded-tl-none bg-(--glass)"
                 }`}
                 style={{
                   borderColor: "var(--border)",
@@ -244,6 +265,7 @@ export default function ChatPage() {
                   <div
                     className="washi-tape-accent w-10 left-4! -top-1!"
                     style={{ opacity: 0.4, background: "var(--peach)" }}
+                    aria-hidden="true"
                   />
                 )}
                 <div className="markdown-content max-w-none leading-relaxed">
@@ -303,6 +325,7 @@ export default function ChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="ask about someone's favorites, memories, or vibes..."
+              aria-label="Ask about your people"
               className="w-full bg-transparent px-5 py-4 text-sm focus:outline-none"
               style={{ color: "var(--text-1)" }}
               disabled={chatMutation.isPending}
@@ -313,10 +336,11 @@ export default function ChatPage() {
                 disabled={!input.trim() || chatMutation.isPending}
                 whileTap={{ scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                aria-label="Send message"
                 className="rounded-xl p-2.5 text-white transition-all hover:opacity-90 disabled:opacity-35 cursor-pointer"
                 style={{ background: "var(--blue)" }}
               >
-                <Send size={16} />
+                <Send size={16} aria-hidden="true" />
               </motion.button>
             </div>
           </div>

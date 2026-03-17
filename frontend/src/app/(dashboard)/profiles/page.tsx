@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { motion } from "framer-motion";
@@ -22,15 +22,21 @@ const RELATIONSHIP_TYPES = [
 
 export default function ProfilesPage() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [relationshipFilter, setRelationshipFilter] = useState("");
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["profiles", search, relationshipFilter],
+    queryKey: ["profiles", debouncedSearch, relationshipFilter],
     queryFn: () =>
       listProfiles({
         page: 1,
         limit: 100,
-        search,
+        search: debouncedSearch,
         relationship_type: relationshipFilter,
       }),
   });
@@ -41,9 +47,9 @@ export default function ProfilesPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         {/* Hero */}
         <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          initial={{ opacity: 0, y: 24, rotate: -1 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 140, damping: 22 }}
           className="mb-12 text-center"
         >
           <h1
@@ -62,9 +68,9 @@ export default function ProfilesPage() {
 
         {/* Search & Filter */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          initial={{ opacity: 0, y: 16, rotate: 0.5 }}
+          animate={{ opacity: 1, y: 0, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 140, damping: 22, delay: 0.08 }}
           className="mb-10 flex flex-col sm:flex-row gap-3 max-w-xl mx-auto"
         >
           <div className="flex-1 relative group">
@@ -77,6 +83,7 @@ export default function ProfilesPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="search by name..."
+              aria-label="Search by name"
               className="w-full glass-input pl-10 pr-4 py-3 rounded-xl text-sm"
             />
           </div>
@@ -84,6 +91,7 @@ export default function ProfilesPage() {
           <select
             value={relationshipFilter}
             onChange={(e) => setRelationshipFilter(e.target.value)}
+            aria-label="Filter by relationship type"
             className="glass-input px-4 py-3 rounded-xl text-sm min-w-[140px] appearance-none cursor-pointer"
           >
             <option value="">all types</option>
@@ -99,14 +107,14 @@ export default function ProfilesPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-28 rounded-2xl shimmer" />
+              <div key={i} className="h-[150px] rounded-2xl shimmer" />
             ))}
           </div>
         ) : profiles.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
+            initial={{ opacity: 0, scale: 0.97, rotate: -0.5 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 160, damping: 22 }}
             className="text-center py-24 glass-panel rounded-3xl"
           >
             <div
@@ -116,7 +124,7 @@ export default function ProfilesPage() {
                 borderColor: "var(--border)",
               }}
             >
-              <span className="text-xl" style={{ color: "var(--text-3)" }}>
+              <span className="text-xl" style={{ color: "var(--text-3)" }} aria-hidden="true">
                 ✦
               </span>
             </div>
@@ -162,7 +170,12 @@ export default function ProfilesPage() {
       </div>
 
       {/* FAB */}
-      <Link href="/profiles/new" prefetch className="fixed bottom-6 right-6 z-40">
+      <Link
+        href="/profiles/new"
+        prefetch
+        aria-label="Add new person"
+        className="fixed bottom-6 right-6 z-40"
+      >
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

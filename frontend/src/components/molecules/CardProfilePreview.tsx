@@ -18,7 +18,7 @@ export default function CardProfilePreview({ profile, href, index = 0 }: CardPro
         animate={{ opacity: 1, y: 0, rotate: index % 2 === 0 ? -0.5 : 0.5 }}
         transition={{
           duration: 0.5,
-          delay: index * 0.08,
+          delay: Math.min(index, 8) * 0.08, // cap stagger at 9 cards (one viewport)
           type: "spring",
           stiffness: 150,
           damping: 18,
@@ -39,15 +39,17 @@ export default function CardProfilePreview({ profile, href, index = 0 }: CardPro
             width: "40px",
             top: "-4px",
           }}
+          aria-hidden="true"
         />
 
         <div className="flex items-center gap-3 mb-4">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 scrapbook-card"
             style={{
-              background: index % 2 === 0 ? "var(--lavender)" : "var(--blue)",
-              color: index % 2 === 0 ? "var(--text-1)" : "white",
-              transform: `rotate(${index % 2 === 0 ? -3 : 3}deg)`,
+              background: ["var(--lavender)", "var(--blue)", "var(--peach)"][index % 3],
+              color:
+                index % 3 === 1 ? "white" : index % 3 === 2 ? "var(--peach-text)" : "var(--text-1)",
+              transform: `rotate(${[-3, 3, -2][index % 3]}deg)`,
             }}
           >
             {profile.full_name?.charAt(0)?.toUpperCase() || "?"}

@@ -16,7 +16,7 @@ export default function Navbar() {
     <motion.nav
       initial={{ y: -12, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+      transition={{ type: "spring", stiffness: 200, damping: 24 }}
       className="sticky top-0 z-50 w-full glass-panel border-b bg-white/80"
       style={{ borderColor: "var(--border)" }}
     >
@@ -33,21 +33,23 @@ export default function Navbar() {
           <div className="flex items-center gap-1">
             <Link
               href="/chat"
+              aria-label="Ask AI"
               className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill) cursor-pointer active:scale-95"
               style={{ color: "var(--text-2)" }}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">Ask AI</span>
             </Link>
 
             <motion.button
               onClick={handleLogout}
+              aria-label="Sign out"
               whileTap={{ scale: 0.93 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
               className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill) cursor-pointer"
               style={{ color: "var(--text-2)" }}
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">Sign Out</span>
             </motion.button>
           </div>

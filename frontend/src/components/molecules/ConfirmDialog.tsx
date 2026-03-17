@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useId } from "react";
 import Button from "@/components/atoms/Button";
 
 interface ConfirmDialogProps {
@@ -24,6 +25,17 @@ export default function ConfirmDialog({
   onCancel,
   isConfirming = false,
 }: ConfirmDialogProps) {
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isConfirming) onCancel();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [isOpen, isConfirming, onCancel]);
+
   return (
     <AnimatePresence>
       {isOpen ? (
@@ -32,10 +44,13 @@ export default function ConfirmDialog({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-[2px]"
-          style={{ background: "rgba(30, 41, 59, 0.4)" }}
+          style={{ background: "var(--overlay)" }}
           onClick={onCancel}
         >
           <motion.div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             initial={{ opacity: 0, scale: 0.9, rotate: -2, y: 20 }}
             animate={{ opacity: 1, scale: 1, rotate: 0.5, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, rotate: -2, y: 20 }}
@@ -50,9 +65,11 @@ export default function ConfirmDialog({
             <div
               className="washi-tape-accent w-24 h-6 -top-2.5!"
               style={{ background: "var(--peach)", opacity: 0.9 }}
+              aria-hidden="true"
             />
 
             <h3
+              id={titleId}
               className="text-xl font-bold tracking-tight mb-3"
               style={{ color: "var(--text-1)" }}
             >

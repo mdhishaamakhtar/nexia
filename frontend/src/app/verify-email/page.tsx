@@ -32,7 +32,7 @@ export default function VerifyEmailPage() {
               Check your email
             </h1>
             <p
-              className="text-[10px] font-semibold tracking-[0.22em] uppercase"
+              className="text-[11px] font-semibold tracking-[0.22em] uppercase"
               style={{ color: "var(--text-3)" }}
             >
               almost there

@@ -66,7 +66,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
         <div
-          className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest mb-8 px-4 py-2 rounded-full border"
+          className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest mb-8 px-4 py-2 rounded-full border"
           style={{
             color: "var(--text-3)",
             borderColor: "var(--border)",
