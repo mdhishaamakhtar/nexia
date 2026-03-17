@@ -113,10 +113,11 @@ export default function ChatPage() {
   };
 
   return (
-    // overflow-hidden prevents this column from ever overflowing and causing a body scroll
+    // Fixed below the navbar — takes the chat out of document flow entirely so the
+    // body has nothing to scroll. Sticky navbar (z-50) sits on top.
     <main
-      className="mx-auto flex h-[calc(100dvh-48px)] max-w-3xl flex-col overflow-hidden px-4 py-4"
-      style={{ color: "var(--text-1)" }}
+      className="fixed inset-x-0 bottom-0 mx-auto flex max-w-3xl flex-col overflow-hidden px-4 py-4"
+      style={{ top: "48px", color: "var(--text-1)" }}
     >
       {/* ── Header ── */}
       <motion.header
