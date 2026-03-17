@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookOpen, MessageCircle, Search, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
+import { AuthRedirect } from "@/components/atoms/AuthRedirect";
 
 export const metadata: Metadata = {
   title: "Nexia — Your Digital Slambook",
@@ -44,6 +45,7 @@ function FeatureCard({
 export default function LandingPage() {
   return (
     <div className="min-h-screen" style={{ color: "var(--text-1)" }}>
+      <AuthRedirect />
       {/* Nav */}
       <nav
         className="sticky top-0 z-40 glass-panel border-b"
