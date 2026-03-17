@@ -113,15 +113,17 @@ export default function ChatPage() {
   };
 
   return (
+    // overflow-hidden prevents this column from ever overflowing and causing a body scroll
     <main
-      className="mx-auto flex h-[calc(100dvh-48px)] max-w-3xl flex-col gap-3 px-4 py-4"
+      className="mx-auto flex h-[calc(100dvh-48px)] max-w-3xl flex-col overflow-hidden px-4 py-4"
       style={{ color: "var(--text-1)" }}
     >
-      {/* Chat header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
+      {/* ── Header ── */}
+      <motion.header
+        initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between rounded-2xl px-5 py-3 border relative glass-panel"
+        transition={{ type: "spring", stiffness: 220, damping: 26 }}
+        className="relative mb-3 flex shrink-0 items-center justify-between overflow-hidden rounded-2xl border px-5 py-3 glass-panel"
         style={{ borderColor: "var(--border)" }}
       >
         <div className="washi-tape-accent w-20" style={{ opacity: 0.8 }} aria-hidden="true" />
@@ -140,23 +142,21 @@ export default function ChatPage() {
             <NexiaIcon size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-bold handwritten" style={{ color: "var(--text-1)" }}>
+            <h1 className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
               Ask about your people
             </h1>
-            <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="mt-0.5 flex items-center gap-1.5">
               <span
                 className="h-1.5 w-1.5 rounded-full animate-pulse"
                 style={{ background: "var(--green)" }}
               />
-              <p
-                className="text-[11px] uppercase tracking-wider"
-                style={{ color: "var(--text-3)" }}
-              >
+              <p className="label-caps" style={{ color: "var(--text-3)" }}>
                 memories loaded
               </p>
             </div>
           </div>
         </div>
+
         <button
           onClick={clearChat}
           className="rounded-xl p-2 transition-all duration-200 hover:rotate-12"
@@ -165,158 +165,185 @@ export default function ChatPage() {
         >
           <Trash2 size={16} aria-hidden="true" />
         </button>
-      </motion.div>
+      </motion.header>
 
-      {/* Messages */}
+      {/* ── Messages ──
+          min-h-0 is required: without it a flex child can't shrink below its content
+          height, which breaks overflow-y-auto and causes double scroll.        */}
       <div
         role="log"
         aria-label="Chat messages"
         aria-live="polite"
-        className="flex-1 space-y-5 overflow-y-auto px-1 py-3"
+        className="min-h-0 flex-1 overflow-y-auto px-1"
       >
-        <AnimatePresence initial={false}>
-          {messages.length === 1 && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center py-10 text-center"
-            >
-              <div
-                className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border scrapbook-card"
-                style={{
-                  background: "var(--fill)",
-                  borderColor: "var(--border)",
-                  transform: "rotate(-3deg)",
-                }}
+        <div className="flex flex-col gap-4 py-2">
+          <AnimatePresence initial={false}>
+            {/* Empty state — shown only when there's just the greeting */}
+            {messages.length === 1 && (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 220, damping: 26 }}
+                className="flex flex-col items-center py-8 text-center"
               >
-                <StickerSparkle size={28} className="text-(--blue)" />
-              </div>
-              <h2 className="mb-2 text-xl font-bold handwritten" style={{ color: "var(--text-1)" }}>
-                Ask about your people
-              </h2>
-              <p
-                className="mb-8 max-w-xs text-sm leading-relaxed"
-                style={{ color: "var(--text-3)" }}
-              >
-                I search through all your profiles to give you accurate insights.
-              </p>
-              <div className="grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2">
-                {SUGGESTED_PROMPTS.map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => handleSubmit(undefined, prompt)}
-                    className="group flex items-center justify-between rounded-xl px-4 py-3.5 text-left text-xs border transition-all cursor-pointer active:scale-[0.97]"
-                    style={{
-                      background: "var(--fill)",
-                      borderColor: "var(--border)",
-                      color: "var(--text-2)",
-                    }}
-                  >
-                    {prompt}
-                    <MessageSquare
-                      size={12}
-                      className="opacity-0 transition-opacity group-hover:opacity-100 shrink-0 ml-2"
-                    />
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {messages.map((msg, idx) => (
-            <motion.div
-              key={msg.id}
-              initial={{
-                opacity: 0,
-                x: msg.role === "user" ? 20 : -20,
-                rotate: idx % 2 === 0 ? -1 : 1,
-              }}
-              animate={{ opacity: 1, x: 0, rotate: idx % 2 === 0 ? -0.5 : 0.5 }}
-              transition={{ type: "spring", stiffness: 120, damping: 20 }}
-              className={`flex gap-3 items-end ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-            >
-              <div
-                className="h-8 w-8 shrink-0 rounded-xl flex items-center justify-center scrapbook-card"
-                style={
-                  msg.role === "user"
-                    ? {
-                        background: "var(--fill)",
-                        color: "var(--text-2)",
-                        transform: "rotate(2deg)",
-                      }
-                    : { background: "var(--blue)", color: "#ffffff", transform: "rotate(-2deg)" }
-                }
-              >
-                {msg.role === "user" ? <User size={15} /> : <NexiaIcon size={18} />}
-              </div>
-
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3.5 text-sm border scrapbook-card ${
-                  msg.role === "user"
-                    ? "rounded-tr-none bg-(--fill-hover)"
-                    : "rounded-tl-none bg-(--glass)"
-                }`}
-                style={{
-                  borderColor: "var(--border)",
-                  color: "var(--text-1)",
-                }}
-              >
-                {msg.role === "assistant" && (
-                  <div
-                    className="washi-tape-accent w-10 left-4! -top-1!"
-                    style={{ opacity: 0.4, background: "var(--peach)" }}
-                    aria-hidden="true"
-                  />
-                )}
-                <div className="markdown-content max-w-none leading-relaxed">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                <div
+                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border"
+                  style={{
+                    background: "var(--fill-hover)",
+                    borderColor: "var(--border)",
+                    transform: "rotate(-3deg)",
+                    boxShadow: "2px 2px 0 var(--border-mid)",
+                  }}
+                >
+                  <StickerSparkle size={28} className="text-(--blue)" />
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+                <h2 className="mb-1.5 text-lg font-bold" style={{ color: "var(--text-1)" }}>
+                  What do you want to know?
+                </h2>
+                <p
+                  className="mb-6 max-w-xs text-sm leading-relaxed"
+                  style={{ color: "var(--text-3)" }}
+                >
+                  I search through all your profiles to give you accurate insights.
+                </p>
+                <div className="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
+                  {SUGGESTED_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => handleSubmit(undefined, prompt)}
+                      className="group flex items-center justify-between rounded-xl border px-4 py-3 text-left text-xs transition-all active:scale-[0.97] hover:border-(--border-mid)"
+                      style={{
+                        background: "var(--fill)",
+                        borderColor: "var(--border)",
+                        color: "var(--text-2)",
+                      }}
+                    >
+                      {prompt}
+                      <MessageSquare
+                        size={12}
+                        className="ml-2 shrink-0 opacity-0 transition-opacity group-hover:opacity-50"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
-        {chatMutation.isPending && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-            <div
-              className="h-8 w-8 shrink-0 rounded-xl flex items-center justify-center scrapbook-card -rotate-3"
-              style={{ background: "var(--blue)" }}
-            >
-              <NexiaIcon size={18} className="text-white" />
-            </div>
-            <div
-              className="flex items-center gap-1.5 rounded-2xl rounded-tl-none px-5 py-4 border"
-              style={{
-                background: "var(--fill)",
-                borderColor: "var(--border)",
-              }}
-            >
-              <div
-                className="h-1.5 w-1.5 animate-bounce rounded-full"
-                style={{ background: "var(--blue)" }}
-              />
-              <div
-                className="h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:150ms]"
-                style={{ background: "var(--blue)" }}
-              />
-              <div
-                className="h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:300ms]"
-                style={{ background: "var(--blue)" }}
-              />
-            </div>
-          </motion.div>
-        )}
+            {/* Message bubbles */}
+            {messages.map((msg) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 220, damping: 26 }}
+                className={`flex items-end gap-2 ${
+                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
+                }`}
+              >
+                {/* Avatar */}
+                <div
+                  className="h-7 w-7 shrink-0 rounded-xl flex items-center justify-center"
+                  style={
+                    msg.role === "user"
+                      ? {
+                          background: "var(--fill-hover)",
+                          border: "1px solid var(--border-mid)",
+                          color: "var(--text-2)",
+                        }
+                      : { background: "var(--blue)", color: "#fff" }
+                  }
+                >
+                  {msg.role === "user" ? (
+                    <User size={14} aria-hidden="true" />
+                  ) : (
+                    <NexiaIcon size={15} aria-hidden="true" />
+                  )}
+                </div>
 
-        <div ref={messagesEndRef} />
+                {/* Bubble */}
+                <div
+                  className={`max-w-[80%] rounded-2xl border px-4 py-3 text-sm leading-relaxed ${
+                    msg.role === "user" ? "rounded-br-sm" : "rounded-bl-sm"
+                  }`}
+                  style={
+                    msg.role === "user"
+                      ? {
+                          background: "var(--fill-hover)",
+                          borderColor: "var(--border-mid)",
+                          color: "var(--text-1)",
+                        }
+                      : {
+                          background: "var(--glass)",
+                          borderColor: "var(--border)",
+                          backdropFilter: "blur(12px)",
+                          WebkitBackdropFilter: "blur(12px)",
+                          color: "var(--text-1)",
+                        }
+                  }
+                >
+                  <div className="chat-markdown">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Typing indicator */}
+          <AnimatePresence>
+            {chatMutation.isPending && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ type: "spring", stiffness: 220, damping: 26 }}
+                className="flex items-end gap-2"
+              >
+                <div
+                  className="h-7 w-7 shrink-0 rounded-xl flex items-center justify-center"
+                  style={{ background: "var(--blue)" }}
+                >
+                  <NexiaIcon size={15} className="text-white" aria-hidden="true" />
+                </div>
+                <div
+                  className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm border px-4 py-3"
+                  style={{
+                    background: "var(--glass)",
+                    borderColor: "var(--border)",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                  }}
+                  aria-label="Nexia is thinking"
+                >
+                  {[0, 150, 300].map((delay) => (
+                    <div
+                      key={delay}
+                      className="h-1.5 w-1.5 rounded-full animate-bounce"
+                      style={{
+                        background: "var(--blue)",
+                        animationDelay: `${delay}ms`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
-      {/* Input */}
-      <div className="pb-2">
-        <form onSubmit={handleSubmit} className="relative">
+      {/* ── Input ── */}
+      <div className="shrink-0 pb-1 pt-3">
+        <form onSubmit={handleSubmit}>
           <div
-            className="flex items-center rounded-2xl border transition-all duration-300 focus-within:border-(--blue)"
+            className="flex items-center gap-2 rounded-2xl border px-4 py-2 transition-all duration-200 focus-within:border-(--blue)"
             style={{
-              background: "var(--fill)",
+              background: "var(--fill-hover)",
               borderColor: "var(--border)",
             }}
           >
@@ -324,25 +351,23 @@ export default function ChatPage() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="ask about someone's favorites, memories, or vibes..."
+              placeholder="ask about someone's favorites, memories, or vibes…"
               aria-label="Ask about your people"
-              className="w-full bg-transparent px-5 py-4 text-sm focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent py-2 text-sm focus:outline-none"
               style={{ color: "var(--text-1)" }}
               disabled={chatMutation.isPending}
             />
-            <div className="mr-2">
-              <motion.button
-                type="submit"
-                disabled={!input.trim() || chatMutation.isPending}
-                whileTap={{ scale: 0.9 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                aria-label="Send message"
-                className="rounded-xl p-2.5 text-white transition-all hover:opacity-90 disabled:opacity-35 cursor-pointer"
-                style={{ background: "var(--blue)" }}
-              >
-                <Send size={16} aria-hidden="true" />
-              </motion.button>
-            </div>
+            <motion.button
+              type="submit"
+              disabled={!input.trim() || chatMutation.isPending}
+              whileTap={{ scale: 0.88 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              aria-label="Send message"
+              className="shrink-0 rounded-xl p-2 text-white transition-opacity hover:opacity-90 disabled:opacity-30 cursor-pointer"
+              style={{ background: "var(--blue)" }}
+            >
+              <Send size={15} aria-hidden="true" />
+            </motion.button>
           </div>
         </form>
       </div>
