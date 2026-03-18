@@ -11,13 +11,16 @@ import (
 	"go.uber.org/zap"
 )
 
-func RunMigrations(cfg *config.Config, logger *zap.Logger) error {
-	if !cfg.DB.RunMigrations {
-		logger.Info("startup migrations disabled by config")
-		return nil
-	}
+type migrationRunner interface {
+	Up() error
+}
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+var newMigrator = func(sourceURL, databaseURL string) (migrationRunner, error) {
+	return migrate.New(sourceURL, databaseURL)
+}
+
+func buildMigrationDSN(cfg *config.Config) string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		cfg.DB.User,
 		cfg.DB.Password,
 		cfg.DB.Host,
@@ -25,8 +28,17 @@ func RunMigrations(cfg *config.Config, logger *zap.Logger) error {
 		cfg.DB.Name,
 		cfg.DB.SSLMode,
 	)
+}
 
-	m, err := migrate.New(
+func RunMigrations(cfg *config.Config, logger *zap.Logger) error {
+	if !cfg.DB.RunMigrations {
+		logger.Info("startup migrations disabled by config")
+		return nil
+	}
+
+	dsn := buildMigrationDSN(cfg)
+
+	m, err := newMigrator(
 		"file://migrations",
 		dsn,
 	)

@@ -3,6 +3,7 @@ package repositories_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/repositories"
@@ -182,6 +183,13 @@ func TestUserRepository(t *testing.T) {
 	if updated.Password != "new-hash" || !updated.EmailVerified {
 		t.Fatalf("user updates not persisted")
 	}
+
+	if _, err := repo.FindByEmail("missing@example.com"); err == nil {
+		t.Fatal("expected missing email lookup to fail")
+	}
+	if _, err := repo.FindByID(9999); err == nil {
+		t.Fatal("expected missing id lookup to fail")
+	}
 }
 
 func TestPasswordResetRepository(t *testing.T) {
@@ -213,6 +221,10 @@ func TestPasswordResetRepository(t *testing.T) {
 	if !reloaded.Used {
 		t.Fatalf("expected reset token to be marked used")
 	}
+
+	if _, err := repo.FindByToken("missing-token"); err == nil {
+		t.Fatal("expected missing reset token lookup to fail")
+	}
 }
 
 func TestEmailVerificationRepository(t *testing.T) {
@@ -243,6 +255,10 @@ func TestEmailVerificationRepository(t *testing.T) {
 	}
 	if !reloaded.Used {
 		t.Fatalf("expected verification token to be marked used")
+	}
+
+	if _, err := repo.FindByToken("missing-token"); err == nil {
+		t.Fatal("expected missing verification token lookup to fail")
 	}
 }
 
@@ -306,10 +322,50 @@ func TestProfileRepository(t *testing.T) {
 		t.Fatalf("expected associated song to be deleted when nil")
 	}
 
+	updatedAgain := &models.Profile{
+		ID:               profile.ID,
+		UserID:           user.ID,
+		FullName:         "Alice Final",
+		RelationshipType: models.RelFriend,
+		Tags:             []models.Tag{{ID: reloaded.Tags[0].ID, Tag: "replaced-again"}},
+		AssociatedSong:   &models.AssociatedSong{ProfileID: profile.ID, Name: "Song D", Artist: "Artist D"},
+	}
+	if err := repo.Update(updatedAgain); err != nil {
+		t.Fatalf("update profile second pass: %v", err)
+	}
+
+	finalProfile, err := repo.FindByID(profile.ID, user.ID)
+	if err != nil {
+		t.Fatalf("reload final profile: %v", err)
+	}
+	if finalProfile.AssociatedSong == nil || finalProfile.AssociatedSong.Name != "Song D" {
+		t.Fatalf("expected associated song to be recreated, got %+v", finalProfile.AssociatedSong)
+	}
+
 	if err := repo.Delete(profile.ID, user.ID); err != nil {
 		t.Fatalf("delete profile: %v", err)
 	}
 	if _, err := repo.FindByID(profile.ID, user.ID); err == nil {
 		t.Fatalf("expected deleted profile to be missing")
+	}
+}
+
+func TestProfileRepositoryFindAllWithEmptyResult(t *testing.T) {
+	db := newRepositoryTestDB(t)
+	user := createUser(t, db, "empty@example.com")
+	repo := repositories.NewProfileRepository(db)
+
+	list, total, err := repo.FindAll(1, 10, "missing", string(models.RelFriend), user.ID)
+	if err != nil {
+		t.Fatalf("find all empty returned error: %v", err)
+	}
+	if total != 0 || len(list) != 0 {
+		t.Fatalf("expected empty result, got total=%d len=%d", total, len(list))
+	}
+
+	tokenRepo := repositories.NewPasswordResetRepository(db)
+	token := &models.PasswordResetToken{UserID: user.ID, Token: "later-token", ExpiresAt: time.Now().Add(time.Hour)}
+	if err := tokenRepo.Create(token); err != nil {
+		t.Fatalf("create token: %v", err)
 	}
 }

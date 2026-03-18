@@ -9,19 +9,28 @@ import (
 
 // GeminiClient wraps the new google.golang.org/genai SDK client.
 type GeminiClient struct {
-	client *genai.Client
+	models geminiModelAPI
+}
+
+type geminiModelAPI interface {
+	EmbedContent(context.Context, string, []*genai.Content, *genai.EmbedContentConfig) (*genai.EmbedContentResponse, error)
+	GenerateContent(context.Context, string, []*genai.Content, *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error)
+}
+
+var newGenAIClient = func(ctx context.Context, cfg *genai.ClientConfig) (*genai.Client, error) {
+	return genai.NewClient(ctx, cfg)
 }
 
 func NewGeminiClient(apiKey string) (*GeminiClient, error) {
 	ctx := context.Background()
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+	client, err := newGenAIClient(ctx, &genai.ClientConfig{
 		APIKey:  apiKey,
 		Backend: genai.BackendGeminiAPI,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
-	return &GeminiClient{client: client}, nil
+	return &GeminiClient{models: client.Models}, nil
 }
 
 // GenerateEmbedding generates a 3072-dimensional embedding using gemini-embedding-001.
@@ -29,7 +38,7 @@ func (c *GeminiClient) GenerateEmbedding(ctx context.Context, text string) ([]fl
 	contents := []*genai.Content{
 		{Parts: []*genai.Part{{Text: text}}},
 	}
-	res, err := c.client.Models.EmbedContent(ctx, "gemini-embedding-001", contents, nil)
+	res, err := c.models.EmbedContent(ctx, "gemini-embedding-001", contents, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate embedding: %w", err)
 	}
@@ -49,7 +58,7 @@ func (c *GeminiClient) GenerateChatResponse(ctx context.Context, systemPrompt st
 			Parts: []*genai.Part{{Text: systemPrompt}},
 		},
 	}
-	res, err := c.client.Models.GenerateContent(ctx, "gemini-2.5-flash", contents, config)
+	res, err := c.models.GenerateContent(ctx, "gemini-2.5-flash", contents, config)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate response: %w", err)
 	}

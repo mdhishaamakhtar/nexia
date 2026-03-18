@@ -16,6 +16,7 @@ type EmailService struct {
 	appBaseURL  string
 	enabled     bool
 	logger      *zap.Logger
+	sendEmail   func(*resend.SendEmailRequest) (*resend.SendEmailResponse, error)
 }
 
 func NewEmailService(cfg *config.Config, logger *zap.Logger) *EmailService {
@@ -28,12 +29,14 @@ func NewEmailService(cfg *config.Config, logger *zap.Logger) *EmailService {
 			logger:      logger.Named("email"),
 		}
 	}
+	client := resend.NewClient(cfg.Email.ResendAPIKey)
 	return &EmailService{
-		client:      resend.NewClient(cfg.Email.ResendAPIKey),
+		client:      client,
 		fromAddress: cfg.Email.FromAddress,
 		appBaseURL:  cfg.Email.AppBaseURL,
 		enabled:     true,
 		logger:      logger.Named("email"),
+		sendEmail:   client.Emails.Send,
 	}
 }
 
@@ -55,7 +58,7 @@ func (e *EmailService) SendVerificationEmail(toEmail, token string) error {
 		Html:    buildVerificationEmailHTML(verifyURL),
 	}
 
-	_, err := e.client.Emails.Send(params)
+	_, err := e.sendEmail(params)
 	if err != nil {
 		return fmt.Errorf("resend: send verification email: %w", err)
 	}
@@ -81,7 +84,7 @@ func (e *EmailService) SendPasswordResetEmail(toEmail, token string) error {
 		Html:    buildPasswordResetEmailHTML(token, resetURL),
 	}
 
-	_, err := e.client.Emails.Send(params)
+	_, err := e.sendEmail(params)
 	if err != nil {
 		return fmt.Errorf("resend: send password reset email: %w", err)
 	}

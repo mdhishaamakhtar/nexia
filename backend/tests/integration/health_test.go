@@ -19,3 +19,28 @@ func TestHealthAndReadinessEndpoints(t *testing.T) {
 		}
 	}
 }
+
+func TestSwaggerEndpointIntegration(t *testing.T) {
+	kit := buildRouter(t, true)
+
+	w := doRequest(t, kit, http.MethodGet, "/api/v1/swagger/index.html", nil, "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestReadinessReturnsUnavailableWhenDBClosed(t *testing.T) {
+	kit := buildRouter(t, true)
+	sqlDB, err := kit.db.DB()
+	if err != nil {
+		t.Fatalf("get sql db: %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("close sql db: %v", err)
+	}
+
+	w := doRequest(t, kit, http.MethodGet, "/api/v1/readyz", nil, "")
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected 503 got %d body=%s", w.Code, w.Body.String())
+	}
+}
