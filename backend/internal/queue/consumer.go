@@ -17,10 +17,20 @@ import (
 )
 
 type TaskHandler struct {
-	db       *gorm.DB
-	gemini   *ai.GeminiClient
-	pgvector *ai.PgVectorClient
-	logger   *zap.Logger
+	db          *gorm.DB
+	gemini      embeddingGenerator
+	pgvector    vectorStore
+	logger      *zap.Logger
+	loadProfile func(context.Context, uint) (*models.Profile, error)
+}
+
+type embeddingGenerator interface {
+	GenerateEmbedding(context.Context, string) ([]float32, error)
+}
+
+type vectorStore interface {
+	UpsertProfile(context.Context, *models.Profile, []float32) error
+	DeleteProfile(context.Context, uint64) error
 }
 
 func NewTaskHandler(db *gorm.DB, gemini *ai.GeminiClient, pgvector *ai.PgVectorClient, logger *zap.Logger) *TaskHandler {
@@ -29,6 +39,15 @@ func NewTaskHandler(db *gorm.DB, gemini *ai.GeminiClient, pgvector *ai.PgVectorC
 		gemini:   gemini,
 		pgvector: pgvector,
 		logger:   logger.Named("queue_worker"),
+		loadProfile: func(ctx context.Context, profileID uint) (*models.Profile, error) {
+			var profile models.Profile
+			if err := repositories.WithProfilePreloads(db).
+				WithContext(ctx).
+				First(&profile, profileID).Error; err != nil {
+				return nil, err
+			}
+			return &profile, nil
+		},
 	}
 }
 
@@ -40,9 +59,8 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 
 	h.logger.Info("processing embedding task", zap.Uint("profile_id", p.ProfileID))
 
-	var profile models.Profile
-	if err := repositories.WithProfilePreloads(h.db).
-		First(&profile, p.ProfileID).Error; err != nil {
+	profile, err := h.loadProfile(ctx, p.ProfileID)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			h.logger.Warn("embedding task skipped: profile not found", zap.Uint("profile_id", p.ProfileID))
 			return asynq.SkipRetry
@@ -168,7 +186,7 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 		return fmt.Errorf("gemini embedding failed: %w", err)
 	}
 
-	if err := h.pgvector.UpsertProfile(ctx, &profile, embedding); err != nil {
+	if err := h.pgvector.UpsertProfile(ctx, profile, embedding); err != nil {
 		h.logger.Error("pgvector upsert failed", zap.Uint("profile_id", p.ProfileID), zap.Error(err))
 		return fmt.Errorf("pgvector upsert failed: %w", err)
 	}

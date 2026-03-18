@@ -165,30 +165,43 @@ type queueWorkerParams struct {
 	QueueClient *queue.QueueClient
 }
 
+type queueWorkerServer interface {
+	Run(asynq.Handler) error
+	Shutdown()
+}
+
+type closableQueueClient interface {
+	Close()
+}
+
 func RegisterQueueWorker(p queueWorkerParams) {
 	if p.QueueClient == nil || p.Server == nil || p.Gemini == nil || p.PgVector == nil {
 		return
 	}
 
-	mux := asynq.NewServeMux()
-	mux.HandleFunc(queue.TypeEmbeddingTask, p.TaskHandler.HandleEmbeddingTask)
-	mux.HandleFunc(queue.TypeDeletionTask, p.TaskHandler.HandleDeletionTask)
+	appendQueueWorkerHooks(p.Lifecycle, p.Logger, p.Server, p.TaskHandler, p.QueueClient)
+}
 
-	p.Lifecycle.Append(fx.Hook{
+func appendQueueWorkerHooks(lifecycle fx.Lifecycle, logger *zap.Logger, server queueWorkerServer, taskHandler *queue.TaskHandler, queueClient closableQueueClient) {
+	mux := asynq.NewServeMux()
+	mux.HandleFunc(queue.TypeEmbeddingTask, taskHandler.HandleEmbeddingTask)
+	mux.HandleFunc(queue.TypeDeletionTask, taskHandler.HandleDeletionTask)
+
+	lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			p.Logger.Info("starting queue worker")
+			logger.Info("starting queue worker")
 			go func() {
-				if err := p.Server.Run(mux); err != nil {
-					p.Logger.Error("queue worker exited", zap.Error(err))
+				if err := server.Run(mux); err != nil {
+					logger.Error("queue worker exited", zap.Error(err))
 				}
 			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			p.Logger.Info("stopping queue worker")
-			p.Server.Shutdown()
-			if p.QueueClient != nil {
-				p.QueueClient.Close()
+			logger.Info("stopping queue worker")
+			server.Shutdown()
+			if queueClient != nil {
+				queueClient.Close()
 			}
 			return nil
 		},
@@ -203,23 +216,30 @@ type httpServerInvokeParams struct {
 	Server    *http.Server
 }
 
+type lifecycleHTTPServer interface {
+	ListenAndServe() error
+	Shutdown(context.Context) error
+}
+
 func RegisterHTTPServer(p httpServerInvokeParams) {
-	p.Lifecycle.Append(fx.Hook{
+	appendHTTPServerHooks(p.Lifecycle, p.Logger, p.Server)
+}
+
+func appendHTTPServerHooks(lifecycle fx.Lifecycle, logger *zap.Logger, server lifecycleHTTPServer) {
+	lifecycle.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			p.Logger.Info("starting http server",
-				zap.String("addr", p.Server.Addr),
-			)
+			logger.Info("starting http server")
 
 			go func() {
-				if err := p.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-					p.Logger.Fatal("http server exited", zap.Error(err))
+				if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					logger.Fatal("http server exited", zap.Error(err))
 				}
 			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			p.Logger.Info("stopping http server")
-			return p.Server.Shutdown(ctx)
+			logger.Info("stopping http server")
+			return server.Shutdown(ctx)
 		},
 	})
 }

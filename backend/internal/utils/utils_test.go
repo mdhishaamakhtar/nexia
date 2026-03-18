@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -84,5 +85,15 @@ func TestRespondHelpers(t *testing.T) {
 	utils.RespondWithSuccess(c, http.StatusCreated, gin.H{"ok": true})
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201 got %d", w.Code)
+	}
+}
+
+func TestGenerateCSRFToken(t *testing.T) {
+	token, err := utils.GenerateCSRFToken()
+	if err != nil {
+		t.Fatalf("GenerateCSRFToken returned error: %v", err)
+	}
+	if len(token) < 32 || strings.Contains(token, " ") {
+		t.Fatalf("unexpected csrf token %q", token)
 	}
 }
