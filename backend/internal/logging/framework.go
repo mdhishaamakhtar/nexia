@@ -46,34 +46,34 @@ type AsynqLogger struct {
 
 func NewAsynqLogger(logger *zap.Logger) asynq.Logger {
 	if logger == nil {
-		logger = zap.NewNop()
+		panic("asynq logger requires a logger")
 	}
 	return &AsynqLogger{logger: logger.Named("asynq")}
 }
 
-func (l *AsynqLogger) Debug(args ...interface{}) {
+func (l *AsynqLogger) Debug(args ...any) {
 	l.logger.Debug(fmt.Sprint(args...))
 }
 
-func (l *AsynqLogger) Info(args ...interface{}) {
+func (l *AsynqLogger) Info(args ...any) {
 	l.logger.Info(fmt.Sprint(args...))
 }
 
-func (l *AsynqLogger) Warn(args ...interface{}) {
+func (l *AsynqLogger) Warn(args ...any) {
 	l.logger.Warn(fmt.Sprint(args...))
 }
 
-func (l *AsynqLogger) Error(args ...interface{}) {
+func (l *AsynqLogger) Error(args ...any) {
 	l.logger.Error(fmt.Sprint(args...))
 }
 
-func (l *AsynqLogger) Fatal(args ...interface{}) {
+func (l *AsynqLogger) Fatal(args ...any) {
 	l.logger.Fatal(fmt.Sprint(args...))
 }
 
 func ConfigureGin(logger *zap.Logger) {
 	if logger == nil {
-		logger = zap.NewNop()
+		panic("gin logging requires a logger")
 	}
 
 	ginLogger := logger.Named("gin")

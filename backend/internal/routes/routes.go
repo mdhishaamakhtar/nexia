@@ -38,11 +38,12 @@ func WithDB(db *gorm.DB) Option {
 }
 
 func SetupRouter(profileController *controllers.ProfileController, authController *controllers.AuthController, chatController *controllers.ChatController, cfg *config.Config, opts ...Option) *gin.Engine {
-	options := options{
-		logger: zap.NewNop(),
-	}
+	options := options{}
 	for _, opt := range opts {
 		opt(&options)
+	}
+	if options.logger == nil {
+		panic("router setup requires a logger")
 	}
 
 	logging.ConfigureGin(options.logger)

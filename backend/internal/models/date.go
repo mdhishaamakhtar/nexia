@@ -36,7 +36,7 @@ func (d Date) Value() (driver.Value, error) {
 }
 
 // Scan implements the sql.Scanner interface for GORM
-func (d *Date) Scan(value interface{}) error {
+func (d *Date) Scan(value any) error {
 	if value == nil {
 		return nil
 	}

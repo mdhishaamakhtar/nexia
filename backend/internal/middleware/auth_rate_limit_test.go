@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func TestAuthRateLimitDelaysBurstRequests(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()
-	r.Use(newAuthRateLimit(nil, 1, 50*time.Millisecond))
+	r.Use(newAuthRateLimit(zap.NewNop(), 1, 50*time.Millisecond))
 	r.POST("/auth/login", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})

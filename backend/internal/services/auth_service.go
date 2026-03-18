@@ -11,6 +11,7 @@ import (
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/utils"
 
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -24,6 +25,7 @@ type AuthService struct {
 	VerifyRepo EmailVerificationRepository
 	EmailSvc   EmailSender
 	Config     *config.Config
+	Logger     *zap.Logger
 }
 
 type UserRepository interface {
@@ -51,13 +53,17 @@ type EmailSender interface {
 	SendPasswordResetEmail(toEmail, token string) error
 }
 
-func NewAuthService(repo UserRepository, resetRepo PasswordResetRepository, verifyRepo EmailVerificationRepository, emailSvc EmailSender, cfg *config.Config) *AuthService {
+func NewAuthService(repo UserRepository, resetRepo PasswordResetRepository, verifyRepo EmailVerificationRepository, emailSvc EmailSender, cfg *config.Config, logger *zap.Logger) *AuthService {
+	if logger == nil {
+		panic("auth service requires a logger")
+	}
 	return &AuthService{
 		Repo:       repo,
 		ResetRepo:  resetRepo,
 		VerifyRepo: verifyRepo,
 		EmailSvc:   emailSvc,
 		Config:     cfg,
+		Logger:     logger.Named("auth_service"),
 	}
 }
 
@@ -106,9 +112,13 @@ func (s *AuthService) Signup(email, password string) error {
 		return err
 	}
 
-	// Best-effort: log error but don't fail signup
+	// Best-effort: log delivery errors but do not fail signup.
 	if err := s.EmailSvc.SendVerificationEmail(email, tokenStr); err != nil {
-		_ = err
+		s.Logger.Warn("failed to send verification email",
+			zap.String("email", email),
+			zap.Uint64("user_id", newUser.ID),
+			zap.Error(err),
+		)
 	}
 
 	return nil
@@ -161,8 +171,11 @@ func (s *AuthService) VerifyEmail(token string) error {
 func (s *AuthService) ForgotPassword(email string) error {
 	user, err := s.Repo.FindByEmail(email)
 	if err != nil {
-		// Silent — don't reveal whether email exists
-		return nil
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Silent — don't reveal whether email exists
+			return nil
+		}
+		return err
 	}
 
 	tokenStr, err := generateToken()
@@ -180,7 +193,11 @@ func (s *AuthService) ForgotPassword(email string) error {
 	}
 
 	if err := s.EmailSvc.SendPasswordResetEmail(email, tokenStr); err != nil {
-		_ = err
+		s.Logger.Warn("failed to send password reset email",
+			zap.String("email", email),
+			zap.Uint64("user_id", user.ID),
+			zap.Error(err),
+		)
 	}
 
 	return nil

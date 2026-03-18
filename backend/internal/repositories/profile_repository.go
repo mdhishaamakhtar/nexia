@@ -35,7 +35,7 @@ func (r *ProfileRepository) Create(profile *models.Profile) error {
 
 func (r *ProfileRepository) FindByID(id uint64, userID uint64) (*models.Profile, error) {
 	var profile models.Profile
-	query := withProfilePreloads(r.DB.Where("id = ? AND user_id = ?", id, userID))
+	query := WithProfilePreloads(r.DB.Where("id = ? AND user_id = ?", id, userID))
 	if err := query.First(&profile).Error; err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (r *ProfileRepository) FindAll(page, limit int, search string, relationship
 	}
 
 	offset := (page - 1) * limit
-	if err := withProfilePreloads(query).
+	if err := WithProfilePreloads(query).
 		Offset(offset).
 		Limit(limit).
 		Find(&profiles).Error; err != nil {
@@ -151,7 +151,7 @@ func (r *ProfileRepository) Delete(id uint64, userID uint64) error {
 	return r.DB.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Profile{}).Error
 }
 
-func withProfilePreloads(query *gorm.DB) *gorm.DB {
+func WithProfilePreloads(query *gorm.DB) *gorm.DB {
 	for _, preload := range profileAssociations {
 		query = query.Preload(preload)
 	}

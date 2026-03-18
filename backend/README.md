@@ -79,6 +79,57 @@ docker-compose up --build
    go run cmd/server/main.go
    ```
 
+## 🔐 Environment Variables
+
+Configuration loads from `config/local.yaml` by default, switches file with `APP_ENV`, and then allows `NEXIA_*` environment variables to override YAML values.
+
+### App Selection
+
+| Variable | Expected Value | Notes |
+| --- | --- | --- |
+| `APP_ENV` | config file name like `local`, `prod` | Selects `config/<APP_ENV>.yaml`. Defaults to `local`. |
+
+### Server
+
+| Variable | Expected Value | Default | Notes |
+| --- | --- | --- | --- |
+| `NEXIA_SERVER_PORT` | integer | `8080` | HTTP server port. |
+| `NEXIA_SERVER_MODE` | `debug`, `test`, or `release` | from config file | Gin mode and logger environment field. |
+| `NEXIA_SERVER_JWT_SECRET` | non-empty string | none in prod | Required in production. |
+| `NEXIA_SERVER_JWT_EXPIRY_MINUTES` | integer | `1440` local, `60` prod | JWT cookie/token lifetime in minutes. |
+| `NEXIA_SERVER_CORS_ORIGINS` | comma-separated origins | from config file | Example: `https://app.example.com,https://admin.example.com` |
+| `NEXIA_SERVER_COOKIE_DOMAIN` | cookie domain string | empty | Example: `.example.com` |
+
+### Database
+
+| Variable | Expected Value | Default | Notes |
+| --- | --- | --- | --- |
+| `NEXIA_DB_HOST` | hostname | from config file | Postgres host. |
+| `NEXIA_DB_PORT` | integer | `5432` | Postgres port. |
+| `NEXIA_DB_USER` | username | from config file | Postgres user. |
+| `NEXIA_DB_PASSWORD` | password string | from config file | Postgres password. |
+| `NEXIA_DB_NAME` | database name | from config file | Postgres database name. |
+| `NEXIA_DB_SSL_MODE` | Postgres sslmode string | `disable` local, `require` prod | Example: `disable`, `require`, `verify-full`. |
+| `NEXIA_DB_RUN_MIGRATIONS` | `true` or `false` | `true` | Set to `false` in production if migrations run separately. |
+| `NEXIA_DB_MAX_IDLE_CONNS` | integer | `10` | SQL pool idle connections. |
+| `NEXIA_DB_MAX_OPEN_CONNS` | integer | `50` | SQL pool max open connections. |
+| `NEXIA_DB_CONN_MAX_LIFETIME_MINUTES` | integer | `60` | SQL connection max lifetime in minutes. |
+
+### AI / Queue
+
+| Variable | Expected Value | Default | Notes |
+| --- | --- | --- | --- |
+| `NEXIA_AI_GEMINI_API_KEY` | API key string | empty | Empty disables Gemini-backed features. |
+| `NEXIA_AI_REDIS_URL` | Redis URI or host:port | `127.0.0.1:6379` | Used by Asynq queue client/worker. |
+
+### Email
+
+| Variable | Expected Value | Default | Notes |
+| --- | --- | --- | --- |
+| `NEXIA_EMAIL_RESEND_API_KEY` | API key string | empty | Empty disables actual email sending. |
+| `NEXIA_EMAIL_FROM_ADDRESS` | RFC 5322 mailbox string | `Nexia <noreply@nexia.hishaam.dev>` | Sender address used for emails. |
+| `NEXIA_EMAIL_APP_BASE_URL` | absolute app URL | from config file | Example: `https://nexia.app` |
+
 ### 📖 API Documentation
 
 Swagger UI is available locally at:

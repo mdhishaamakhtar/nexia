@@ -9,6 +9,7 @@ import (
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/services"
 
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -164,6 +165,7 @@ func newAuthService(userRepo *fakeUserRepo, resetRepo *fakeResetRepo, verifyRepo
 		verifyRepo,
 		emailSvc,
 		&config.Config{Server: config.ServerConfig{JWTSecret: "test-secret", JWTExpiryMinutes: 60}},
+		zap.NewNop(),
 	)
 }
 
@@ -363,6 +365,37 @@ func TestForgotPasswordUserNotFound(t *testing.T) {
 	err := svc.ForgotPassword("nobody@example.com")
 	if err != nil {
 		t.Fatalf("expected nil (silent), got %v", err)
+	}
+}
+
+func TestForgotPasswordFindEmailGenericError(t *testing.T) {
+	dbErr := errors.New("db unavailable")
+	repo := &fakeUserRepo{findErr: dbErr}
+	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
+
+	err := svc.ForgotPassword("alice@example.com")
+	if !errors.Is(err, dbErr) {
+		t.Fatalf("expected db error propagated, got %v", err)
+	}
+}
+
+func TestSignupEmailSendErrorDoesNotFail(t *testing.T) {
+	repo := &fakeUserRepo{}
+	emailSvc := &fakeEmailSvc{sendErr: errors.New("smtp down")}
+	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, emailSvc)
+
+	if err := svc.Signup("alice@example.com", "password123"); err != nil {
+		t.Fatalf("expected signup success despite email failure, got %v", err)
+	}
+}
+
+func TestForgotPasswordEmailSendErrorDoesNotFail(t *testing.T) {
+	repo := &fakeUserRepo{user: &models.User{ID: 1, Email: "alice@example.com", Password: "hash"}}
+	emailSvc := &fakeEmailSvc{sendErr: errors.New("smtp down")}
+	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, emailSvc)
+
+	if err := svc.ForgotPassword("alice@example.com"); err != nil {
+		t.Fatalf("expected forgot password success despite email failure, got %v", err)
 	}
 }
 

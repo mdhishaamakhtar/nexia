@@ -9,6 +9,7 @@ import (
 
 	"nexia-backend/internal/ai"
 	"nexia-backend/internal/models"
+	"nexia-backend/internal/repositories"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"
@@ -40,16 +41,7 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 	h.logger.Info("processing embedding task", zap.Uint("profile_id", p.ProfileID))
 
 	var profile models.Profile
-	if err := h.db.
-		Preload("Tags").
-		Preload("PoliticalViews").
-		Preload("FoodRestrictions").
-		Preload("MovieGenres").
-		Preload("BookGenres").
-		Preload("HangoutPlaces").
-		Preload("Quotes").
-		Preload("TopSongs").
-		Preload("AssociatedSong").
+	if err := repositories.WithProfilePreloads(h.db).
 		First(&profile, p.ProfileID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			h.logger.Warn("embedding task skipped: profile not found", zap.Uint("profile_id", p.ProfileID))
@@ -60,21 +52,21 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 
 	// Construct comprehensive text to embed
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Profile of %s\n", profile.FullName))
-	sb.WriteString(fmt.Sprintf("Bio: %s\n", profile.Bio))
-	sb.WriteString(fmt.Sprintf("Profession: %s\n", profile.Profession))
-	sb.WriteString(fmt.Sprintf("Relationship Type: %s\n", profile.RelationshipType))
+	fmt.Fprintf(&sb, "Profile of %s\n", profile.FullName)
+	fmt.Fprintf(&sb, "Bio: %s\n", profile.Bio)
+	fmt.Fprintf(&sb, "Profession: %s\n", profile.Profession)
+	fmt.Fprintf(&sb, "Relationship Type: %s\n", profile.RelationshipType)
 	if profile.ZodiacSign != nil {
-		sb.WriteString(fmt.Sprintf("Zodiac Sign: %s\n", *profile.ZodiacSign))
+		fmt.Fprintf(&sb, "Zodiac Sign: %s\n", *profile.ZodiacSign)
 	}
 	if profile.Birthday != nil {
-		sb.WriteString(fmt.Sprintf("Birthday: %s\n", time.Time(*profile.Birthday).Format("January 02, 2006")))
+		fmt.Fprintf(&sb, "Birthday: %s\n", time.Time(*profile.Birthday).Format("January 02, 2006"))
 	}
-	sb.WriteString(fmt.Sprintf("Long Term Goals: %s\n", profile.LongTermGoals))
-	sb.WriteString(fmt.Sprintf("Music Preference: %s\n", profile.MusicPreference))
-	sb.WriteString(fmt.Sprintf("Favorite Movie: %s\n", profile.FavoriteMovie))
-	sb.WriteString(fmt.Sprintf("Favorite Book: %s\n", profile.FavoriteBook))
-	sb.WriteString(fmt.Sprintf("Favorite Memory: %s\n", profile.FavoriteMemory))
+	fmt.Fprintf(&sb, "Long Term Goals: %s\n", profile.LongTermGoals)
+	fmt.Fprintf(&sb, "Music Preference: %s\n", profile.MusicPreference)
+	fmt.Fprintf(&sb, "Favorite Movie: %s\n", profile.FavoriteMovie)
+	fmt.Fprintf(&sb, "Favorite Book: %s\n", profile.FavoriteBook)
+	fmt.Fprintf(&sb, "Favorite Memory: %s\n", profile.FavoriteMemory)
 
 	if len(profile.Tags) > 0 {
 		sb.WriteString("Interests/Tags: ")
@@ -145,7 +137,7 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 	if len(profile.TopSongs) > 0 {
 		sb.WriteString("Top Songs: ")
 		for i, song := range profile.TopSongs {
-			sb.WriteString(fmt.Sprintf("%s by %s", song.Name, song.Artist))
+			fmt.Fprintf(&sb, "%s by %s", song.Name, song.Artist)
 			if i < len(profile.TopSongs)-1 {
 				sb.WriteString(", ")
 			}
@@ -154,13 +146,13 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 	}
 
 	if profile.AssociatedSong != nil {
-		sb.WriteString(fmt.Sprintf("Associated Song: %s by %s\n", profile.AssociatedSong.Name, profile.AssociatedSong.Artist))
+		fmt.Fprintf(&sb, "Associated Song: %s by %s\n", profile.AssociatedSong.Name, profile.AssociatedSong.Artist)
 	}
 
 	if len(profile.Quotes) > 0 {
 		sb.WriteString("Quotes: ")
 		for i, q := range profile.Quotes {
-			sb.WriteString(fmt.Sprintf("%q", q.Quote))
+			fmt.Fprintf(&sb, "%q", q.Quote)
 			if i < len(profile.Quotes)-1 {
 				sb.WriteString(", ")
 			}

@@ -43,7 +43,7 @@ func (f *fakeVectorClient) SearchContext(ctx context.Context, userID uint64, que
 		return nil, f.err
 	}
 	if f.results == nil {
-		return []ai.SearchResult{{Payload: map[string]interface{}{"full_name": "Alice", "top_songs": []interface{}{map[string]interface{}{"name": "Numb", "artist": "LP"}}}}}, nil
+		return []ai.SearchResult{{Payload: map[string]any{"full_name": "Alice", "top_songs": []any{map[string]any{"name": "Numb", "artist": "LP"}}}}}, nil
 	}
 	return f.results, nil
 }
@@ -91,19 +91,19 @@ func TestChatServiceChatFailure(t *testing.T) {
 func TestChatServiceSuccess(t *testing.T) {
 	gemini := &fakeGeminiClient{chatResp: "Answer"}
 	vector := &fakeVectorClient{results: []ai.SearchResult{{
-		Payload: map[string]interface{}{
+		Payload: map[string]any{
 			"full_name":         "Alice Example",
 			"score":             float64(1.23),
-			"food_restrictions": []interface{}{map[string]interface{}{"restriction": "None"}},
-			"quotes":            []interface{}{map[string]interface{}{"quote": "Keep going"}},
-			"top_songs":         []interface{}{map[string]interface{}{"name": "Numb", "artist": "LP"}},
-			"movie_genres":      []interface{}{map[string]interface{}{"genre": "Sci-Fi"}},
-			"hangout_places":    []interface{}{map[string]interface{}{"place": "Cafe"}},
-			"political_views":   []interface{}{map[string]interface{}{"view": "Moderate"}},
-			"tags":              []interface{}{map[string]interface{}{"tag": "travel"}},
-			"associated_song":   map[string]interface{}{"name": "Yellow", "artist": "Coldplay"},
+			"food_restrictions": []any{map[string]any{"restriction": "None"}},
+			"quotes":            []any{map[string]any{"quote": "Keep going"}},
+			"top_songs":         []any{map[string]any{"name": "Numb", "artist": "LP"}},
+			"movie_genres":      []any{map[string]any{"genre": "Sci-Fi"}},
+			"hangout_places":    []any{map[string]any{"place": "Cafe"}},
+			"political_views":   []any{map[string]any{"view": "Moderate"}},
+			"tags":              []any{map[string]any{"tag": "travel"}},
+			"associated_song":   map[string]any{"name": "Yellow", "artist": "Coldplay"},
 			"is_best_friend":    true,
-			"misc":              []interface{}{"x", "y"},
+			"misc":              []any{"x", "y"},
 		},
 	}}}
 	svc := services.NewChatService(gemini, vector)

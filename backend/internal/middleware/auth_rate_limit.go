@@ -29,7 +29,7 @@ func NewAuthRateLimit(logger *zap.Logger) gin.HandlerFunc {
 
 func newAuthRateLimit(logger *zap.Logger, limit int, per time.Duration) gin.HandlerFunc {
 	if logger == nil {
-		logger = zap.NewNop()
+		panic("auth rate limit requires a logger")
 	}
 
 	limiter := &authRateLimiter{
@@ -67,7 +67,7 @@ func (l *authRateLimiter) middleware() gin.HandlerFunc {
 		l.mu.Unlock()
 
 		before := time.Now()
-		_ = limiter.Take()
+		limiter.Take()
 		waited := time.Since(before)
 
 		if waited > 0 {
