@@ -6,6 +6,7 @@ import (
 	_ "nexia-backend/docs/swagger"
 	"nexia-backend/internal/config"
 	"nexia-backend/internal/controllers"
+	"nexia-backend/internal/logging"
 	"nexia-backend/internal/middleware"
 	"time"
 
@@ -44,6 +45,7 @@ func SetupRouter(profileController *controllers.ProfileController, authControlle
 		opt(&options)
 	}
 
+	logging.ConfigureGin(options.logger)
 	gin.SetMode(cfg.Server.Mode)
 	r := gin.New()
 

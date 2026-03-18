@@ -2,6 +2,7 @@ package logging
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -59,15 +60,25 @@ func (g *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 	fields := []zap.Field{
 		zap.Duration("duration", elapsed),
 		zap.Int64("rows", rows),
-		zap.String("sql", sql),
 	}
 
 	switch {
 	case err != nil && g.logLevel >= gormlogger.Error:
-		g.logger.Error("db query failed", append(fields, zap.Error(err))...)
+		g.logger.Error("db query failed", append(fields,
+			zap.Error(err),
+			zap.String("sql", truncateSQL(sql, 512)),
+		)...)
 	case elapsed > g.slowThreshold && g.logLevel >= gormlogger.Warn:
 		g.logger.Warn("db slow query", fields...)
 	case g.logLevel >= gormlogger.Info:
-		g.logger.Debug("db query", fields...)
+		g.logger.Debug("db query completed", fields...)
 	}
+}
+
+func truncateSQL(sql string, max int) string {
+	sql = strings.TrimSpace(sql)
+	if len(sql) <= max {
+		return sql
+	}
+	return sql[:max] + "...(truncated)"
 }

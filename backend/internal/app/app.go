@@ -116,7 +116,7 @@ func NewRouter(
 	)
 }
 
-func NewAsynqServer(cfg *config.Config) *asynq.Server {
+func NewAsynqServer(cfg *config.Config, logger *zap.Logger) *asynq.Server {
 	if cfg.AI.RedisURL == "" {
 		return nil
 	}
@@ -125,6 +125,7 @@ func NewAsynqServer(cfg *config.Config) *asynq.Server {
 		queue.ParseRedisOpt(cfg.AI.RedisURL),
 		asynq.Config{
 			Concurrency: 10,
+			Logger:      logging.NewAsynqLogger(logger),
 			LogLevel:    asynq.WarnLevel,
 		},
 	)
