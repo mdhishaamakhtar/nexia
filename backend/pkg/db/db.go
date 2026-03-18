@@ -14,8 +14,13 @@ import (
 
 var DB *gorm.DB
 
-func New(cfg *config.Config, logger *zap.Logger) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+var (
+	openGorm             = gorm.Open
+	newPostgresDialector = func(dsn string) gorm.Dialector { return postgres.Open(dsn) }
+)
+
+func buildDSN(cfg *config.Config) string {
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		cfg.DB.Host,
 		cfg.DB.Port,
 		cfg.DB.User,
@@ -23,9 +28,13 @@ func New(cfg *config.Config, logger *zap.Logger) (*gorm.DB, error) {
 		cfg.DB.Name,
 		cfg.DB.SSLMode,
 	)
+}
+
+func New(cfg *config.Config, logger *zap.Logger) (*gorm.DB, error) {
+	dsn := buildDSN(cfg)
 
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	DB, err = openGorm(newPostgresDialector(dsn), &gorm.Config{
 		Logger: logging.NewGormLogger(logger),
 	})
 	if err != nil {

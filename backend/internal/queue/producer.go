@@ -21,8 +21,17 @@ type DeletionPayload struct {
 }
 
 type QueueClient struct {
-	client *asynq.Client
+	client asynqEnqueuer
 	logger *zap.Logger
+}
+
+type asynqEnqueuer interface {
+	Enqueue(*asynq.Task, ...asynq.Option) (*asynq.TaskInfo, error)
+	Close() error
+}
+
+var newAsynqClient = func(opt asynq.RedisConnOpt) asynqEnqueuer {
+	return asynq.NewClient(opt)
 }
 
 func ParseRedisOpt(redisURL string) asynq.RedisConnOpt {
@@ -34,7 +43,11 @@ func ParseRedisOpt(redisURL string) asynq.RedisConnOpt {
 }
 
 func NewQueueClient(redisURL string, logger *zap.Logger) *QueueClient {
-	client := asynq.NewClient(ParseRedisOpt(redisURL))
+	client := newAsynqClient(ParseRedisOpt(redisURL))
+	return newQueueClientWithClient(client, logger)
+}
+
+func newQueueClientWithClient(client asynqEnqueuer, logger *zap.Logger) *QueueClient {
 	return &QueueClient{client: client, logger: logger.Named("queue")}
 }
 
@@ -65,5 +78,5 @@ func (c *QueueClient) EnqueueDeletionTask(profileID uint64) error {
 }
 
 func (c *QueueClient) Close() {
-	c.client.Close()
+	_ = c.client.Close()
 }
