@@ -151,51 +151,36 @@ go tool swag init -g cmd/server/main.go -o docs/swagger --parseDependency --pars
 go fmt ./...
 ```
 
-### Test Structure
+### Test Strategy
 
-Backend tests are split by purpose:
+Backend tests are intentionally split by responsibility:
 
-- `tests/integration`: End-to-end API flow tests backed by SQLite for auth, profiles, chat, and health/readiness.
-- Package-local `_test.go` files under `internal/...`: unit-style tests for services, controllers, middleware, config, models, and utils.
+- `tests/integration`: integration tests exercise the HTTP surface end to end. These cover all API routes, middleware wiring, request validation, auth flow, CSRF behavior, profile CRUD, chat, health/readiness, and Swagger reachability.
+- Package-local `_test.go` files under `internal/...` and `pkg/...`: unit tests cover branch-heavy logic that is better tested below the HTTP layer, including services, repositories, middleware helpers, AI adapters, email delivery paths, queue handling, logging, app bootstrap, and DB helpers.
 
-### Run All Tests
+This split is deliberate:
+
+- Integration tests prove the routes are wired correctly and that the real request/response behavior holds together.
+- Unit tests close the remaining coverage gap in lower-level code paths that would be slow, brittle, or unnecessary to reach through full HTTP flows.
+- Coverage is measured against the backend application packages in `internal/...` and `pkg/...`.
+- Generated Swagger code and non-application entrypoint binaries are excluded from the coverage target because they do not represent backend business logic.
+
+### Run Tests
 
 ```bash
 go test ./...
 ```
 
-### Run Integration Tests Only
+### Fetch Coverage
 
 ```bash
-go test ./tests/integration -v
+go tool cover -func=coverage.packages.out
 ```
 
-### Run Unit Tests Only
+To refresh `coverage.packages.out`, run:
 
 ```bash
-go test ./internal/... -v
-```
-
-### Coverage (All Packages)
-
-```bash
-go test ./... -coverpkg=./... -coverprofile=coverage.out
-go tool cover -func=coverage.out
-```
-
-### Coverage (Core Packages)
-
-```bash
-go test ./tests/... \
-  -coverpkg=./internal/config,./internal/controllers,./internal/middleware,./internal/models,./internal/routes,./internal/services,./internal/utils \
-  -coverprofile=coverage.core.out
-go tool cover -func=coverage.core.out
-```
-
-### Open HTML Coverage Report
-
-```bash
-go tool cover -html=coverage.out -o coverage.html
+go test ./internal/... ./pkg/... -coverprofile=coverage.packages.out
 ```
 
 ---
