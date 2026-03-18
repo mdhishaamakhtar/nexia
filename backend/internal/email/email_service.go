@@ -2,12 +2,12 @@ package email
 
 import (
 	"fmt"
-	"log"
 	"net/url"
 
 	"nexia-backend/internal/config"
 
 	resend "github.com/resend/resend-go/v2"
+	"go.uber.org/zap"
 )
 
 type EmailService struct {
@@ -15,18 +15,25 @@ type EmailService struct {
 	fromAddress string
 	appBaseURL  string
 	enabled     bool
+	logger      *zap.Logger
 }
 
-func NewEmailService(cfg *config.Config) *EmailService {
+func NewEmailService(cfg *config.Config, logger *zap.Logger) *EmailService {
 	if cfg.Email.ResendAPIKey == "" {
-		log.Println("Warning: Email service disabled — NEXIA_EMAIL_RESEND_API_KEY not set")
-		return &EmailService{enabled: false, fromAddress: cfg.Email.FromAddress, appBaseURL: cfg.Email.AppBaseURL}
+		logger.Warn("email service disabled: missing resend api key")
+		return &EmailService{
+			enabled:     false,
+			fromAddress: cfg.Email.FromAddress,
+			appBaseURL:  cfg.Email.AppBaseURL,
+			logger:      logger.Named("email"),
+		}
 	}
 	return &EmailService{
 		client:      resend.NewClient(cfg.Email.ResendAPIKey),
 		fromAddress: cfg.Email.FromAddress,
 		appBaseURL:  cfg.Email.AppBaseURL,
 		enabled:     true,
+		logger:      logger.Named("email"),
 	}
 }
 
@@ -34,7 +41,10 @@ func (e *EmailService) SendVerificationEmail(toEmail, token string) error {
 	verifyURL := fmt.Sprintf("%s/verify-email/confirm?token=%s", e.appBaseURL, url.QueryEscape(token))
 
 	if !e.enabled {
-		log.Printf("[email disabled] Would send verification email to %s — verifyURL: %s", toEmail, verifyURL)
+		e.logger.Info("email send skipped: verification email",
+			zap.String("to_email", toEmail),
+			zap.String("verify_url", verifyURL),
+		)
 		return nil
 	}
 
@@ -49,6 +59,7 @@ func (e *EmailService) SendVerificationEmail(toEmail, token string) error {
 	if err != nil {
 		return fmt.Errorf("resend: send verification email: %w", err)
 	}
+	e.logger.Info("verification email sent", zap.String("to_email", toEmail))
 	return nil
 }
 
@@ -56,7 +67,10 @@ func (e *EmailService) SendPasswordResetEmail(toEmail, token string) error {
 	resetURL := fmt.Sprintf("%s/reset-password", e.appBaseURL)
 
 	if !e.enabled {
-		log.Printf("[email disabled] Would send password reset email to %s — resetURL: %s", toEmail, resetURL)
+		e.logger.Info("email send skipped: password reset email",
+			zap.String("to_email", toEmail),
+			zap.String("reset_url", resetURL),
+		)
 		return nil
 	}
 
@@ -71,5 +85,6 @@ func (e *EmailService) SendPasswordResetEmail(toEmail, token string) error {
 	if err != nil {
 		return fmt.Errorf("resend: send password reset email: %w", err)
 	}
+	e.logger.Info("password reset email sent", zap.String("to_email", toEmail))
 	return nil
 }

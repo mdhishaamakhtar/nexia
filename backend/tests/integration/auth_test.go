@@ -7,10 +7,10 @@ import (
 )
 
 func TestSignupIntegration(t *testing.T) {
-	r := buildRouter(t, false)
+	kit := buildRouter(t, false)
 
 	t.Run("signup returns 201 and sends verification email", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": "signup-ok@example.com", "password": "pass123"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": "signup-ok@example.com", "password": "pass123"}, "")
 		if w.Code != http.StatusCreated {
 			t.Fatalf("expected 201 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -21,8 +21,8 @@ func TestSignupIntegration(t *testing.T) {
 	})
 
 	t.Run("signup duplicate email returns 409", func(t *testing.T) {
-		postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": "dup@example.com", "password": "pass123"}, "")
-		w := postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": "dup@example.com", "password": "pass123"}, "")
+		postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": "dup@example.com", "password": "pass123"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": "dup@example.com", "password": "pass123"}, "")
 		if w.Code != http.StatusConflict {
 			t.Fatalf("expected 409 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -34,21 +34,21 @@ func TestSignupIntegration(t *testing.T) {
 	})
 
 	t.Run("signup invalid email format returns 400", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": "not-an-email", "password": "pass123"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": "not-an-email", "password": "pass123"}, "")
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 
 	t.Run("signup password too short returns 400", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": "short-pass@example.com", "password": "abc"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": "short-pass@example.com", "password": "abc"}, "")
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 
 	t.Run("signup missing fields returns 400", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": "missing@example.com"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": "missing@example.com"}, "")
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -56,17 +56,17 @@ func TestSignupIntegration(t *testing.T) {
 }
 
 func TestVerifyEmailIntegration(t *testing.T) {
-	r := buildRouter(t, false)
+	kit := buildRouter(t, false)
 	const email = "verify@example.com"
 
 	// Signup first
-	w := postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": email, "password": "pass123"}, "")
+	w := postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": email, "password": "pass123"}, "")
 	if w.Code != http.StatusCreated {
 		t.Fatalf("signup expected 201 got %d body=%s", w.Code, w.Body.String())
 	}
 
 	t.Run("login before verify returns 403", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/login", map[string]any{"email": email, "password": "pass123"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/login", map[string]any{"email": email, "password": "pass123"}, "")
 		if w.Code != http.StatusForbidden {
 			t.Fatalf("expected 403 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -78,31 +78,28 @@ func TestVerifyEmailIntegration(t *testing.T) {
 	})
 
 	t.Run("invalid token returns 404", func(t *testing.T) {
-		w := doRequest(t, r, "GET", "/api/v1/auth/verify-email?token=bogustoken", nil, "")
+		w := doRequest(t, kit, "GET", "/api/v1/auth/verify-email?token=bogustoken", nil, "")
 		if w.Code != http.StatusNotFound {
 			t.Fatalf("expected 404 got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 
 	t.Run("missing token returns 400", func(t *testing.T) {
-		w := doRequest(t, r, "GET", "/api/v1/auth/verify-email", nil, "")
+		w := doRequest(t, kit, "GET", "/api/v1/auth/verify-email", nil, "")
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 
 	t.Run("valid token verifies email and allows login", func(t *testing.T) {
-		token := testStore.getVerifyTokenForEmail(email)
-		if token == "" {
-			t.Fatal("expected a verify token to be stored after signup")
-		}
+		token := kit.getVerifyTokenForEmail(t, email)
 
-		w := doRequest(t, r, "GET", fmt.Sprintf("/api/v1/auth/verify-email?token=%s", token), nil, "")
+		w := doRequest(t, kit, "GET", fmt.Sprintf("/api/v1/auth/verify-email?token=%s", token), nil, "")
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
 		}
 
-		loginW := postJSON(t, r, "/api/v1/auth/login", map[string]any{"email": email, "password": "pass123"}, "")
+		loginW := postJSON(t, kit, "/api/v1/auth/login", map[string]any{"email": email, "password": "pass123"}, "")
 		if loginW.Code != http.StatusOK {
 			t.Fatalf("login after verify expected 200 got %d body=%s", loginW.Code, loginW.Body.String())
 		}
@@ -110,11 +107,11 @@ func TestVerifyEmailIntegration(t *testing.T) {
 }
 
 func TestLoginIntegration(t *testing.T) {
-	r := buildRouter(t, false)
+	kit := buildRouter(t, false)
 
 	t.Run("invalid credentials returns 401", func(t *testing.T) {
-		signupAndGetToken(t, r, "login-test@example.com")
-		w := postJSON(t, r, "/api/v1/auth/login", map[string]any{"email": "login-test@example.com", "password": "wrongpass"}, "")
+		signupAndGetToken(t, kit, "login-test@example.com")
+		w := postJSON(t, kit, "/api/v1/auth/login", map[string]any{"email": "login-test@example.com", "password": "wrongpass"}, "")
 		if w.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -126,14 +123,14 @@ func TestLoginIntegration(t *testing.T) {
 	})
 
 	t.Run("unknown email returns 401", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/login", map[string]any{"email": "nobody@example.com", "password": "pass123"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/login", map[string]any{"email": "nobody@example.com", "password": "pass123"}, "")
 		if w.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401 got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 
 	t.Run("missing fields returns 400", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/login", map[string]any{"email": "someone@example.com"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/login", map[string]any{"email": "someone@example.com"}, "")
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -141,11 +138,11 @@ func TestLoginIntegration(t *testing.T) {
 }
 
 func TestSessionAndLogoutIntegration(t *testing.T) {
-	r := buildRouter(t, false)
-	_, cookie := signupAndGetToken(t, r, "session@example.com")
+	kit := buildRouter(t, false)
+	_, cookie, csrfCookie := signupAndGetToken(t, kit, "session@example.com")
 
 	t.Run("auth/me returns user info with valid cookie", func(t *testing.T) {
-		w := doRequest(t, r, "GET", "/api/v1/auth/me", nil, "", cookie)
+		w := doRequest(t, kit, "GET", "/api/v1/auth/me", nil, "", cookie, csrfCookie)
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -156,7 +153,7 @@ func TestSessionAndLogoutIntegration(t *testing.T) {
 	})
 
 	t.Run("logout clears cookie", func(t *testing.T) {
-		w := doRequest(t, r, "POST", "/api/v1/auth/logout", nil, "", cookie)
+		w := doRequest(t, kit, "POST", "/api/v1/auth/logout", nil, "", cookie, csrfCookie)
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -173,7 +170,7 @@ func TestSessionAndLogoutIntegration(t *testing.T) {
 	})
 
 	t.Run("auth/me returns 401 without token", func(t *testing.T) {
-		w := doRequest(t, r, "GET", "/api/v1/auth/me", nil, "")
+		w := doRequest(t, kit, "GET", "/api/v1/auth/me", nil, "")
 		if w.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -181,10 +178,10 @@ func TestSessionAndLogoutIntegration(t *testing.T) {
 }
 
 func TestForgotPasswordIntegration(t *testing.T) {
-	r := buildRouter(t, false)
+	kit := buildRouter(t, false)
 
 	t.Run("forgot password always returns 200 (anti-enumeration)", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/forgot-password", map[string]any{"email": "nonexistent@example.com"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/forgot-password", map[string]any{"email": "nonexistent@example.com"}, "")
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -192,20 +189,17 @@ func TestForgotPasswordIntegration(t *testing.T) {
 
 	t.Run("forgot password for existing user stores reset token", func(t *testing.T) {
 		const email = "forgot@example.com"
-		signupAndGetToken(t, r, email)
+		signupAndGetToken(t, kit, email)
 
-		w := postJSON(t, r, "/api/v1/auth/forgot-password", map[string]any{"email": email}, "")
+		w := postJSON(t, kit, "/api/v1/auth/forgot-password", map[string]any{"email": email}, "")
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
 		}
-		tok := testStore.getResetTokenForEmail(email)
-		if tok == "" {
-			t.Fatal("expected a reset token to be stored after forgot-password")
-		}
+		_ = kit.getResetTokenForEmail(t, email)
 	})
 
 	t.Run("forgot password missing email field returns 400", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/forgot-password", map[string]any{}, "")
+		w := postJSON(t, kit, "/api/v1/auth/forgot-password", map[string]any{}, "")
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -213,44 +207,41 @@ func TestForgotPasswordIntegration(t *testing.T) {
 }
 
 func TestResetPasswordIntegration(t *testing.T) {
-	r := buildRouter(t, false)
+	kit := buildRouter(t, false)
 	const email = "reset@example.com"
-	signupAndGetToken(t, r, email)
+	signupAndGetToken(t, kit, email)
 
-	postJSON(t, r, "/api/v1/auth/forgot-password", map[string]any{"email": email}, "")
-	resetToken := testStore.getResetTokenForEmail(email)
-	if resetToken == "" {
-		t.Fatal("expected a reset token after forgot-password")
-	}
+	postJSON(t, kit, "/api/v1/auth/forgot-password", map[string]any{"email": email}, "")
+	resetToken := kit.getResetTokenForEmail(t, email)
 
 	t.Run("invalid token returns 404", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/reset-password", map[string]any{"token": "bogustoken", "new_password": "newpass123"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/reset-password", map[string]any{"token": "bogustoken", "new_password": "newpass123"}, "")
 		if w.Code != http.StatusNotFound {
 			t.Fatalf("expected 404 got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 
 	t.Run("password too short returns 400", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/reset-password", map[string]any{"token": resetToken, "new_password": "abc"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/reset-password", map[string]any{"token": resetToken, "new_password": "abc"}, "")
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 
 	t.Run("missing fields returns 400", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/reset-password", map[string]any{"token": resetToken}, "")
+		w := postJSON(t, kit, "/api/v1/auth/reset-password", map[string]any{"token": resetToken}, "")
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
 		}
 	})
 
 	t.Run("valid token resets password and allows login", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/auth/reset-password", map[string]any{"token": resetToken, "new_password": "newpass456"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/reset-password", map[string]any{"token": resetToken, "new_password": "newpass456"}, "")
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
 		}
 
-		loginW := postJSON(t, r, "/api/v1/auth/login", map[string]any{"email": email, "password": "newpass456"}, "")
+		loginW := postJSON(t, kit, "/api/v1/auth/login", map[string]any{"email": email, "password": "newpass456"}, "")
 		if loginW.Code != http.StatusOK {
 			t.Fatalf("login with new password expected 200 got %d body=%s", loginW.Code, loginW.Body.String())
 		}
@@ -258,7 +249,7 @@ func TestResetPasswordIntegration(t *testing.T) {
 
 	t.Run("used token returns 404", func(t *testing.T) {
 		// resetToken was already consumed in the previous sub-test
-		w := postJSON(t, r, "/api/v1/auth/reset-password", map[string]any{"token": resetToken, "new_password": "anotherpass"}, "")
+		w := postJSON(t, kit, "/api/v1/auth/reset-password", map[string]any{"token": resetToken, "new_password": "anotherpass"}, "")
 		if w.Code != http.StatusNotFound {
 			t.Fatalf("expected 404 for used token got %d body=%s", w.Code, w.Body.String())
 		}

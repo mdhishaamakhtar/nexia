@@ -23,6 +23,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 				return
 			}
 			tokenString = parts[1]
+			c.Set(authMethodKey, authMethodBearer)
 		} else {
 			cookieToken, err := c.Cookie("nexia_token")
 			if err != nil || cookieToken == "" {
@@ -31,6 +32,7 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 				return
 			}
 			tokenString = cookieToken
+			c.Set(authMethodKey, authMethodCookie)
 		}
 
 		claims, err := utils.ValidateToken(tokenString, cfg)

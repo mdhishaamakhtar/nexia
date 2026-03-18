@@ -8,11 +8,11 @@ import (
 )
 
 func TestChatFlowIntegration(t *testing.T) {
-	r := buildRouter(t, true)
-	token, _ := signupAndGetToken(t, r, "chat-user@example.com")
+	kit := buildRouter(t, true)
+	token, _, _ := signupAndGetToken(t, kit, "chat-user@example.com")
 
 	t.Run("chat succeeds", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/chat", map[string]any{"message": "Who likes rock music?"}, token)
+		w := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "Who likes rock music?"}, token)
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -23,21 +23,21 @@ func TestChatFlowIntegration(t *testing.T) {
 	})
 
 	t.Run("chat validation error", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/chat", map[string]any{}, token)
+		w := postJSON(t, kit, "/api/v1/chat", map[string]any{}, token)
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400 got %d", w.Code)
 		}
 	})
 
 	t.Run("chat unauthorized", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/chat", map[string]any{"message": "hello"}, "")
+		w := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "hello"}, "")
 		if w.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401 got %d", w.Code)
 		}
 	})
 
 	t.Run("chat internal failure returns server error envelope", func(t *testing.T) {
-		w := postJSON(t, r, "/api/v1/chat", map[string]any{"message": "trigger-ai-fail"}, token)
+		w := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "trigger-ai-fail"}, token)
 		if w.Code != http.StatusInternalServerError {
 			t.Fatalf("expected 500 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -50,10 +50,10 @@ func TestChatFlowIntegration(t *testing.T) {
 }
 
 func TestChatUnavailableIntegration(t *testing.T) {
-	r := buildRouter(t, false)
-	token, _ := signupAndGetToken(t, r, "chat-unavailable@example.com")
+	kit := buildRouter(t, false)
+	token, _, _ := signupAndGetToken(t, kit, "chat-unavailable@example.com")
 
-	w := postJSON(t, r, "/api/v1/chat", map[string]any{"message": "hello"}, token)
+	w := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "hello"}, token)
 	if w.Code != http.StatusServiceUnavailable {
 		t.Fatalf("expected 503 got %d body=%s", w.Code, w.Body.String())
 	}

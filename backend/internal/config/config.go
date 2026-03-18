@@ -35,12 +35,13 @@ type ServerConfig struct {
 }
 
 type DBConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Name     string `mapstructure:"name"`
-	SSLMode  string `mapstructure:"ssl_mode"`
+	Host          string `mapstructure:"host"`
+	Port          int    `mapstructure:"port"`
+	User          string `mapstructure:"user"`
+	Password      string `mapstructure:"password"`
+	Name          string `mapstructure:"name"`
+	SSLMode       string `mapstructure:"ssl_mode"`
+	RunMigrations bool   `mapstructure:"run_migrations"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -58,6 +59,7 @@ func LoadConfig() (*Config, error) {
 	// e.g. NEXIA_DB_PASSWORD will override db.password
 	viper.SetEnvPrefix("nexia")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetDefault("db.run_migrations", true)
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("failed to read config: %w", err)

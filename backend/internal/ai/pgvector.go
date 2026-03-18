@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"nexia-backend/internal/models"
 
 	"github.com/pgvector/pgvector-go"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -23,12 +23,13 @@ type SearchResult struct {
 
 // PgVectorClient handles all vector operations using pgvector inside Postgres.
 type PgVectorClient struct {
-	db *gorm.DB
+	db     *gorm.DB
+	logger *zap.Logger
 }
 
 // NewPgVectorClient creates a new PgVectorClient that reuses the existing GORM connection.
-func NewPgVectorClient(db *gorm.DB) *PgVectorClient {
-	return &PgVectorClient{db: db}
+func NewPgVectorClient(db *gorm.DB, logger *zap.Logger) *PgVectorClient {
+	return &PgVectorClient{db: db, logger: logger.Named("pgvector")}
 }
 
 // profileEmbeddingRow maps to the profile_embeddings table.
@@ -69,11 +70,17 @@ func (c *PgVectorClient) UpsertProfile(ctx context.Context, profile *models.Prof
 	`, row.ProfileID, row.UserID, row.Embedding, row.Payload)
 
 	if result.Error != nil {
-		log.Printf("pgvector Upsert Error (ProfileID=%d): %v", profile.ID, result.Error)
+		c.logger.Error("pgvector upsert failed",
+			zap.Uint64("profile_id", profile.ID),
+			zap.Error(result.Error),
+		)
 		return result.Error
 	}
 
-	log.Printf("Upserted to pgvector: ProfileID=%d, UserID=%d", profile.ID, profile.UserID)
+	c.logger.Info("pgvector upserted profile",
+		zap.Uint64("profile_id", profile.ID),
+		zap.Uint64("user_id", profile.UserID),
+	)
 	return nil
 }
 
@@ -83,11 +90,14 @@ func (c *PgVectorClient) DeleteProfile(ctx context.Context, profileID uint64) er
 		"DELETE FROM profile_embeddings WHERE profile_id = ?", profileID,
 	)
 	if result.Error != nil {
-		log.Printf("pgvector Delete Error (ProfileID=%d): %v", profileID, result.Error)
+		c.logger.Error("pgvector delete failed",
+			zap.Uint64("profile_id", profileID),
+			zap.Error(result.Error),
+		)
 		return result.Error
 	}
 
-	log.Printf("Deleted from pgvector: ProfileID=%d", profileID)
+	c.logger.Info("pgvector deleted profile", zap.Uint64("profile_id", profileID))
 	return nil
 }
 
@@ -121,7 +131,10 @@ func (c *PgVectorClient) SearchContext(ctx context.Context, userID uint64, query
 	for _, r := range rows {
 		var payload map[string]interface{}
 		if err := json.Unmarshal(r.Payload, &payload); err != nil {
-			log.Printf("Warning: failed to unmarshal payload for ProfileID=%d: %v", r.ProfileID, err)
+			c.logger.Warn("failed to unmarshal pgvector payload",
+				zap.Uint64("profile_id", r.ProfileID),
+				zap.Error(err),
+			)
 			continue
 		}
 		results = append(results, SearchResult{

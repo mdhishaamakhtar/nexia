@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"nexia-backend/internal/models"
 
 	"github.com/hibiken/asynq"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -19,13 +19,15 @@ type TaskHandler struct {
 	db       *gorm.DB
 	gemini   *ai.GeminiClient
 	pgvector *ai.PgVectorClient
+	logger   *zap.Logger
 }
 
-func NewTaskHandler(db *gorm.DB, gemini *ai.GeminiClient, pgvector *ai.PgVectorClient) *TaskHandler {
+func NewTaskHandler(db *gorm.DB, gemini *ai.GeminiClient, pgvector *ai.PgVectorClient, logger *zap.Logger) *TaskHandler {
 	return &TaskHandler{
 		db:       db,
 		gemini:   gemini,
 		pgvector: pgvector,
+		logger:   logger.Named("queue_worker"),
 	}
 }
 
@@ -35,7 +37,7 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 	}
 
-	log.Printf("Processing embedding task for ProfileID: %d", p.ProfileID)
+	h.logger.Info("processing embedding task", zap.Uint("profile_id", p.ProfileID))
 
 	var profile models.Profile
 	if err := h.db.
@@ -50,7 +52,7 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 		Preload("AssociatedSong").
 		First(&profile, p.ProfileID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			log.Printf("⚠️ ProfileID %d not found, skipping task.", p.ProfileID)
+			h.logger.Warn("embedding task skipped: profile not found", zap.Uint("profile_id", p.ProfileID))
 			return asynq.SkipRetry
 		}
 		return fmt.Errorf("fetching profile failed: %w", err)
@@ -170,16 +172,19 @@ func (h *TaskHandler) HandleEmbeddingTask(ctx context.Context, t *asynq.Task) er
 
 	embedding, err := h.gemini.GenerateEmbedding(ctx, textToEmbed)
 	if err != nil {
-		log.Printf("ERROR: Gemini embedding failed for ProfileID %d: %v", p.ProfileID, err)
+		h.logger.Error("gemini embedding failed", zap.Uint("profile_id", p.ProfileID), zap.Error(err))
 		return fmt.Errorf("gemini embedding failed: %w", err)
 	}
 
 	if err := h.pgvector.UpsertProfile(ctx, &profile, embedding); err != nil {
-		log.Printf("ERROR: pgvector upsert failed for ProfileID %d: %v", p.ProfileID, err)
+		h.logger.Error("pgvector upsert failed", zap.Uint("profile_id", p.ProfileID), zap.Error(err))
 		return fmt.Errorf("pgvector upsert failed: %w", err)
 	}
 
-	log.Printf("✅ Successfully embedded and indexed ProfileID: %d for UserID: %d", p.ProfileID, profile.UserID)
+	h.logger.Info("embedding task completed",
+		zap.Uint("profile_id", p.ProfileID),
+		zap.Uint64("user_id", profile.UserID),
+	)
 	return nil
 }
 
@@ -189,13 +194,13 @@ func (h *TaskHandler) HandleDeletionTask(ctx context.Context, t *asynq.Task) err
 		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 	}
 
-	log.Printf("Processing deletion task for ProfileID: %d", p.ProfileID)
+	h.logger.Info("processing deletion task", zap.Uint64("profile_id", p.ProfileID))
 
 	if err := h.pgvector.DeleteProfile(ctx, p.ProfileID); err != nil {
-		log.Printf("ERROR: pgvector deletion failed for ProfileID %d: %v", p.ProfileID, err)
+		h.logger.Error("pgvector deletion failed", zap.Uint64("profile_id", p.ProfileID), zap.Error(err))
 		return fmt.Errorf("pgvector deletion failed: %w", err)
 	}
 
-	log.Printf("✅ Successfully deleted ProfileID: %d from pgvector", p.ProfileID)
+	h.logger.Info("deletion task completed", zap.Uint64("profile_id", p.ProfileID))
 	return nil
 }

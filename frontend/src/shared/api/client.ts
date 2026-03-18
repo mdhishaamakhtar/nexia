@@ -1,6 +1,18 @@
 import axios from "axios";
 import type { ApiErrorResponse } from "@/shared/types/api";
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const prefix = `${name}=`;
+  for (const cookie of document.cookie.split(";")) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
+    }
+  }
+  return null;
+}
+
 export const api = axios.create({
   baseURL: `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"}/api/v1`,
   withCredentials: true,
@@ -10,7 +22,16 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use(
-  (config) => config,
+  (config) => {
+    const method = config.method?.toUpperCase();
+    if (method && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+      const csrfToken = getCookie("nexia_csrf");
+      if (csrfToken) {
+        config.headers.set("X-CSRF-Token", csrfToken);
+      }
+    }
+    return config;
+  },
   (error) => Promise.reject(error)
 );
 

@@ -2,15 +2,17 @@ package services
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"nexia-backend/internal/models"
+
+	"go.uber.org/zap"
 )
 
 type ProfileService struct {
-	Repo  ProfileRepository
-	Queue EmbeddingTaskQueue
+	Repo   ProfileRepository
+	Queue  EmbeddingTaskQueue
+	Logger *zap.Logger
 }
 
 type ProfileRepository interface {
@@ -27,7 +29,14 @@ type EmbeddingTaskQueue interface {
 }
 
 func NewProfileService(repo ProfileRepository, queue EmbeddingTaskQueue) *ProfileService {
-	return &ProfileService{Repo: repo, Queue: queue}
+	return NewProfileServiceWithLogger(repo, queue, zap.NewNop())
+}
+
+func NewProfileServiceWithLogger(repo ProfileRepository, queue EmbeddingTaskQueue, logger *zap.Logger) *ProfileService {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
+	return &ProfileService{Repo: repo, Queue: queue, Logger: logger.Named("profile_service")}
 }
 
 func (s *ProfileService) CreateProfile(profile *models.Profile, userID uint64) error {
@@ -113,8 +122,10 @@ func (s *ProfileService) DeleteProfile(id uint64, userID uint64) error {
 	// Async deletion from pgvector (vectorDB) via queue
 	if s.Queue != nil {
 		if err := s.Queue.EnqueueDeletionTask(id); err != nil {
-			// Log the error but don't fail the request since DB delete succeeded
-			log.Printf("Warning: Failed to enqueue deletion task for profile %d: %v", id, err)
+			s.Logger.Warn("failed to enqueue profile deletion task",
+				zap.Uint64("profile_id", id),
+				zap.Error(err),
+			)
 		}
 	}
 

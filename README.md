@@ -28,6 +28,8 @@ Think: "Who hates mushrooms?" or "What song reminds me of Sam?" and get answers 
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![Gin](https://img.shields.io/badge/Gin-1.11-009688?style=for-the-badge&logo=gin&logoColor=white)](https://gin-gonic.com/)
+[![Fx](https://img.shields.io/badge/Uber_Fx-1.24-232F3E?style=for-the-badge&logo=uber&logoColor=white)](https://github.com/uber-go/fx)
+[![Zap](https://img.shields.io/badge/Uber_Zap-1.27-232F3E?style=for-the-badge&logo=uber&logoColor=white)](https://github.com/uber-go/zap)
 [![GORM](https://img.shields.io/badge/GORM-1.31-1A237E?style=for-the-badge&logo=go&logoColor=white)](https://gorm.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![pgvector](https://img.shields.io/badge/pgvector-PG17_Extension-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
