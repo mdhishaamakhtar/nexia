@@ -132,6 +132,15 @@ go test ./... -coverpkg=./... -coverprofile=coverage.out
 go tool cover -func=coverage.out
 ```
 
+### Coverage (Core Packages)
+
+```bash
+go test ./tests/... \
+  -coverpkg=./internal/config,./internal/controllers,./internal/middleware,./internal/models,./internal/routes,./internal/services,./internal/utils \
+  -coverprofile=coverage.core.out
+go tool cover -func=coverage.core.out
+```
+
 ### Open HTML Coverage Report
 
 ```bash
