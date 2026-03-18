@@ -46,7 +46,7 @@ func New() *fx.App {
 			fx.Annotate(repositories.NewEmailVerificationRepository, fx.As(new(services.EmailVerificationRepository))),
 			fx.Annotate(NewEmbeddingTaskQueue, fx.As(new(services.EmbeddingTaskQueue))),
 			fx.Annotate(NewGeminiForChat, fx.As(new(services.GeminiClient))),
-			services.NewProfileServiceWithLogger,
+			services.NewProfileService,
 			services.NewAuthService,
 			services.NewChatService,
 			controllers.NewProfileController,
@@ -142,9 +142,13 @@ type httpServerParams struct {
 
 func NewHTTPServer(p httpServerParams) *http.Server {
 	addr := fmt.Sprintf(":%d", p.Config.Server.Port)
+	httpErrorLog := zap.NewStdLog(p.Logger.Named("net_http"))
+	httpErrorLog.SetFlags(0)
+	httpErrorLog.SetPrefix("")
 	return &http.Server{
 		Addr:              addr,
 		Handler:           p.Router,
+		ErrorLog:          httpErrorLog,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 }

@@ -15,6 +15,7 @@ import (
 	"nexia-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -40,7 +41,7 @@ func (r *controllerProfileRepo) Delete(id uint64, userID uint64) error { return 
 
 func newProfileController(repoErr error) *controllers.ProfileController {
 	repo := &controllerProfileRepo{err: repoErr}
-	svc := services.NewProfileService(repo, nil)
+	svc := services.NewProfileService(repo, nil, zap.NewNop())
 	return controllers.NewProfileController(svc)
 }
 
@@ -146,7 +147,7 @@ func (staticGemini) GenerateChatResponse(ctx context.Context, systemPrompt strin
 }
 
 func (staticVector) SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit int) ([]ai.SearchResult, error) {
-	return []ai.SearchResult{{Payload: map[string]interface{}{"full_name": "A"}}}, nil
+	return []ai.SearchResult{{Payload: map[string]any{"full_name": "A"}}}, nil
 }
 
 func TestChatControllerMissingUserContext(t *testing.T) {
@@ -171,7 +172,7 @@ func newAuthController() *controllers.AuthController {
 	resetRepo := &fakeAuthResetRepo{}
 	verifyRepo := &fakeAuthVerifyRepo{}
 	emailSvc := &fakeAuthEmailSvc{}
-	svc := services.NewAuthService(repo, resetRepo, verifyRepo, emailSvc, cfg)
+	svc := services.NewAuthService(repo, resetRepo, verifyRepo, emailSvc, cfg, zap.NewNop())
 	return controllers.NewAuthController(svc, cfg)
 }
 

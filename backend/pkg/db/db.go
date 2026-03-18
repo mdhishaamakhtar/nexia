@@ -38,10 +38,14 @@ func New(cfg *config.Config, logger *zap.Logger) (*gorm.DB, error) {
 	}
 
 	// Connection pool settings
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetMaxIdleConns(cfg.DB.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(cfg.DB.MaxOpenConns)
+	sqlDB.SetConnMaxLifetime(time.Duration(cfg.DB.ConnMaxLifetimeMinutes) * time.Minute)
 
-	logger.Info("connected to database successfully")
+	logger.Info("connected to database successfully",
+		zap.Int("db_max_idle_conns", cfg.DB.MaxIdleConns),
+		zap.Int("db_max_open_conns", cfg.DB.MaxOpenConns),
+		zap.Int("db_conn_max_lifetime_minutes", cfg.DB.ConnMaxLifetimeMinutes),
+	)
 	return DB, nil
 }

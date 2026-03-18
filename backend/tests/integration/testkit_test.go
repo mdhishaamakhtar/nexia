@@ -223,8 +223,8 @@ func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 		},
 	}
 
-	authService := services.NewAuthService(userRepository, resetTokenRepo, verifyTokenRepo, emailSender, cfg)
-	profileService := services.NewProfileService(profileRepository, fakeQueue{})
+	authService := services.NewAuthService(userRepository, resetTokenRepo, verifyTokenRepo, emailSender, cfg, zap.NewNop())
+	profileService := services.NewProfileService(profileRepository, fakeQueue{}, zap.NewNop())
 
 	var chatService *services.ChatService
 	if enableAI {

@@ -1,7 +1,6 @@
 package models_test
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -45,6 +44,4 @@ func TestDateJSONAndDBHelpers(t *testing.T) {
 	if err := d.Scan("not-time"); err == nil || !strings.Contains(err.Error(), "failed to scan Date value") {
 		t.Fatalf("expected scan error, got %v", err)
 	}
-
-	_ = json.Valid(b)
 }

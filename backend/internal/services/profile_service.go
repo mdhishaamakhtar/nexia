@@ -28,13 +28,9 @@ type EmbeddingTaskQueue interface {
 	EnqueueDeletionTask(profileID uint64) error
 }
 
-func NewProfileService(repo ProfileRepository, queue EmbeddingTaskQueue) *ProfileService {
-	return NewProfileServiceWithLogger(repo, queue, zap.NewNop())
-}
-
-func NewProfileServiceWithLogger(repo ProfileRepository, queue EmbeddingTaskQueue, logger *zap.Logger) *ProfileService {
+func NewProfileService(repo ProfileRepository, queue EmbeddingTaskQueue, logger *zap.Logger) *ProfileService {
 	if logger == nil {
-		logger = zap.NewNop()
+		panic("profile service requires a logger")
 	}
 	return &ProfileService{Repo: repo, Queue: queue, Logger: logger.Named("profile_service")}
 }
@@ -55,7 +51,7 @@ func (s *ProfileService) CreateProfile(profile *models.Profile, userID uint64) e
 
 	// Async Embedding
 	if s.Queue != nil {
-		_ = s.Queue.EnqueueEmbeddingTask(uint(profile.ID))
+		s.enqueueEmbeddingTask(profile.ID)
 	}
 
 	return nil
@@ -96,7 +92,7 @@ func (s *ProfileService) UpdateProfile(id uint64, profile *models.Profile, userI
 
 	// Async Embedding
 	if s.Queue != nil {
-		_ = s.Queue.EnqueueEmbeddingTask(uint(profile.ID))
+		s.enqueueEmbeddingTask(profile.ID)
 	}
 
 	return nil
@@ -122,14 +118,24 @@ func (s *ProfileService) DeleteProfile(id uint64, userID uint64) error {
 	// Async deletion from pgvector (vectorDB) via queue
 	if s.Queue != nil {
 		if err := s.Queue.EnqueueDeletionTask(id); err != nil {
-			s.Logger.Warn("failed to enqueue profile deletion task",
-				zap.Uint64("profile_id", id),
-				zap.Error(err),
-			)
+			s.logQueueFailure("failed to enqueue profile deletion task", id, err)
 		}
 	}
 
 	return nil
+}
+
+func (s *ProfileService) enqueueEmbeddingTask(profileID uint64) {
+	if err := s.Queue.EnqueueEmbeddingTask(uint(profileID)); err != nil {
+		s.logQueueFailure("failed to enqueue profile embedding task", profileID, err)
+	}
+}
+
+func (s *ProfileService) logQueueFailure(message string, profileID uint64, err error) {
+	s.Logger.Warn(message,
+		zap.Uint64("profile_id", profileID),
+		zap.Error(err),
+	)
 }
 
 func DeriveZodiac(date time.Time) models.ZodiacSign {

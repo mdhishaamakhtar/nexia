@@ -63,7 +63,7 @@ func (s *ChatService) Chat(ctx context.Context, userID uint64, message string) (
 			if strVal != "" &&
 				key != "user_id" && key != "id" && key != "profile_id" &&
 				!strings.Contains(key, "created") && !strings.Contains(key, "updated") {
-				contextBuilder.WriteString(fmt.Sprintf("%s: %s\n", readableKey, strVal))
+				fmt.Fprintf(&contextBuilder, "%s: %s\n", readableKey, strVal)
 			}
 		}
 		contextBuilder.WriteString("\n")
@@ -93,23 +93,23 @@ Rules:
 	return response, nil
 }
 
-// formatPayloadValue converts a JSON-decoded interface{} value into a readable string.
+// formatPayloadValue converts a JSON-decoded any value into a readable string.
 // The payload comes from JSONB (decoded via json.Unmarshal), so values are standard Go types.
-func formatPayloadValue(val interface{}) string {
+func formatPayloadValue(val any) string {
 	switch v := val.(type) {
 	case string:
 		return v
 	case float64:
 		// Numbers (IDs, etc.) — not shown due to key filter above
 		return fmt.Sprintf("%v", v)
-	case []interface{}:
+	case []any:
 		// Lists: tags, quotes, songs, restrictions, etc.
 		items := []string{}
 		for _, item := range v {
 			switch iv := item.(type) {
 			case string:
 				items = append(items, iv)
-			case map[string]interface{}:
+			case map[string]any:
 				// Structs inside lists (songs, quotes, etc.)
 				if name, ok := iv["name"]; ok {
 					artist := fmt.Sprintf("%v", iv["artist"])
@@ -130,7 +130,7 @@ func formatPayloadValue(val interface{}) string {
 			}
 		}
 		return strings.Join(items, ", ")
-	case map[string]interface{}:
+	case map[string]any:
 		// Single struct (AssociatedSong)
 		if name, ok := v["name"]; ok {
 			artist := fmt.Sprintf("%v", v["artist"])

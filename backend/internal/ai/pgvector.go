@@ -18,7 +18,7 @@ const VectorSize = 3072 // gemini-embedding-001 dimension
 type SearchResult struct {
 	ProfileID uint64
 	Score     float64
-	Payload   map[string]interface{}
+	Payload   map[string]any
 }
 
 // PgVectorClient handles all vector operations using pgvector inside Postgres.
@@ -129,7 +129,7 @@ func (c *PgVectorClient) SearchContext(ctx context.Context, userID uint64, query
 
 	results := make([]SearchResult, 0, len(rows))
 	for _, r := range rows {
-		var payload map[string]interface{}
+		var payload map[string]any
 		if err := json.Unmarshal(r.Payload, &payload); err != nil {
 			c.logger.Warn("failed to unmarshal pgvector payload",
 				zap.Uint64("profile_id", r.ProfileID),

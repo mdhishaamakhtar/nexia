@@ -7,6 +7,8 @@ import (
 
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/services"
+
+	"go.uber.org/zap"
 )
 
 type fakeProfileRepo struct {
@@ -84,7 +86,7 @@ func (f *fakeEmbeddingQueue) EnqueueDeletionTask(profileID uint64) error {
 func TestProfileServiceCreateProfile(t *testing.T) {
 	repo := &fakeProfileRepo{}
 	queue := &fakeEmbeddingQueue{}
-	svc := services.NewProfileService(repo, queue)
+	svc := services.NewProfileService(repo, queue, zap.NewNop())
 
 	birthday := models.Date(time.Date(2001, time.March, 22, 0, 0, 0, 0, time.UTC))
 	profile := &models.Profile{FullName: "Alice", TopSongs: []models.TopSong{{Name: "Song", Artist: "Artist"}}, Birthday: &birthday}
@@ -104,7 +106,7 @@ func TestProfileServiceCreateProfile(t *testing.T) {
 }
 
 func TestProfileServiceCreateValidation(t *testing.T) {
-	svc := services.NewProfileService(&fakeProfileRepo{}, &fakeEmbeddingQueue{})
+	svc := services.NewProfileService(&fakeProfileRepo{}, &fakeEmbeddingQueue{}, zap.NewNop())
 	profile := &models.Profile{TopSongs: []models.TopSong{{}, {}, {}, {}}}
 
 	err := svc.CreateProfile(profile, 1)
@@ -115,7 +117,7 @@ func TestProfileServiceCreateValidation(t *testing.T) {
 
 func TestProfileServiceListProfilesBounds(t *testing.T) {
 	repo := &fakeProfileRepo{findAllResp: []models.Profile{{ID: 1}}, findAllTotal: 1}
-	svc := services.NewProfileService(repo, nil)
+	svc := services.NewProfileService(repo, nil, zap.NewNop())
 
 	profiles, total, err := svc.ListProfiles(0, 500, "", "", 1)
 	if err != nil {
@@ -129,7 +131,7 @@ func TestProfileServiceListProfilesBounds(t *testing.T) {
 func TestProfileServiceUpdateAndDelete(t *testing.T) {
 	repo := &fakeProfileRepo{}
 	queue := &fakeEmbeddingQueue{}
-	svc := services.NewProfileService(repo, queue)
+	svc := services.NewProfileService(repo, queue, zap.NewNop())
 
 	p := &models.Profile{FullName: "Bob", TopSongs: []models.TopSong{{Name: "Song", Artist: "A"}}}
 	if err := svc.UpdateProfile(10, p, 3); err != nil {
@@ -156,7 +158,7 @@ func TestProfileServiceUpdateAndDelete(t *testing.T) {
 func TestProfileServiceRepositoryAndQueueErrorPaths(t *testing.T) {
 	repoErr := errors.New("repo failed")
 	repo := &fakeProfileRepo{err: repoErr}
-	svc := services.NewProfileService(repo, &fakeEmbeddingQueue{err: errors.New("queue failed")})
+	svc := services.NewProfileService(repo, &fakeEmbeddingQueue{err: errors.New("queue failed")}, zap.NewNop())
 
 	if err := svc.CreateProfile(&models.Profile{TopSongs: []models.TopSong{{Name: "a", Artist: "b"}}}, 1); !errors.Is(err, repoErr) {
 		t.Fatalf("expected repo error on create, got %v", err)
@@ -170,7 +172,7 @@ func TestProfileServiceRepositoryAndQueueErrorPaths(t *testing.T) {
 }
 
 func TestProfileServiceUpdateValidation(t *testing.T) {
-	svc := services.NewProfileService(&fakeProfileRepo{}, &fakeEmbeddingQueue{})
+	svc := services.NewProfileService(&fakeProfileRepo{}, &fakeEmbeddingQueue{}, zap.NewNop())
 	profile := &models.Profile{TopSongs: []models.TopSong{{}, {}, {}, {}}}
 
 	err := svc.UpdateProfile(1, profile, 1)
@@ -181,7 +183,7 @@ func TestProfileServiceUpdateValidation(t *testing.T) {
 
 func TestProfileServiceListProfilesLimitZero(t *testing.T) {
 	repo := &fakeProfileRepo{findAllResp: []models.Profile{{ID: 1}}, findAllTotal: 1}
-	svc := services.NewProfileService(repo, nil)
+	svc := services.NewProfileService(repo, nil, zap.NewNop())
 
 	profiles, total, err := svc.ListProfiles(1, 0, "", "", 1)
 	if err != nil {
@@ -196,7 +198,7 @@ func TestProfileServiceDeleteQueueError(t *testing.T) {
 	// repo succeeds but queue fails — DeleteProfile should still return nil (logs and continues)
 	repo := &fakeProfileRepo{}
 	queue := &fakeEmbeddingQueue{err: errors.New("queue unavailable")}
-	svc := services.NewProfileService(repo, queue)
+	svc := services.NewProfileService(repo, queue, zap.NewNop())
 
 	err := svc.DeleteProfile(5, 1)
 	if err != nil {
@@ -211,7 +213,7 @@ func TestProfileServiceUpdatePassesAssociationsThrough(t *testing.T) {
 	// Service must pass the caller's associations unchanged to the repo — no accumulation.
 	repo := &fakeProfileRepo{}
 	queue := &fakeEmbeddingQueue{}
-	svc := services.NewProfileService(repo, queue)
+	svc := services.NewProfileService(repo, queue, zap.NewNop())
 
 	p := &models.Profile{
 		FullName: "Bob",

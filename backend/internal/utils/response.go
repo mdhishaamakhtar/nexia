@@ -22,6 +22,6 @@ func RespondWithError(c *gin.Context, status int, code string, message string) {
 	})
 }
 
-func RespondWithSuccess(c *gin.Context, status int, data interface{}) {
+func RespondWithSuccess(c *gin.Context, status int, data any) {
 	c.JSON(status, data)
 }

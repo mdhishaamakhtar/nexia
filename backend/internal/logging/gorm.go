@@ -29,21 +29,21 @@ func (g *GormLogger) LogMode(level gormlogger.LogLevel) gormlogger.Interface {
 	return &next
 }
 
-func (g *GormLogger) Info(ctx context.Context, msg string, data ...interface{}) {
+func (g *GormLogger) Info(ctx context.Context, msg string, data ...any) {
 	if g.logLevel < gormlogger.Info {
 		return
 	}
 	g.logger.Info(msg, zap.Any("data", data))
 }
 
-func (g *GormLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
+func (g *GormLogger) Warn(ctx context.Context, msg string, data ...any) {
 	if g.logLevel < gormlogger.Warn {
 		return
 	}
 	g.logger.Warn(msg, zap.Any("data", data))
 }
 
-func (g *GormLogger) Error(ctx context.Context, msg string, data ...interface{}) {
+func (g *GormLogger) Error(ctx context.Context, msg string, data ...any) {
 	if g.logLevel < gormlogger.Error {
 		return
 	}
