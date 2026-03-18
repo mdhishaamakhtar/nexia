@@ -1,34 +1,40 @@
 package main
 
 import (
-	"log"
-
 	"nexia-backend/internal/config"
+	"nexia-backend/internal/logging"
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/queue"
 	"nexia-backend/pkg/db"
+
+	"go.uber.org/zap"
 )
 
 func main() {
-	// 1. Load Config
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		panic(err)
 	}
 
-	// 2. Connect to Database
-	if err := db.Connect(cfg); err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+	logger, err := logging.NewLogger(cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = logger.Sync()
+	}()
+
+	if _, err := db.New(cfg, logger); err != nil {
+		logger.Fatal("failed to connect to database", zap.Error(err))
 	}
 
-	// 3. Connect to Queue
 	if cfg.AI.RedisURL == "" {
-		log.Fatal("Redis URL not configured. Cannot sync embeddings.")
+		logger.Fatal("redis url not configured; cannot sync embeddings")
 	}
-	queueClient := queue.NewQueueClient(cfg.AI.RedisURL)
+	queueClient := queue.NewQueueClient(cfg.AI.RedisURL, logger)
 	defer queueClient.Close()
 
-	log.Println("Starting Profile Embedding Sync...")
+	logger.Info("starting profile embedding sync")
 
 	// 4. Batch Process
 	var page = 1
@@ -41,7 +47,7 @@ func main() {
 
 		result := db.DB.Limit(limit).Offset(offset).Find(&profiles)
 		if result.Error != nil {
-			log.Fatalf("Failed to fetch profiles: %v", result.Error)
+			logger.Fatal("failed to fetch profiles", zap.Error(result.Error))
 		}
 
 		if len(profiles) == 0 {
@@ -50,15 +56,18 @@ func main() {
 
 		for _, p := range profiles {
 			if err := queueClient.EnqueueEmbeddingTask(uint(p.ID)); err != nil {
-				log.Printf("Failed to enqueue profile %d: %v", p.ID, err)
+				logger.Warn("failed to enqueue profile", zap.Uint64("profile_id", p.ID), zap.Error(err))
 			} else {
 				count++
 			}
 		}
 
-		log.Printf("Processed batch %d (%d profiles enqueued so far)", page, count)
+		logger.Info("processed profile batch",
+			zap.Int("page", page),
+			zap.Int("enqueued_count", count),
+		)
 		page++
 	}
 
-	log.Printf("Sync complete! Enqueued %d profiles for embedding.", count)
+	logger.Info("profile embedding sync completed", zap.Int("enqueued_count", count))
 }

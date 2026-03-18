@@ -2,16 +2,21 @@ package db
 
 import (
 	"fmt"
-	"log"
 
 	"nexia-backend/internal/config"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"go.uber.org/zap"
 )
 
-func RunMigrations(cfg *config.Config) error {
+func RunMigrations(cfg *config.Config, logger *zap.Logger) error {
+	if !cfg.DB.RunMigrations {
+		logger.Info("startup migrations disabled by config")
+		return nil
+	}
+
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		cfg.DB.User,
 		cfg.DB.Password,
@@ -33,6 +38,6 @@ func RunMigrations(cfg *config.Config) error {
 		return fmt.Errorf("failed to run up migrations: %w", err)
 	}
 
-	log.Println("Migrations ran successfully")
+	logger.Info("migrations ran successfully")
 	return nil
 }

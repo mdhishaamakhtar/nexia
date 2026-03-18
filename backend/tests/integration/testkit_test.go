@@ -5,400 +5,38 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"sort"
 	"strings"
-	"sync"
 	"testing"
 
 	"nexia-backend/internal/ai"
 	"nexia-backend/internal/config"
 	"nexia-backend/internal/controllers"
+	"nexia-backend/internal/middleware"
 	"nexia-backend/internal/models"
+	"nexia-backend/internal/repositories"
 	"nexia-backend/internal/routes"
 	"nexia-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-type memoryStore struct {
-	mu                  sync.RWMutex
-	nextUserID          uint64
-	nextProfile         uint64
-	usersByEmail        map[string]*models.User
-	profilesByID        map[uint64]*models.Profile
-	verifyTokensByToken map[string]*models.EmailVerificationToken
-	resetTokensByToken  map[string]*models.PasswordResetToken
-}
-
-func newMemoryStore() *memoryStore {
-	return &memoryStore{
-		nextUserID:          1,
-		nextProfile:         1,
-		usersByEmail:        make(map[string]*models.User),
-		profilesByID:        make(map[uint64]*models.Profile),
-		verifyTokensByToken: make(map[string]*models.EmailVerificationToken),
-		resetTokensByToken:  make(map[string]*models.PasswordResetToken),
-	}
-}
-
-type authRepo struct {
-	store *memoryStore
-}
-
-type profileRepo struct {
-	store *memoryStore
-}
-
-type emailVerifyRepo struct {
-	store *memoryStore
-}
-
-type passwordResetRepo struct {
-	store *memoryStore
+type integrationKit struct {
+	router *gin.Engine
+	db     *gorm.DB
+	users  *repositories.UserRepository
 }
 
 type fakeEmailSender struct{}
 
-func (f *fakeEmailSender) SendVerificationEmail(toEmail, token string) error {
-	return nil
-}
-
+func (f *fakeEmailSender) SendVerificationEmail(toEmail, token string) error { return nil }
 func (f *fakeEmailSender) SendPasswordResetEmail(toEmail, token string) error {
 	return nil
-}
-
-func (r *authRepo) Create(user *models.User) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if _, exists := s.usersByEmail[user.Email]; exists {
-		return errors.New("email already exists")
-	}
-
-	cloned := *user
-	cloned.ID = s.nextUserID
-	s.nextUserID++
-	s.usersByEmail[user.Email] = &cloned
-	user.ID = cloned.ID
-	return nil
-}
-
-func (r *authRepo) FindByEmail(email string) (*models.User, error) {
-	s := r.store
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	user, ok := s.usersByEmail[email]
-	if !ok {
-		return nil, gorm.ErrRecordNotFound
-	}
-	cloned := *user
-	return &cloned, nil
-}
-
-func (r *authRepo) FindByID(id uint64) (*models.User, error) {
-	s := r.store
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	for _, user := range s.usersByEmail {
-		if user.ID == id {
-			cloned := *user
-			return &cloned, nil
-		}
-	}
-	return nil, gorm.ErrRecordNotFound
-}
-
-func (r *authRepo) UpdatePassword(userID uint64, hashedPassword string) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for _, user := range s.usersByEmail {
-		if user.ID == userID {
-			user.Password = hashedPassword
-			return nil
-		}
-	}
-	return gorm.ErrRecordNotFound
-}
-
-func (r *authRepo) UpdateEmailVerified(userID uint64) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for _, user := range s.usersByEmail {
-		if user.ID == userID {
-			user.EmailVerified = true
-			return nil
-		}
-	}
-	return gorm.ErrRecordNotFound
-}
-
-// verifyUserEmail is a helper for tests to mark a user's email as verified without going through the email flow
-func (s *memoryStore) verifyUserEmail(email string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	user, ok := s.usersByEmail[email]
-	if !ok {
-		return gorm.ErrRecordNotFound
-	}
-	user.EmailVerified = true
-	return nil
-}
-
-// getVerifyTokenForEmail returns the verification token string for a given email (for test assertions)
-func (s *memoryStore) getVerifyTokenForEmail(email string) string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	user, ok := s.usersByEmail[email]
-	if !ok {
-		return ""
-	}
-	for tok, t := range s.verifyTokensByToken {
-		if t.UserID == user.ID {
-			return tok
-		}
-	}
-	return ""
-}
-
-// getResetTokenForEmail returns the password reset token string for a given email (for test assertions)
-func (s *memoryStore) getResetTokenForEmail(email string) string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	user, ok := s.usersByEmail[email]
-	if !ok {
-		return ""
-	}
-	for tok, t := range s.resetTokensByToken {
-		if t.UserID == user.ID {
-			return tok
-		}
-	}
-	return ""
-}
-
-func (r *emailVerifyRepo) Create(token *models.EmailVerificationToken) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	token.ID = 1
-	s.verifyTokensByToken[token.Token] = token
-	return nil
-}
-
-func (r *emailVerifyRepo) FindByToken(token string) (*models.EmailVerificationToken, error) {
-	s := r.store
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	t, ok := s.verifyTokensByToken[token]
-	if !ok {
-		return nil, gorm.ErrRecordNotFound
-	}
-	cloned := *t
-	return &cloned, nil
-}
-
-func (r *emailVerifyRepo) MarkAsUsed(id uint64) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for _, t := range s.verifyTokensByToken {
-		if t.ID == id {
-			t.Used = true
-			return nil
-		}
-	}
-	return gorm.ErrRecordNotFound
-}
-
-func (r *passwordResetRepo) Create(token *models.PasswordResetToken) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	token.ID = 1
-	s.resetTokensByToken[token.Token] = token
-	return nil
-}
-
-func (r *passwordResetRepo) FindByToken(token string) (*models.PasswordResetToken, error) {
-	s := r.store
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	t, ok := s.resetTokensByToken[token]
-	if !ok {
-		return nil, gorm.ErrRecordNotFound
-	}
-	cloned := *t
-	return &cloned, nil
-}
-
-func (r *passwordResetRepo) MarkAsUsed(id uint64) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	for _, t := range s.resetTokensByToken {
-		if t.ID == id {
-			t.Used = true
-			return nil
-		}
-	}
-	return gorm.ErrRecordNotFound
-}
-
-func (r *profileRepo) Create(profile *models.Profile) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	profile.ID = s.nextProfile
-	s.nextProfile++
-	stored := cloneProfile(profile)
-	applyChildIDs(stored)
-	s.profilesByID[stored.ID] = stored
-	return nil
-}
-
-func (r *profileRepo) FindByID(id uint64, userID uint64) (*models.Profile, error) {
-	s := r.store
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	p, ok := s.profilesByID[id]
-	if !ok || p.UserID != userID {
-		return nil, gorm.ErrRecordNotFound
-	}
-	return cloneProfile(p), nil
-}
-
-func (r *profileRepo) FindAll(page, limit int, search, relationshipType string, userID uint64) ([]models.Profile, int64, error) {
-	s := r.store
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	list := make([]models.Profile, 0)
-	for _, p := range s.profilesByID {
-		if p.UserID != userID {
-			continue
-		}
-		if relationshipType != "" && string(p.RelationshipType) != relationshipType {
-			continue
-		}
-		if search != "" && !strings.Contains(strings.ToLower(p.FullName), strings.ToLower(search)) {
-			continue
-		}
-		list = append(list, *cloneProfile(p))
-	}
-	sort.Slice(list, func(i, j int) bool { return list[i].ID < list[j].ID })
-
-	total := int64(len(list))
-	start := (page - 1) * limit
-	if start >= len(list) {
-		return []models.Profile{}, total, nil
-	}
-	end := min(start+limit, len(list))
-	return list[start:end], total, nil
-}
-
-func (r *profileRepo) Update(profile *models.Profile) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	existing, ok := s.profilesByID[profile.ID]
-	if !ok || existing.UserID != profile.UserID {
-		return gorm.ErrRecordNotFound
-	}
-
-	stored := cloneProfile(profile)
-	applyChildIDs(stored)
-	s.profilesByID[profile.ID] = stored
-	return nil
-}
-
-func (r *profileRepo) Delete(id uint64, userID uint64) error {
-	s := r.store
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	existing, ok := s.profilesByID[id]
-	if !ok || existing.UserID != userID {
-		return gorm.ErrRecordNotFound
-	}
-	delete(s.profilesByID, id)
-	return nil
-}
-
-func cloneProfile(p *models.Profile) *models.Profile {
-	copyProfile := *p
-	copyProfile.Tags = append([]models.Tag(nil), p.Tags...)
-	copyProfile.PoliticalViews = append([]models.PoliticalView(nil), p.PoliticalViews...)
-	copyProfile.FoodRestrictions = append([]models.FoodRestriction(nil), p.FoodRestrictions...)
-	copyProfile.MovieGenres = append([]models.MovieGenre(nil), p.MovieGenres...)
-	copyProfile.BookGenres = append([]models.BookGenre(nil), p.BookGenres...)
-	copyProfile.HangoutPlaces = append([]models.HangoutPlace(nil), p.HangoutPlaces...)
-	copyProfile.Quotes = append([]models.Quote(nil), p.Quotes...)
-	copyProfile.TopSongs = append([]models.TopSong(nil), p.TopSongs...)
-	if p.AssociatedSong != nil {
-		song := *p.AssociatedSong
-		copyProfile.AssociatedSong = &song
-	}
-	return &copyProfile
-}
-
-func applyChildIDs(p *models.Profile) {
-	for i := range p.Tags {
-		p.Tags[i].ProfileID = p.ID
-		p.Tags[i].ID = uint64(i + 1)
-	}
-	for i := range p.PoliticalViews {
-		p.PoliticalViews[i].ProfileID = p.ID
-		p.PoliticalViews[i].ID = uint64(i + 1)
-	}
-	for i := range p.FoodRestrictions {
-		p.FoodRestrictions[i].ProfileID = p.ID
-		p.FoodRestrictions[i].ID = uint64(i + 1)
-	}
-	for i := range p.MovieGenres {
-		p.MovieGenres[i].ProfileID = p.ID
-		p.MovieGenres[i].ID = uint64(i + 1)
-	}
-	for i := range p.BookGenres {
-		p.BookGenres[i].ProfileID = p.ID
-		p.BookGenres[i].ID = uint64(i + 1)
-	}
-	for i := range p.HangoutPlaces {
-		p.HangoutPlaces[i].ProfileID = p.ID
-		p.HangoutPlaces[i].ID = uint64(i + 1)
-	}
-	for i := range p.Quotes {
-		p.Quotes[i].ProfileID = p.ID
-		p.Quotes[i].ID = uint64(i + 1)
-	}
-	for i := range p.TopSongs {
-		p.TopSongs[i].ProfileID = p.ID
-		p.TopSongs[i].ID = uint64(i + 1)
-	}
-	if p.AssociatedSong != nil {
-		p.AssociatedSong.ProfileID = p.ID
-	}
 }
 
 type fakeQueue struct{}
@@ -444,20 +82,147 @@ func (fakeVector) SearchContext(ctx context.Context, userID uint64, queryEmbeddi
 	}, nil
 }
 
-func buildRouter(t *testing.T, enableAI bool) *gin.Engine {
+func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
 
-	store := newMemoryStore()
-	testStore = store // Make store available to test helpers
+	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared&_fk=1", strings.ReplaceAll(t.Name(), "/", "_"))
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
 
-	userRepository := &authRepo{store: store}
-	profileRepository := &profileRepo{store: store}
-	resetTokenRepo := &passwordResetRepo{store: store}
-	verifyTokenRepo := &emailVerifyRepo{store: store}
+	if err := db.Exec("PRAGMA foreign_keys = ON").Error; err != nil {
+		t.Fatalf("enable foreign keys: %v", err)
+	}
+
+	for _, stmt := range []string{
+		`CREATE TABLE users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			email TEXT NOT NULL UNIQUE,
+			email_verified NUMERIC NOT NULL DEFAULT 0,
+			password TEXT NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE password_reset_tokens (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			token TEXT NOT NULL UNIQUE,
+			expires_at DATETIME NOT NULL,
+			used NUMERIC NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token)`,
+		`CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id)`,
+		`CREATE TABLE email_verification_tokens (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			token TEXT NOT NULL UNIQUE,
+			expires_at DATETIME NOT NULL,
+			used NUMERIC NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX idx_email_verification_tokens_token ON email_verification_tokens(token)`,
+		`CREATE INDEX idx_email_verification_tokens_user_id ON email_verification_tokens(user_id)`,
+		`CREATE TABLE profiles (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			full_name TEXT NOT NULL,
+			bio TEXT,
+			profession TEXT,
+			long_term_goals TEXT,
+			relationship_type TEXT NOT NULL,
+			birthday DATE,
+			zodiac_sign TEXT,
+			music_preference TEXT,
+			favorite_movie TEXT,
+			favorite_book TEXT,
+			favorite_memory TEXT,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX idx_profiles_user_id ON profiles(user_id)`,
+		`CREATE INDEX idx_profiles_user_relationship ON profiles(user_id, relationship_type)`,
+		`CREATE TABLE tags (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_id INTEGER NOT NULL,
+			tag TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE political_views (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_id INTEGER NOT NULL,
+			view TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE food_restrictions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_id INTEGER NOT NULL,
+			restriction TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE movie_genres (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_id INTEGER NOT NULL,
+			genre TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE book_genres (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_id INTEGER NOT NULL,
+			genre TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE hangout_places (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_id INTEGER NOT NULL,
+			place TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE quotes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_id INTEGER NOT NULL,
+			quote TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE top_songs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			profile_id INTEGER NOT NULL,
+			name TEXT,
+			artist TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE associated_songs (
+			profile_id INTEGER PRIMARY KEY,
+			name TEXT,
+			artist TEXT,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
+		)`,
+	} {
+		if err := db.Exec(stmt).Error; err != nil {
+			t.Fatalf("create sqlite schema: %v", err)
+		}
+	}
+
+	userRepository := repositories.NewUserRepository(db)
+	profileRepository := repositories.NewProfileRepository(db)
+	resetTokenRepo := repositories.NewPasswordResetRepository(db)
+	verifyTokenRepo := repositories.NewEmailVerificationRepository(db)
 	emailSender := &fakeEmailSender{}
 
-	cfg := &config.Config{Server: config.ServerConfig{Mode: gin.TestMode, JWTSecret: "integration-secret", JWTExpiryMinutes: 30, CORSOrigins: []string{"http://localhost:3000"}}}
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			Mode:             gin.TestMode,
+			JWTSecret:        "integration-secret",
+			JWTExpiryMinutes: 30,
+			CORSOrigins:      []string{"http://localhost:3000"},
+		},
+	}
+
 	authService := services.NewAuthService(userRepository, resetTokenRepo, verifyTokenRepo, emailSender, cfg)
 	profileService := services.NewProfileService(profileRepository, fakeQueue{})
 
@@ -472,19 +237,65 @@ func buildRouter(t *testing.T, enableAI bool) *gin.Engine {
 	profileController := controllers.NewProfileController(profileService)
 	chatController := controllers.NewChatController(chatService)
 
-	return routes.SetupRouter(profileController, authController, chatController, cfg)
+	return &integrationKit{
+		router: routes.SetupRouter(profileController, authController, chatController, cfg, routes.WithLogger(zap.NewNop()), routes.WithDB(db)),
+		db:     db,
+		users:  userRepository,
+	}
 }
 
-func postJSON(t *testing.T, r *gin.Engine, path string, body any, token string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
+func (k *integrationKit) verifyUserEmail(t *testing.T, email string) {
+	t.Helper()
+
+	user, err := k.users.FindByEmail(email)
+	if err != nil {
+		t.Fatalf("find user by email: %v", err)
+	}
+	if err := k.users.UpdateEmailVerified(user.ID); err != nil {
+		t.Fatalf("verify user email: %v", err)
+	}
+}
+
+func (k *integrationKit) getVerifyTokenForEmail(t *testing.T, email string) string {
+	t.Helper()
+
+	user, err := k.users.FindByEmail(email)
+	if err != nil {
+		t.Fatalf("find user by email: %v", err)
+	}
+
+	var token models.EmailVerificationToken
+	if err := k.db.Where("user_id = ?", user.ID).Order("id DESC").First(&token).Error; err != nil {
+		t.Fatalf("find verification token: %v", err)
+	}
+	return token.Token
+}
+
+func (k *integrationKit) getResetTokenForEmail(t *testing.T, email string) string {
+	t.Helper()
+
+	user, err := k.users.FindByEmail(email)
+	if err != nil {
+		t.Fatalf("find user by email: %v", err)
+	}
+
+	var token models.PasswordResetToken
+	if err := k.db.Where("user_id = ?", user.ID).Order("id DESC").First(&token).Error; err != nil {
+		t.Fatalf("find reset token: %v", err)
+	}
+	return token.Token
+}
+
+func postJSON(t *testing.T, kit *integrationKit, path string, body any, token string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 	t.Helper()
 	payload, err := json.Marshal(body)
 	if err != nil {
 		t.Fatalf("marshal body: %v", err)
 	}
-	return doRequest(t, r, http.MethodPost, path, payload, token, cookies...)
+	return doRequest(t, kit, http.MethodPost, path, payload, token, cookies...)
 }
 
-func doRequest(t *testing.T, r *gin.Engine, method, path string, body []byte, token string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
+func doRequest(t *testing.T, kit *integrationKit, method, path string, body []byte, token string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(method, path, bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -493,9 +304,12 @@ func doRequest(t *testing.T, r *gin.Engine, method, path string, body []byte, to
 	}
 	for _, c := range cookies {
 		req.AddCookie(c)
+		if c.Name == middleware.CSRFCookieName {
+			req.Header.Set(middleware.CSRFHeaderName, c.Value)
+		}
 	}
 	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	kit.router.ServeHTTP(w, req)
 	return w
 }
 
@@ -517,29 +331,21 @@ func mustJSON(t *testing.T, v any) []byte {
 	return b
 }
 
-var testStore *memoryStore // Package-level store for test helpers
-
-func signupAndGetToken(t *testing.T, r *gin.Engine, email string) (string, *http.Cookie) {
+func signupAndGetToken(t *testing.T, kit *integrationKit, email string) (string, *http.Cookie, *http.Cookie) {
 	t.Helper()
-	// Signup
-	signupResp := postJSON(t, r, "/api/v1/auth/signup", map[string]any{"email": email, "password": "pass123"}, "")
+
+	signupResp := postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": email, "password": "pass123"}, "")
 	if signupResp.Code != http.StatusCreated {
 		t.Fatalf("signup expected 201, got %d body=%s", signupResp.Code, signupResp.Body.String())
 	}
 
-	// For testing: mark email as verified to proceed with login.
-	// In production, users verify via the email link.
-	if testStore != nil {
-		if err := testStore.verifyUserEmail(email); err != nil {
-			t.Fatalf("failed to verify email in test: %v", err)
-		}
-	}
+	kit.verifyUserEmail(t, email)
 
-	// Login
-	loginResp := postJSON(t, r, "/api/v1/auth/login", map[string]any{"email": email, "password": "pass123"}, "")
+	loginResp := postJSON(t, kit, "/api/v1/auth/login", map[string]any{"email": email, "password": "pass123"}, "")
 	if loginResp.Code != http.StatusOK {
 		t.Fatalf("login expected 200, got %d body=%s", loginResp.Code, loginResp.Body.String())
 	}
+
 	var out struct {
 		Token string `json:"token"`
 	}
@@ -549,16 +355,23 @@ func signupAndGetToken(t *testing.T, r *gin.Engine, email string) (string, *http
 	if out.Token == "" {
 		t.Fatalf("expected token")
 	}
-	cookies := loginResp.Result().Cookies()
+
 	var authCookie *http.Cookie
-	for _, c := range cookies {
+	var csrfCookie *http.Cookie
+	for _, c := range loginResp.Result().Cookies() {
 		if c.Name == "nexia_token" {
 			authCookie = c
-			break
+		}
+		if c.Name == middleware.CSRFCookieName {
+			csrfCookie = c
 		}
 	}
 	if authCookie == nil {
 		t.Fatalf("expected nexia_token cookie")
 	}
-	return out.Token, authCookie
+	if csrfCookie == nil {
+		t.Fatalf("expected csrf cookie")
+	}
+
+	return out.Token, authCookie, csrfCookie
 }

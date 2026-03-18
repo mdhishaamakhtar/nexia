@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/hibiken/asynq"
+	"go.uber.org/zap"
 )
 
 const (
@@ -21,6 +22,7 @@ type DeletionPayload struct {
 
 type QueueClient struct {
 	client *asynq.Client
+	logger *zap.Logger
 }
 
 func ParseRedisOpt(redisURL string) asynq.RedisConnOpt {
@@ -31,9 +33,9 @@ func ParseRedisOpt(redisURL string) asynq.RedisConnOpt {
 	return opt
 }
 
-func NewQueueClient(redisURL string) *QueueClient {
+func NewQueueClient(redisURL string, logger *zap.Logger) *QueueClient {
 	client := asynq.NewClient(ParseRedisOpt(redisURL))
-	return &QueueClient{client: client}
+	return &QueueClient{client: client, logger: logger.Named("queue")}
 }
 
 func (c *QueueClient) EnqueueEmbeddingTask(profileID uint) error {
@@ -43,6 +45,9 @@ func (c *QueueClient) EnqueueEmbeddingTask(profileID uint) error {
 	}
 	task := asynq.NewTask(TypeEmbeddingTask, payload)
 	_, err = c.client.Enqueue(task)
+	if err == nil {
+		c.logger.Debug("enqueued embedding task", zap.Uint("profile_id", profileID))
+	}
 	return err
 }
 
@@ -53,6 +58,9 @@ func (c *QueueClient) EnqueueDeletionTask(profileID uint64) error {
 	}
 	task := asynq.NewTask(TypeDeletionTask, payload)
 	_, err = c.client.Enqueue(task)
+	if err == nil {
+		c.logger.Debug("enqueued deletion task", zap.Uint64("profile_id", profileID))
+	}
 	return err
 }
 

@@ -13,6 +13,7 @@ db:
   password: ""
   name: ""
   ssl_mode: "require"
+  run_migrations: true # Set NEXIA_DB_RUN_MIGRATIONS=false in production
 
 ai:
   gemini_api_key: ""

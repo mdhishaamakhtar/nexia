@@ -103,8 +103,15 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 		maxAgeSeconds = int((24 * time.Hour).Seconds())
 	}
 
+	csrfToken, err := utils.GenerateCSRFToken()
+	if err != nil {
+		utils.RespondWithError(c, http.StatusInternalServerError, "SERVER_ERROR", "Failed to generate CSRF token")
+		return
+	}
+
 	c.SetSameSite(http.SameSiteNoneMode)
 	c.SetCookie("nexia_token", token, maxAgeSeconds, "/", ctrl.Config.Server.CookieDomain, true, true)
+	c.SetCookie(middleware.CSRFCookieName, csrfToken, maxAgeSeconds, "/", ctrl.Config.Server.CookieDomain, true, false)
 
 	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"token": token})
 }
@@ -169,6 +176,7 @@ func (ctrl *AuthController) Me(c *gin.Context) {
 func (ctrl *AuthController) Logout(c *gin.Context) {
 	c.SetSameSite(http.SameSiteNoneMode)
 	c.SetCookie("nexia_token", "", -1, "/", ctrl.Config.Server.CookieDomain, true, true)
+	c.SetCookie(middleware.CSRFCookieName, "", -1, "/", ctrl.Config.Server.CookieDomain, true, false)
 	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"message": "Logged out"})
 }
 

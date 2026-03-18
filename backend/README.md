@@ -10,6 +10,8 @@ Nexia Backend is a production-grade REST API built using **Go**, **Gin**, and **
 
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![Gin](https://img.shields.io/badge/Gin-1.11-009688?style=for-the-badge&logo=gin&logoColor=white)](https://gin-gonic.com/)
+[![Fx](https://img.shields.io/badge/Uber_Fx-1.24-232F3E?style=for-the-badge&logo=uber&logoColor=white)](https://github.com/uber-go/fx)
+[![Zap](https://img.shields.io/badge/Uber_Zap-1.27-232F3E?style=for-the-badge&logo=uber&logoColor=white)](https://github.com/uber-go/zap)
 [![GORM](https://img.shields.io/badge/GORM-1.31-1A237E?style=for-the-badge&logo=go&logoColor=white)](https://gorm.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![pgvector](https://img.shields.io/badge/pgvector-PG17_Extension-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
@@ -100,10 +102,10 @@ go fmt ./...
 
 ### Test Structure
 
-All backend tests are centralized under `backend/tests`:
+Backend tests are split by purpose:
 
-- `tests/unit`: Focused unit tests for services, middleware, config, models, and utils.
-- `tests/integration`: End-to-end API flow tests (auth, profiles, chat, health/readiness).
+- `tests/integration`: End-to-end API flow tests backed by SQLite for auth, profiles, chat, and health/readiness.
+- Package-local `_test.go` files under `internal/...`: unit-style tests for services, controllers, middleware, config, models, and utils.
 
 ### Run All Tests
 
@@ -120,7 +122,7 @@ go test ./tests/integration -v
 ### Run Unit Tests Only
 
 ```bash
-go test ./tests/unit -v
+go test ./internal/... -v
 ```
 
 ### Coverage (All Packages)
@@ -130,21 +132,10 @@ go test ./... -coverpkg=./... -coverprofile=coverage.out
 go tool cover -func=coverage.out
 ```
 
-### Coverage (Core Internal Packages)
-
-This excludes external-adapter style packages (for example `internal/ai`) and is the recommended quality target for day-to-day development.
-
-```bash
-go test ./tests/... \
-  -coverpkg=./internal/config,./internal/controllers,./internal/middleware,./internal/models,./internal/routes,./internal/services,./internal/utils \
-  -coverprofile=coverage.core.out
-go tool cover -func=coverage.core.out
-```
-
 ### Open HTML Coverage Report
 
 ```bash
-go tool cover -html=coverage.core.out -o coverage.html
+go tool cover -html=coverage.out -o coverage.html
 ```
 
 ---

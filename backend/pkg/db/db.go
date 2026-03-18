@@ -2,19 +2,19 @@ package db
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"nexia-backend/internal/config"
+	"nexia-backend/internal/logging"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 var DB *gorm.DB
 
-func Connect(cfg *config.Config) error {
+func New(cfg *config.Config, logger *zap.Logger) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		cfg.DB.Host,
 		cfg.DB.Port,
@@ -26,15 +26,15 @@ func Connect(cfg *config.Config) error {
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+		Logger: logging.NewGormLogger(logger),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	sqlDB, err := DB.DB()
 	if err != nil {
-		return fmt.Errorf("failed to get sql db: %w", err)
+		return nil, fmt.Errorf("failed to get sql db: %w", err)
 	}
 
 	// Connection pool settings
@@ -42,6 +42,6 @@ func Connect(cfg *config.Config) error {
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	log.Println("Connected to database successfully")
-	return nil
+	logger.Info("connected to database successfully")
+	return DB, nil
 }

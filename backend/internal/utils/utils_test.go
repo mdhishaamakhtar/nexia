@@ -1,4 +1,4 @@
-package unit_test
+package utils_test
 
 import (
 	"encoding/json"

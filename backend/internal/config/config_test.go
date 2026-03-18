@@ -1,4 +1,4 @@
-package unit_test
+package config_test
 
 import (
 	"os"
@@ -30,6 +30,7 @@ db:
   password: pass
   name: db
   ssl_mode: disable
+  run_migrations: true
 ai:
   gemini_api_key: ""
   redis_url: ""
@@ -51,6 +52,7 @@ db:
   password: pass
   name: prod
   ssl_mode: require
+  run_migrations: false
 ai:
   gemini_api_key: "prod-key"
   redis_url: "redis:6379"
@@ -83,6 +85,9 @@ ai:
 	if cfg.DB.Password != "override-pass" {
 		t.Fatalf("expected env override password, got %s", cfg.DB.Password)
 	}
+	if !cfg.DB.RunMigrations {
+		t.Fatalf("expected local run_migrations=true")
+	}
 
 	viper.Reset()
 	t.Setenv("APP_ENV", "prod")
@@ -96,6 +101,9 @@ ai:
 	}
 	if cfg.DB.Host != "prod-db" {
 		t.Fatalf("expected prod-db got %s", cfg.DB.Host)
+	}
+	if cfg.DB.RunMigrations {
+		t.Fatalf("expected prod run_migrations=false")
 	}
 }
 
