@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,13 +15,19 @@ import (
 	"nexia-backend/internal/controllers"
 	"nexia-backend/internal/middleware"
 	"nexia-backend/internal/models"
+	"nexia-backend/internal/queue"
 	"nexia-backend/internal/repositories"
 	"nexia-backend/internal/routes"
 	"nexia-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/modules/redis"
 	"go.uber.org/zap"
-	"gorm.io/driver/sqlite"
+	gormPostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -39,11 +44,6 @@ func (f *fakeEmailSender) SendPasswordResetEmail(toEmail, token string) error {
 	return nil
 }
 
-type fakeQueue struct{}
-
-func (fakeQueue) EnqueueEmbeddingTask(profileID uint) error  { return nil }
-func (fakeQueue) EnqueueDeletionTask(profileID uint64) error { return nil }
-
 type fakeGemini struct{}
 
 func (fakeGemini) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {
@@ -57,155 +57,57 @@ func (fakeGemini) GenerateChatResponse(ctx context.Context, systemPrompt string,
 	return "Synthetic answer based on context", nil
 }
 
-type fakeVector struct{}
-
-func (fakeVector) SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit int) ([]ai.SearchResult, error) {
-	return []ai.SearchResult{
-		{
-			ProfileID: 1,
-			Score:     0.95,
-			Payload: map[string]any{
-				"full_name":         "Test Friend",
-				"relationship_type": "Friend",
-				"music_preference":  "Rock",
-				"favorite_movie":    "Inception",
-				"food_restrictions": []any{map[string]any{"restriction": "None"}},
-				"top_songs":         []any{map[string]any{"name": "Song A", "artist": "Artist A"}},
-				"associated_song":   map[string]any{"name": "Song B", "artist": "Artist B"},
-				"created_at":        "ignored",
-				"updated_at":        "ignored",
-				"id":                1,
-				"user_id":           userID,
-				"profile_id":        1,
-			},
-		},
-	}, nil
-}
-
 func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
+	ctx := context.Background()
 
-	dsn := fmt.Sprintf("file:%s?mode=memory&cache=shared&_fk=1", strings.ReplaceAll(t.Name(), "/", "_"))
-	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	pgContainer, err := postgres.Run(ctx,
+		"pgvector/pgvector:pg16",
+		postgres.WithDatabase("nexia"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("secret"),
+		postgres.BasicWaitStrategies(),
+	)
 	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
+		t.Fatalf("run postgres container: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = pgContainer.Terminate(ctx)
+	})
+
+	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		t.Fatalf("get db connection string: %v", err)
 	}
 
-	if err := db.Exec("PRAGMA foreign_keys = ON").Error; err != nil {
-		t.Fatalf("enable foreign keys: %v", err)
+	redisContainer, err := redis.Run(ctx, "redis:7")
+	if err != nil {
+		t.Fatalf("run redis container: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = redisContainer.Terminate(ctx)
+	})
+	redisURL, err := redisContainer.ConnectionString(ctx)
+	if err != nil {
+		t.Fatalf("get redis connection string: %v", err)
 	}
 
-	for _, stmt := range []string{
-		`CREATE TABLE users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			email TEXT NOT NULL UNIQUE,
-			email_verified NUMERIC NOT NULL DEFAULT 0,
-			password TEXT NOT NULL,
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE password_reset_tokens (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_id INTEGER NOT NULL,
-			token TEXT NOT NULL UNIQUE,
-			expires_at DATETIME NOT NULL,
-			used NUMERIC NOT NULL DEFAULT 0,
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-		)`,
-		`CREATE INDEX idx_password_reset_tokens_token ON password_reset_tokens(token)`,
-		`CREATE INDEX idx_password_reset_tokens_user_id ON password_reset_tokens(user_id)`,
-		`CREATE TABLE email_verification_tokens (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_id INTEGER NOT NULL,
-			token TEXT NOT NULL UNIQUE,
-			expires_at DATETIME NOT NULL,
-			used NUMERIC NOT NULL DEFAULT 0,
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-		)`,
-		`CREATE INDEX idx_email_verification_tokens_token ON email_verification_tokens(token)`,
-		`CREATE INDEX idx_email_verification_tokens_user_id ON email_verification_tokens(user_id)`,
-		`CREATE TABLE profiles (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_id INTEGER NOT NULL,
-			full_name TEXT NOT NULL,
-			bio TEXT,
-			profession TEXT,
-			long_term_goals TEXT,
-			relationship_type TEXT NOT NULL,
-			birthday DATE,
-			zodiac_sign TEXT,
-			music_preference TEXT,
-			favorite_movie TEXT,
-			favorite_book TEXT,
-			favorite_memory TEXT,
-			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
-		)`,
-		`CREATE INDEX idx_profiles_user_id ON profiles(user_id)`,
-		`CREATE INDEX idx_profiles_user_relationship ON profiles(user_id, relationship_type)`,
-		`CREATE TABLE tags (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			profile_id INTEGER NOT NULL,
-			tag TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-		`CREATE TABLE political_views (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			profile_id INTEGER NOT NULL,
-			view TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-		`CREATE TABLE food_restrictions (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			profile_id INTEGER NOT NULL,
-			restriction TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-		`CREATE TABLE movie_genres (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			profile_id INTEGER NOT NULL,
-			genre TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-		`CREATE TABLE book_genres (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			profile_id INTEGER NOT NULL,
-			genre TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-		`CREATE TABLE hangout_places (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			profile_id INTEGER NOT NULL,
-			place TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-		`CREATE TABLE quotes (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			profile_id INTEGER NOT NULL,
-			quote TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-		`CREATE TABLE top_songs (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			profile_id INTEGER NOT NULL,
-			name TEXT,
-			artist TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-		`CREATE TABLE associated_songs (
-			profile_id INTEGER PRIMARY KEY,
-			name TEXT,
-			artist TEXT,
-			FOREIGN KEY(profile_id) REFERENCES profiles(id) ON DELETE CASCADE
-		)`,
-	} {
-		if err := db.Exec(stmt).Error; err != nil {
-			t.Fatalf("create sqlite schema: %v", err)
-		}
+	db, err := gorm.Open(gormPostgres.Open(connStr), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open postgres: %v", err)
+	}
+
+	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector;").Error; err != nil {
+		t.Fatalf("create vector extension: %v", err)
+	}
+
+	migrator, err := migrate.New("file://../../migrations", connStr)
+	if err != nil {
+		t.Fatalf("create migrator: %v", err)
+	}
+	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
+		t.Fatalf("run migrations: %v", err)
 	}
 
 	userRepository := repositories.NewUserRepository(db)
@@ -221,14 +123,22 @@ func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 			JWTExpiryMinutes: 30,
 			CORSOrigins:      []string{"http://localhost:3000"},
 		},
+		AI: config.AIConfig{
+			RedisURL: redisURL, // Enable Asynq and pass in the testcontainer URL
+		},
 	}
 
 	authService := services.NewAuthService(userRepository, resetTokenRepo, verifyTokenRepo, emailSender, cfg, zap.NewNop())
-	profileService := services.NewProfileService(profileRepository, fakeQueue{}, zap.NewNop())
+
+	// Real embedded queue pointing to Redis
+	qClient := queue.NewQueueClient(redisURL, zap.NewNop())
+	profileService := services.NewProfileService(profileRepository, qClient, zap.NewNop())
 
 	var chatService *services.ChatService
 	if enableAI {
-		chatService = services.NewChatService(fakeGemini{}, fakeVector{})
+		// Real pgvector client instead of fakeVector
+		pgClient := ai.NewPgVectorClient(db, zap.NewNop())
+		chatService = services.NewChatService(fakeGemini{}, pgClient)
 	} else {
 		chatService = services.NewChatService(nil, nil)
 	}

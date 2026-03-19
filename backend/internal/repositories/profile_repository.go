@@ -48,7 +48,7 @@ func (r *ProfileRepository) FindAll(page, limit int, search string, relationship
 
 	query := r.DB.Model(&models.Profile{}).Where("user_id = ?", userID)
 	if search != "" {
-		query = query.Where("full_name LIKE ?", "%"+search+"%")
+		query = query.Where("LOWER(full_name) LIKE LOWER(?)", "%"+search+"%")
 	}
 	if relationshipType != "" {
 		query = query.Where("relationship_type = ?", relationshipType)

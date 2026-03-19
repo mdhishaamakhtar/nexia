@@ -8,12 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"nexia-backend/internal/ai"
 	"nexia-backend/internal/models"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -128,62 +126,6 @@ func TestNewQueueClient(t *testing.T) {
 	}
 	if client.client != fake {
 		t.Fatal("expected injected asynq client")
-	}
-}
-
-func TestNewTaskHandler(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open sqlite: %v", err)
-	}
-	for _, stmt := range []string{
-		`CREATE TABLE profiles (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_id INTEGER NOT NULL,
-			full_name TEXT NOT NULL,
-			bio TEXT,
-			profession TEXT,
-			long_term_goals TEXT,
-			relationship_type TEXT NOT NULL,
-			birthday DATE,
-			zodiac_sign TEXT,
-			music_preference TEXT,
-			favorite_movie TEXT,
-			favorite_book TEXT,
-			favorite_memory TEXT,
-			created_at DATETIME,
-			updated_at DATETIME
-		)`,
-		`CREATE TABLE tags (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER, tag TEXT)`,
-		`CREATE TABLE political_views (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER, view TEXT)`,
-		`CREATE TABLE food_restrictions (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER, restriction TEXT)`,
-		`CREATE TABLE movie_genres (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER, genre TEXT)`,
-		`CREATE TABLE book_genres (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER, genre TEXT)`,
-		`CREATE TABLE hangout_places (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER, place TEXT)`,
-		`CREATE TABLE quotes (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER, quote TEXT)`,
-		`CREATE TABLE top_songs (id INTEGER PRIMARY KEY AUTOINCREMENT, profile_id INTEGER, name TEXT, artist TEXT)`,
-		`CREATE TABLE associated_songs (profile_id INTEGER PRIMARY KEY, name TEXT, artist TEXT)`,
-	} {
-		if err := db.Exec(stmt).Error; err != nil {
-			t.Fatalf("create schema: %v", err)
-		}
-	}
-
-	profile := &models.Profile{ID: 3, UserID: 4, FullName: "Loader"}
-	if err := db.Create(profile).Error; err != nil {
-		t.Fatalf("create profile: %v", err)
-	}
-
-	handler := NewTaskHandler(db, &ai.GeminiClient{}, &ai.PgVectorClient{}, zap.NewNop())
-	if handler == nil || handler.gemini == nil || handler.pgvector == nil || handler.loadProfile == nil {
-		t.Fatalf("expected initialized task handler, got %+v", handler)
-	}
-	loaded, err := handler.loadProfile(context.Background(), uint(profile.ID))
-	if err != nil {
-		t.Fatalf("loadProfile returned error: %v", err)
-	}
-	if loaded.ID != profile.ID || loaded.FullName != "Loader" {
-		t.Fatalf("unexpected loaded profile %+v", loaded)
 	}
 }
 
