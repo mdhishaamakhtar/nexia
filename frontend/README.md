@@ -57,12 +57,14 @@ This will automatically proxy `/api` calls to the internal backend.
 1. **Install Dependencies**
 
    ```bash
+   cd frontend
    npm install
    ```
 
 2. **Launch Dev Server**
 
    ```bash
+   cd frontend
    npm run dev
    ```
 

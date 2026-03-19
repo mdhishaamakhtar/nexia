@@ -76,6 +76,7 @@ docker-compose up --build
 4. **Run Server**:
 
    ```bash
+   cd backend
    go run cmd/server/main.go
    ```
 
@@ -133,11 +134,12 @@ Configuration loads from `config/local.yaml` by default, switches file with `APP
 ### 📖 API Documentation
 
 Swagger UI is available locally at:
-	`http://localhost:8080/api/v1/swagger/index.html`
+  `http://localhost:8080/api/v1/swagger/index.html`
 
 To regenerate or update the Swagger documentation, run:
 
 ```bash
+cd backend
 go tool swag init -g cmd/server/main.go -o docs/swagger --parseDependency --parseInternal
 ```
 
@@ -148,6 +150,7 @@ go tool swag init -g cmd/server/main.go -o docs/swagger --parseDependency --pars
 ### Format Code (`go fmt`)
 
 ```bash
+cd backend
 go fmt ./...
 ```
 
@@ -168,19 +171,22 @@ This split is deliberate:
 ### Run Tests
 
 ```bash
+cd backend
 go test ./...
 ```
 
 ### Fetch Coverage
 
 ```bash
+cd backend
 go tool cover -func=coverage.packages.out
 ```
 
 To refresh `coverage.packages.out`, run:
 
 ```bash
-go test ./internal/... ./pkg/... -coverprofile=coverage.packages.out
+cd backend
+go test -coverpkg=./internal/...,./pkg/... ./... -coverprofile=coverage.packages.out
 ```
 
 ---
