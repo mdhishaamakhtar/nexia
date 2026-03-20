@@ -19,6 +19,7 @@ import (
 const resetTokenExpiry = 15 * time.Minute
 const verifyTokenExpiry = 24 * time.Hour
 
+// AuthService handles registration, login, email verification, and password reset.
 type AuthService struct {
 	Repo       UserRepository
 	ResetRepo  PasswordResetRepository
@@ -28,6 +29,7 @@ type AuthService struct {
 	Logger     *zap.Logger
 }
 
+// UserRepository is the data-access interface for User records.
 type UserRepository interface {
 	Create(user *models.User) error
 	FindByEmail(email string) (*models.User, error)
@@ -36,23 +38,28 @@ type UserRepository interface {
 	UpdateEmailVerified(userID uint64) error
 }
 
+// PasswordResetRepository manages single-use password reset tokens (15-minute expiry).
 type PasswordResetRepository interface {
 	Create(token *models.PasswordResetToken) error
 	FindByToken(token string) (*models.PasswordResetToken, error)
 	MarkAsUsed(id uint64) error
 }
 
+// EmailVerificationRepository manages single-use email verification tokens (24-hour expiry).
 type EmailVerificationRepository interface {
 	Create(token *models.EmailVerificationToken) error
 	FindByToken(token string) (*models.EmailVerificationToken, error)
 	MarkAsUsed(id uint64) error
 }
 
+// EmailSender delivers transactional emails. A no-op implementation is used when
+// the Resend API key is not configured.
 type EmailSender interface {
 	SendVerificationEmail(toEmail, token string) error
 	SendPasswordResetEmail(toEmail, token string) error
 }
 
+// NewAuthService constructs an AuthService. Panics if logger is nil.
 func NewAuthService(repo UserRepository, resetRepo PasswordResetRepository, verifyRepo EmailVerificationRepository, emailSvc EmailSender, cfg *config.Config, logger *zap.Logger) *AuthService {
 	if logger == nil {
 		panic("auth service requires a logger")

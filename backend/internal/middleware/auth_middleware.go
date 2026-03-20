@@ -5,12 +5,22 @@ import (
 	"strings"
 
 	"nexia-backend/internal/config"
+	"nexia-backend/internal/models"
 	"nexia-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
+// UserLookup is the minimal interface AuthMiddleware needs to verify a user exists in the database.
+type UserLookup interface {
+	FindByID(id uint64) (*models.User, error)
+}
+
+// AuthMiddleware validates the JWT from either the Authorization: Bearer header or
+// the nexia_token cookie, then verifies the user still exists in the database.
+// On success it stores the userID in the Gin context and records the auth method
+// (bearer or cookie) for downstream CSRF enforcement.
+func AuthMiddleware(cfg *config.Config, users UserLookup) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		tokenString := ""
@@ -38,6 +48,12 @@ func AuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		claims, err := utils.ValidateToken(tokenString, cfg)
 		if err != nil {
 			utils.RespondWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "Invalid or expired token")
+			c.Abort()
+			return
+		}
+
+		if _, err := users.FindByID(claims.UserID); err != nil {
+			utils.RespondWithError(c, http.StatusUnauthorized, "UNAUTHORIZED", "User not found")
 			c.Abort()
 			return
 		}

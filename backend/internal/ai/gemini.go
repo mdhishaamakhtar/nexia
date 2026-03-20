@@ -21,6 +21,7 @@ var newGenAIClient = func(ctx context.Context, cfg *genai.ClientConfig) (*genai.
 	return genai.NewClient(ctx, cfg)
 }
 
+// NewGeminiClient initialises a GeminiClient using the google.golang.org/genai SDK.
 func NewGeminiClient(apiKey string) (*GeminiClient, error) {
 	ctx := context.Background()
 	client, err := newGenAIClient(ctx, &genai.ClientConfig{
@@ -68,6 +69,7 @@ func (c *GeminiClient) GenerateChatResponse(ctx context.Context, systemPrompt st
 	return res.Candidates[0].Content.Parts[0].Text, nil
 }
 
+// Close is a no-op. The google.golang.org/genai client manages its own connection
+// lifecycle and does not expose a Close method.
 func (c *GeminiClient) Close() {
-	// google.golang.org/genai client does not require explicit close
 }

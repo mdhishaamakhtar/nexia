@@ -23,6 +23,9 @@ type visitorLimiter struct {
 	lastSeen time.Time
 }
 
+// NewAuthRateLimit returns a per-IP rate-limit middleware capped at 10 requests
+// per 10 seconds. Excess requests are slowed via token-bucket (not rejected),
+// and the delay is logged as a warning. Intended for auth endpoints only.
 func NewAuthRateLimit(logger *zap.Logger) gin.HandlerFunc {
 	return newAuthRateLimit(logger, 10, 10*time.Second)
 }

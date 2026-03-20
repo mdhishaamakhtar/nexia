@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"nexia-backend/internal/ai"
 	"nexia-backend/internal/config"
 	"nexia-backend/internal/controllers"
 	"nexia-backend/internal/middleware"
@@ -136,8 +135,8 @@ func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 
 	var chatService *services.ChatService
 	if enableAI {
-		// Real pgvector client instead of fakeVector
-		pgClient := ai.NewPgVectorClient(db, zap.NewNop())
+		// Real embedding repository instead of fakeVector
+		pgClient := repositories.NewEmbeddingRepository(db, zap.NewNop())
 		chatService = services.NewChatService(fakeGemini{}, pgClient)
 	} else {
 		chatService = services.NewChatService(nil, nil)
@@ -148,10 +147,54 @@ func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 	chatController := controllers.NewChatController(chatService)
 
 	return &integrationKit{
-		router: routes.SetupRouter(profileController, authController, chatController, cfg, routes.WithLogger(zap.NewNop()), routes.WithDB(db)),
+		router: routes.SetupRouter(profileController, authController, chatController, cfg, routes.WithLogger(zap.NewNop()), routes.WithDB(db), routes.WithUserLookup(userRepository)),
 		db:     db,
 		users:  userRepository,
 	}
+}
+
+// buildDB spins up a postgres container with pgvector, runs migrations, and
+// returns a connected *gorm.DB. Used by tests that need a real DB but not
+// the full HTTP router.
+func buildDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	ctx := context.Background()
+
+	pgContainer, err := postgres.Run(ctx,
+		"pgvector/pgvector:pg16",
+		postgres.WithDatabase("nexia"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("secret"),
+		postgres.BasicWaitStrategies(),
+	)
+	if err != nil {
+		t.Fatalf("run postgres container: %v", err)
+	}
+	t.Cleanup(func() { _ = pgContainer.Terminate(ctx) })
+
+	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		t.Fatalf("get db connection string: %v", err)
+	}
+
+	db, err := gorm.Open(gormPostgres.Open(connStr), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("open postgres: %v", err)
+	}
+
+	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector;").Error; err != nil {
+		t.Fatalf("create vector extension: %v", err)
+	}
+
+	migrator, err := migrate.New("file://../../migrations", connStr)
+	if err != nil {
+		t.Fatalf("create migrator: %v", err)
+	}
+	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
+		t.Fatalf("run migrations: %v", err)
+	}
+
+	return db
 }
 
 func (k *integrationKit) verifyUserEmail(t *testing.T, email string) {

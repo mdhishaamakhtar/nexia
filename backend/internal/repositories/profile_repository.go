@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"context"
+
 	"nexia-backend/internal/models"
 
 	"gorm.io/gorm"
@@ -19,17 +21,20 @@ var profileAssociations = []string{
 	"AssociatedSong",
 }
 
+// ProfileRepository is the GORM-backed implementation of the ProfileRepository interface
+// defined in the services package.
 type ProfileRepository struct {
 	DB *gorm.DB
 }
 
+// NewProfileRepository constructs a ProfileRepository.
 func NewProfileRepository(db *gorm.DB) *ProfileRepository {
 	return &ProfileRepository{DB: db}
 }
 
 func (r *ProfileRepository) Create(profile *models.Profile) error {
-	// GORM automatically handles inserting the parent and then the children
-	// as long as the foreign keys are correctly defined in the models.
+	// FullSaveAssociations instructs GORM to INSERT the parent and all child
+	// association slices in a single call, respecting the foreign key constraints.
 	return r.DB.Session(&gorm.Session{FullSaveAssociations: true}).Create(profile).Error
 }
 
@@ -145,12 +150,24 @@ func extractIDs(n int, id func(int) uint64) []uint64 {
 	return result
 }
 
+// LoadForEmbedding loads a fully-preloaded profile by ID without a userID filter.
+// Used by the background embedding worker which only has the profileID from the queue task.
+func (r *ProfileRepository) LoadForEmbedding(ctx context.Context, profileID uint) (*models.Profile, error) {
+	var profile models.Profile
+	if err := WithProfilePreloads(r.DB).WithContext(ctx).First(&profile, profileID).Error; err != nil {
+		return nil, err
+	}
+	return &profile, nil
+}
+
 func (r *ProfileRepository) Delete(id uint64, userID uint64) error {
 	// Since the database has ON DELETE CASCADE (see migrations),
 	// we only need to delete the parent record.
 	return r.DB.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Profile{}).Error
 }
 
+// WithProfilePreloads applies Preload clauses for every association in profileAssociations,
+// ensuring callers always receive a fully-hydrated profile.
 func WithProfilePreloads(query *gorm.DB) *gorm.DB {
 	for _, preload := range profileAssociations {
 		query = query.Preload(preload)

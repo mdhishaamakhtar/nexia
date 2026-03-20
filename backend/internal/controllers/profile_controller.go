@@ -12,27 +12,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// ProfileController handles CRUD for profile resources.
 type ProfileController struct {
 	Service *services.ProfileService
 }
 
+// NewProfileController constructs a ProfileController.
 func NewProfileController(service *services.ProfileService) *ProfileController {
 	return &ProfileController{Service: service}
 }
 
-// CreateProfile godoc
-// @Summary Create a new profile
-// @Description Create a new profile with all child attributes
-// @Tags profiles
-// @Accept json
-// @Produce json
-// @Param profile body models.Profile true "Profile Data"
-// @Security BearerAuth
-// @Success 201 {object} map[string]uint64
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /profiles [post]
+// CreateProfile creates a new profile for the authenticated user.
+// The response body contains only the new profile's ID.
+//
+// @Summary      Create a profile
+// @Tags         profiles
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        profile  body      models.Profile       true  "Profile payload"
+// @Success      201      {object}  map[string]uint64    "Created profile ID"
+// @Failure      400      {object}  utils.ErrorResponse  "Validation error (e.g. >3 top songs)"
+// @Failure      401      {object}  utils.ErrorResponse
+// @Failure      500      {object}  utils.ErrorResponse
+// @Router       /profiles [post]
 func (ctrl *ProfileController) CreateProfile(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {
@@ -54,19 +57,19 @@ func (ctrl *ProfileController) CreateProfile(c *gin.Context) {
 	utils.RespondWithSuccess(c, http.StatusCreated, gin.H{"id": profile.ID})
 }
 
-// GetProfile godoc
-// @Summary Get a profile by ID
-// @Description Get full profile details including all child lists
-// @Tags profiles
-// @Accept json
-// @Produce json
-// @Param id path int true "Profile ID"
-// @Security BearerAuth
-// @Success 200 {object} models.Profile
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /profiles/{id} [get]
+// GetProfile returns a full profile including all child associations.
+// Returns 404 if the profile doesn't exist or belongs to a different user.
+//
+// @Summary      Get a profile
+// @Tags         profiles
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int            true  "Profile ID"
+// @Success      200  {object}  models.Profile
+// @Failure      401  {object}  utils.ErrorResponse
+// @Failure      404  {object}  utils.ErrorResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Router       /profiles/{id} [get]
 func (ctrl *ProfileController) GetProfile(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {
@@ -90,21 +93,22 @@ func (ctrl *ProfileController) GetProfile(c *gin.Context) {
 	utils.RespondWithSuccess(c, http.StatusOK, profile)
 }
 
-// ListProfiles godoc
-// @Summary List profiles
-// @Description List profiles with pagination and filtering
-// @Tags profiles
-// @Accept json
-// @Produce json
-// @Param page query int false "Page number"
-// @Param limit query int false "Page limit"
-// @Param search query string false "Search by name"
-// @Param relationship_type query string false "Filter by relationship type"
-// @Security BearerAuth
-// @Success 200 {object} map[string]interface{}
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /profiles [get]
+// ListProfiles returns a paginated list of profiles for the authenticated user.
+// Page defaults to 1, limit defaults to 10 (max 100). Both search and
+// relationship_type filters are optional and can be combined.
+//
+// @Summary      List profiles
+// @Tags         profiles
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page               query  int     false  "Page number (default 1)"
+// @Param        limit              query  int     false  "Page size (default 10, max 100)"
+// @Param        search             query  string  false  "Case-insensitive name substring filter"
+// @Param        relationship_type  query  string  false  "Exact relationship type filter"
+// @Success      200  {object}  map[string]interface{}  "data, total, page, limit"
+// @Failure      401  {object}  utils.ErrorResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Router       /profiles [get]
 func (ctrl *ProfileController) ListProfiles(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {
@@ -131,20 +135,22 @@ func (ctrl *ProfileController) ListProfiles(c *gin.Context) {
 	})
 }
 
-// UpdateProfile godoc
-// @Summary Update a profile
-// @Description Full overwrite update of a profile
-// @Tags profiles
-// @Accept json
-// @Produce json
-// @Param id path int true "Profile ID"
-// @Param profile body models.Profile true "Profile Data"
-// @Security BearerAuth
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /profiles/{id} [put]
+// UpdateProfile fully overwrites a profile. Child associations not present in the
+// payload are deleted. Omitted child slices are treated as empty.
+//
+// @Summary      Update a profile
+// @Tags         profiles
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id       path      int              true  "Profile ID"
+// @Param        profile  body      models.Profile   true  "Full profile payload"
+// @Success      200      {object}  map[string]string
+// @Failure      400      {object}  utils.ErrorResponse  "Validation error"
+// @Failure      401      {object}  utils.ErrorResponse
+// @Failure      404      {object}  utils.ErrorResponse
+// @Failure      500      {object}  utils.ErrorResponse
+// @Router       /profiles/{id} [put]
 func (ctrl *ProfileController) UpdateProfile(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {
@@ -173,19 +179,20 @@ func (ctrl *ProfileController) UpdateProfile(c *gin.Context) {
 	utils.RespondWithSuccess(c, http.StatusOK, gin.H{"message": "Profile updated successfully"})
 }
 
-// DeleteProfile godoc
-// @Summary Delete a profile
-// @Description Delete a profile and all its child entities
-// @Tags profiles
-// @Accept json
-// @Produce json
-// @Param id path int true "Profile ID"
-// @Security BearerAuth
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /profiles/{id} [delete]
+// DeleteProfile deletes a profile and all its child records (via ON DELETE CASCADE).
+// The vector embedding is also removed asynchronously via the queue.
+//
+// @Summary      Delete a profile
+// @Tags         profiles
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Profile ID"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  utils.ErrorResponse  "Invalid ID"
+// @Failure      401  {object}  utils.ErrorResponse
+// @Failure      404  {object}  utils.ErrorResponse
+// @Failure      500  {object}  utils.ErrorResponse
+// @Router       /profiles/{id} [delete]
 func (ctrl *ProfileController) DeleteProfile(c *gin.Context) {
 	userID, err := middleware.GetUserID(c)
 	if err != nil {

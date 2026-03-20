@@ -4,32 +4,42 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"nexia-backend/internal/ai"
 	"strings"
 	"time"
+
+	"nexia-backend/internal/repositories"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
+// ChatService implements RAG-powered chat over the user's profile data.
+// Both Gemini and PgVector must be non-nil for Chat to work; if either is nil the
+// service returns ErrAIUnavailable.
 type ChatService struct {
 	Gemini   GeminiClient
 	PgVector VectorSearchClient
 }
 
+// GeminiClient is the interface for Gemini AI operations used by ChatService and EmbeddingService.
 type GeminiClient interface {
 	GenerateEmbedding(ctx context.Context, text string) ([]float32, error)
 	GenerateChatResponse(ctx context.Context, systemPrompt string, userMessage string) (string, error)
 }
 
+// VectorSearchClient performs cosine-similarity searches against stored profile embeddings.
 type VectorSearchClient interface {
-	SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit int) ([]ai.SearchResult, error)
+	SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit int) ([]repositories.SearchResult, error)
 }
 
+// NewChatService constructs a ChatService. Pass nil for either dependency to get a
+// service that always returns ErrAIUnavailable (used when AI is not configured).
 func NewChatService(gemini GeminiClient, pgvector VectorSearchClient) *ChatService {
 	return &ChatService{Gemini: gemini, PgVector: pgvector}
 }
 
+// Chat answers a natural-language question about the user's friends using RAG:
+// embed the query → vector search → inject top-5 profile payloads → generate response.
 func (s *ChatService) Chat(ctx context.Context, userID uint64, message string) (string, error) {
 	if s.Gemini == nil || s.PgVector == nil {
 		return "", ErrAIUnavailable

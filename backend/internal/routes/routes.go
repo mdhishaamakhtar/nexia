@@ -19,8 +19,9 @@ import (
 )
 
 type options struct {
-	logger *zap.Logger
-	db     *gorm.DB
+	logger     *zap.Logger
+	db         *gorm.DB
+	userLookup middleware.UserLookup
 }
 
 type Option func(*options)
@@ -34,6 +35,12 @@ func WithLogger(logger *zap.Logger) Option {
 func WithDB(db *gorm.DB) Option {
 	return func(o *options) {
 		o.db = db
+	}
+}
+
+func WithUserLookup(ul middleware.UserLookup) Option {
+	return func(o *options) {
+		o.userLookup = ul
 	}
 }
 
@@ -93,17 +100,17 @@ func SetupRouter(profileController *controllers.ProfileController, authControlle
 		v1.POST("/auth/signup", authRateLimit, authController.Signup)
 		v1.POST("/auth/login", authRateLimit, authController.Login)
 		v1.GET("/auth/verify-email", authController.VerifyEmail)
-		v1.GET("/auth/me", middleware.AuthMiddleware(cfg), authController.Me)
-		v1.POST("/auth/logout", middleware.AuthMiddleware(cfg), middleware.CSRFMiddleware(), authController.Logout)
+		v1.GET("/auth/me", middleware.AuthMiddleware(cfg, options.userLookup), authController.Me)
+		v1.POST("/auth/logout", middleware.AuthMiddleware(cfg, options.userLookup), middleware.CSRFMiddleware(), authController.Logout)
 		v1.POST("/auth/forgot-password", authRateLimit, authController.ForgotPassword)
 		v1.POST("/auth/reset-password", authRateLimit, authController.ResetPassword)
 
 		// Chat (Protected)
-		v1.POST("/chat", middleware.AuthMiddleware(cfg), middleware.CSRFMiddleware(), chatController.Chat)
+		v1.POST("/chat", middleware.AuthMiddleware(cfg, options.userLookup), middleware.CSRFMiddleware(), chatController.Chat)
 
 		// Profiles (Protected)
 		profiles := v1.Group("/profiles")
-		profiles.Use(middleware.AuthMiddleware(cfg))
+		profiles.Use(middleware.AuthMiddleware(cfg, options.userLookup))
 		{
 			profiles.POST("", middleware.CSRFMiddleware(), profileController.CreateProfile)
 			profiles.GET("", profileController.ListProfiles)

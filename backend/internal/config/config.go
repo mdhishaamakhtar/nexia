@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config is the top-level application configuration loaded from a YAML file
+// and overridable via NEXIA_-prefixed environment variables.
 type Config struct {
 	Server ServerConfig `mapstructure:"server"`
 	DB     DBConfig     `mapstructure:"db"`
@@ -47,19 +49,19 @@ type DBConfig struct {
 	ConnMaxLifetimeMinutes int    `mapstructure:"conn_max_lifetime_minutes"`
 }
 
+// LoadConfig reads the YAML config file matching the APP_ENV environment variable
+// (defaults to "local") and applies NEXIA_-prefixed env var overrides.
+// For example, NEXIA_DB_PASSWORD overrides db.password.
 func LoadConfig() (*Config, error) {
-	viper.SetConfigName("local") // Default to local
+	viper.SetConfigName("local")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("config")
 
-	// Check for environment variable to switch config
 	viper.AutomaticEnv()
 	if env := viper.GetString("APP_ENV"); env != "" {
 		viper.SetConfigName(env)
 	}
 
-	// Environment variable override
-	// e.g. NEXIA_DB_PASSWORD will override db.password
 	viper.SetEnvPrefix("nexia")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetDefault("db.run_migrations", true)

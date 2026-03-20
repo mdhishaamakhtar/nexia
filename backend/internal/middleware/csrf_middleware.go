@@ -17,6 +17,9 @@ const (
 	authMethodBearer = "bearer"
 )
 
+// CSRFMiddleware enforces double-submit CSRF protection for state-mutating requests
+// (POST, PUT, PATCH, DELETE) made via cookie authentication. Bearer-authenticated
+// requests are exempt because the cookie is not involved.
 func CSRFMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		switch c.Request.Method {

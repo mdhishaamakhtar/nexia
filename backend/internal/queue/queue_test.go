@@ -4,16 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"testing"
-	"time"
 
-	"nexia-backend/internal/models"
+	"nexia-backend/internal/services"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
+
+// --- Producer fakes ---
 
 type fakeEnqueuer struct {
 	tasks  []*asynq.Task
@@ -34,37 +33,26 @@ func (f *fakeEnqueuer) Close() error {
 	return nil
 }
 
-type fakeEmbeddingGenerator struct {
-	text string
-	err  error
-}
+// --- Handler fake ---
 
-func (f *fakeEmbeddingGenerator) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {
-	f.text = text
-	if f.err != nil {
-		return nil, f.err
-	}
-	return []float32{0.1, 0.2}, nil
-}
-
-type fakeVectorStore struct {
-	profile   *models.Profile
-	embedding []float32
-	upsertErr error
-	deleteID  uint64
+type fakeEmbeddingRunner struct {
+	embedErr  error
 	deleteErr error
+	embedded  []uint
+	deleted   []uint64
 }
 
-func (f *fakeVectorStore) UpsertProfile(ctx context.Context, profile *models.Profile, embedding []float32) error {
-	f.profile = profile
-	f.embedding = embedding
-	return f.upsertErr
+func (f *fakeEmbeddingRunner) EmbedProfile(_ context.Context, profileID uint) error {
+	f.embedded = append(f.embedded, profileID)
+	return f.embedErr
 }
 
-func (f *fakeVectorStore) DeleteProfile(ctx context.Context, profileID uint64) error {
-	f.deleteID = profileID
+func (f *fakeEmbeddingRunner) DeleteEmbedding(_ context.Context, profileID uint64) error {
+	f.deleted = append(f.deleted, profileID)
 	return f.deleteErr
 }
+
+// --- Producer tests ---
 
 func TestParseRedisOpt(t *testing.T) {
 	if got := ParseRedisOpt("redis://localhost:6379/0"); got == nil {
@@ -129,155 +117,75 @@ func TestNewQueueClient(t *testing.T) {
 	}
 }
 
-func TestTaskHandlerEmbeddingTask(t *testing.T) {
-	birthday := models.Date(time.Date(2000, time.March, 21, 0, 0, 0, 0, time.UTC))
-	profile := &models.Profile{
-		ID:               7,
-		UserID:           9,
-		FullName:         "Alice Example",
-		Bio:              "A close friend",
-		Profession:       "Engineer",
-		RelationshipType: "Friend",
-		Birthday:         &birthday,
-		LongTermGoals:    "Build a startup",
-		MusicPreference:  "Rock",
-		FavoriteMovie:    "Inception",
-		FavoriteBook:     "Dune",
-		FavoriteMemory:   "Road trip",
-		Tags:             []models.Tag{{Tag: "travel"}},
-		PoliticalViews:   []models.PoliticalView{{View: "Moderate"}},
-		FoodRestrictions: []models.FoodRestriction{{Restriction: "None"}},
-		MovieGenres:      []models.MovieGenre{{Genre: "Sci-Fi"}},
-		BookGenres:       []models.BookGenre{{Genre: "Fantasy"}},
-		HangoutPlaces:    []models.HangoutPlace{{Place: "Cafe"}},
-		Quotes:           []models.Quote{{Quote: "Keep going"}},
-		TopSongs:         []models.TopSong{{Name: "Song A", Artist: "Artist A"}},
-		AssociatedSong:   &models.AssociatedSong{Name: "Song B", Artist: "Artist B"},
-	}
+// --- Handler tests (dispatch only) ---
 
-	gemini := &fakeEmbeddingGenerator{}
-	vector := &fakeVectorStore{}
-	handler := &TaskHandler{
-		gemini:   gemini,
-		pgvector: vector,
-		logger:   zap.NewNop(),
-		loadProfile: func(ctx context.Context, profileID uint) (*models.Profile, error) {
-			return profile, nil
-		},
-	}
+func TestTaskHandlerEmbeddingTask(t *testing.T) {
+	runner := &fakeEmbeddingRunner{}
+	handler := &TaskHandler{svc: runner, logger: zap.NewNop()}
 
 	payload, _ := json.Marshal(EmbeddingPayload{ProfileID: 7})
 	if err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload)); err != nil {
-		t.Fatalf("HandleEmbeddingTask returned error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
-	if vector.profile != profile || len(vector.embedding) != 2 {
-		t.Fatalf("unexpected vector upsert args profile=%+v embedding=%+v", vector.profile, vector.embedding)
-	}
-	for _, want := range []string{
-		"Profile of Alice Example",
-		"Political Views: Moderate",
-		"Food Restrictions: None",
-		"Favorite Movie Genres: Sci-Fi",
-		"Favorite Book Genres: Fantasy",
-		"Favorite Hangout Places: Cafe",
-		"Associated Song: Song B by Artist B",
-	} {
-		if !strings.Contains(gemini.text, want) {
-			t.Fatalf("expected embedded text to contain %q, got %q", want, gemini.text)
-		}
+	if len(runner.embedded) != 1 || runner.embedded[0] != 7 {
+		t.Fatalf("expected EmbedProfile(7), got %v", runner.embedded)
 	}
 }
 
 func TestTaskHandlerEmbeddingTaskErrors(t *testing.T) {
 	t.Run("invalid payload skips retry", func(t *testing.T) {
-		handler := &TaskHandler{logger: zap.NewNop()}
+		handler := &TaskHandler{svc: &fakeEmbeddingRunner{}, logger: zap.NewNop()}
 		err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, []byte("bad")))
 		if !errors.Is(err, asynq.SkipRetry) {
-			t.Fatalf("expected skip retry error, got %v", err)
+			t.Fatalf("expected SkipRetry, got %v", err)
 		}
 	})
 
-	t.Run("profile not found skips retry", func(t *testing.T) {
-		handler := &TaskHandler{
-			logger: zap.NewNop(),
-			loadProfile: func(ctx context.Context, profileID uint) (*models.Profile, error) {
-				return nil, gorm.ErrRecordNotFound
-			},
-		}
+	t.Run("ErrNotFound skips retry", func(t *testing.T) {
+		handler := &TaskHandler{svc: &fakeEmbeddingRunner{embedErr: services.ErrNotFound}, logger: zap.NewNop()}
 		payload, _ := json.Marshal(EmbeddingPayload{ProfileID: 1})
 		err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload))
 		if !errors.Is(err, asynq.SkipRetry) {
-			t.Fatalf("expected skip retry error, got %v", err)
+			t.Fatalf("expected SkipRetry on ErrNotFound, got %v", err)
 		}
 	})
 
-	t.Run("profile load failure", func(t *testing.T) {
-		handler := &TaskHandler{
-			logger: zap.NewNop(),
-			loadProfile: func(ctx context.Context, profileID uint) (*models.Profile, error) {
-				return nil, errors.New("db failed")
-			},
-		}
+	t.Run("other error propagated", func(t *testing.T) {
+		handler := &TaskHandler{svc: &fakeEmbeddingRunner{embedErr: errors.New("transient failure")}, logger: zap.NewNop()}
 		payload, _ := json.Marshal(EmbeddingPayload{ProfileID: 1})
 		if err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload)); err == nil {
-			t.Fatal("expected load error")
-		}
-	})
-
-	t.Run("gemini failure", func(t *testing.T) {
-		handler := &TaskHandler{
-			logger:   zap.NewNop(),
-			gemini:   &fakeEmbeddingGenerator{err: errors.New("embed failed")},
-			pgvector: &fakeVectorStore{},
-			loadProfile: func(ctx context.Context, profileID uint) (*models.Profile, error) {
-				return &models.Profile{ID: 1, UserID: 2, FullName: "A"}, nil
-			},
-		}
-		payload, _ := json.Marshal(EmbeddingPayload{ProfileID: 1})
-		if err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload)); err == nil {
-			t.Fatal("expected gemini error")
-		}
-	})
-
-	t.Run("vector upsert failure", func(t *testing.T) {
-		handler := &TaskHandler{
-			logger:   zap.NewNop(),
-			gemini:   &fakeEmbeddingGenerator{},
-			pgvector: &fakeVectorStore{upsertErr: errors.New("upsert failed")},
-			loadProfile: func(ctx context.Context, profileID uint) (*models.Profile, error) {
-				return &models.Profile{ID: 1, UserID: 2, FullName: "A"}, nil
-			},
-		}
-		payload, _ := json.Marshal(EmbeddingPayload{ProfileID: 1})
-		if err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload)); err == nil {
-			t.Fatal("expected upsert error")
+			t.Fatal("expected error to propagate")
 		}
 	})
 }
 
 func TestTaskHandlerDeletionTask(t *testing.T) {
-	vector := &fakeVectorStore{}
-	handler := &TaskHandler{pgvector: vector, logger: zap.NewNop()}
+	runner := &fakeEmbeddingRunner{}
+	handler := &TaskHandler{svc: runner, logger: zap.NewNop()}
 
 	payload, _ := json.Marshal(DeletionPayload{ProfileID: 22})
 	if err := handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, payload)); err != nil {
-		t.Fatalf("HandleDeletionTask returned error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
-	if vector.deleteID != 22 {
-		t.Fatalf("expected delete id 22 got %d", vector.deleteID)
+	if len(runner.deleted) != 1 || runner.deleted[0] != 22 {
+		t.Fatalf("expected DeleteEmbedding(22), got %v", runner.deleted)
 	}
 }
 
 func TestTaskHandlerDeletionTaskErrors(t *testing.T) {
-	handler := &TaskHandler{pgvector: &fakeVectorStore{deleteErr: errors.New("delete failed")}, logger: zap.NewNop()}
+	t.Run("invalid payload skips retry", func(t *testing.T) {
+		handler := &TaskHandler{svc: &fakeEmbeddingRunner{}, logger: zap.NewNop()}
+		err := handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, []byte("bad")))
+		if !errors.Is(err, asynq.SkipRetry) {
+			t.Fatalf("expected SkipRetry, got %v", err)
+		}
+	})
 
-	err := handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, []byte("bad")))
-	if !errors.Is(err, asynq.SkipRetry) {
-		t.Fatalf("expected skip retry for invalid payload, got %v", err)
-	}
-
-	payload, _ := json.Marshal(DeletionPayload{ProfileID: 4})
-	if err := handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, payload)); err == nil {
-		t.Fatal("expected deletion error")
-	}
+	t.Run("deletion error propagated", func(t *testing.T) {
+		handler := &TaskHandler{svc: &fakeEmbeddingRunner{deleteErr: errors.New("delete failed")}, logger: zap.NewNop()}
+		payload, _ := json.Marshal(DeletionPayload{ProfileID: 4})
+		if err := handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, payload)); err == nil {
+			t.Fatal("expected error to propagate")
+		}
+	})
 }
