@@ -4,7 +4,10 @@ import (
 	"time"
 )
 
+// RelationshipType classifies how the profile owner knows the person being described.
 type RelationshipType string
+
+// ZodiacSign is derived automatically from Birthday by applyDerivedZodiac — never set it directly.
 type ZodiacSign string
 
 const (
@@ -31,6 +34,10 @@ const (
 	ZodiacPisces      ZodiacSign = "Pisces"
 )
 
+// Profile is the core entity representing a person in the user's network.
+// All child associations (Tags, Songs, etc.) are eagerly loaded and stored
+// in separate tables with ON DELETE CASCADE so deleting a Profile cleans up
+// everything automatically.
 type Profile struct {
 	ID               uint64           `gorm:"primaryKey;autoIncrement" json:"id"`
 	UserID           uint64           `gorm:"not null;index" json:"user_id"`
@@ -48,7 +55,6 @@ type Profile struct {
 	CreatedAt        time.Time        `gorm:"not null;default:now()" json:"created_at"`
 	UpdatedAt        time.Time        `gorm:"not null;default:now()" json:"updated_at"`
 
-	// Child Associations
 	Tags             []Tag             `gorm:"foreignKey:ProfileID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"tags"`
 	PoliticalViews   []PoliticalView   `gorm:"foreignKey:ProfileID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"political_views"`
 	FoodRestrictions []FoodRestriction `gorm:"foreignKey:ProfileID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"food_restrictions"`
@@ -102,6 +108,7 @@ type Quote struct {
 	Quote     string `gorm:"type:text" json:"quote"`
 }
 
+// TopSong is limited to 3 per profile, enforced in the service layer.
 type TopSong struct {
 	ID        uint64 `gorm:"primaryKey;autoIncrement" json:"id"`
 	ProfileID uint64 `gorm:"not null;index" json:"profile_id"`
@@ -109,6 +116,8 @@ type TopSong struct {
 	Artist    string `gorm:"type:varchar(255)" json:"artist"`
 }
 
+// AssociatedSong is the one song that "defines" the person. It uses ProfileID as its primary
+// key (has-one, not has-many), so there is at most one row per profile.
 type AssociatedSong struct {
 	ProfileID uint64 `gorm:"primaryKey" json:"profile_id"`
 	Name      string `gorm:"type:varchar(255)" json:"name"`

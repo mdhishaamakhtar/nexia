@@ -154,20 +154,6 @@ cd backend
 go fmt ./...
 ```
 
-### Test Strategy
-
-Backend tests are intentionally split by responsibility:
-
-- `tests/integration`: integration tests exercise the HTTP surface end to end. These cover all API routes, middleware wiring, request validation, auth flow, CSRF behavior, profile CRUD, chat, health/readiness, and Swagger reachability.
-- Package-local `_test.go` files under `internal/...` and `pkg/...`: unit tests cover branch-heavy logic that is better tested below the HTTP layer, including services, repositories, middleware helpers, AI adapters, email delivery paths, queue handling, logging, app bootstrap, and DB helpers.
-
-This split is deliberate:
-
-- Integration tests prove the routes are wired correctly and that the real request/response behavior holds together.
-- Unit tests close the remaining coverage gap in lower-level code paths that would be slow, brittle, or unnecessary to reach through full HTTP flows.
-- Coverage is measured against the backend application packages in `internal/...` and `pkg/...`.
-- Generated Swagger code and non-application entrypoint binaries are excluded from the coverage target because they do not represent backend business logic.
-
 ### Run Tests
 
 ```bash
@@ -175,18 +161,22 @@ cd backend
 go test ./...
 ```
 
-### Fetch Coverage
+### Generate Coverage
+
+```bash
+cd backend
+go test \
+  -coverpkg=$(go list ./internal/... | grep -Ev 'internal/(app|logging|ai)' | paste -sd, -) \
+  ./... -coverprofile=coverage.packages.out
+```
+
+Excluded packages: `internal/app` (fx DI wiring), `internal/logging` (zap/gorm/asynq adapters), `internal/ai` (Gemini SDK calls) — testing these is testing the libraries, not application logic.
+
+### View Coverage
 
 ```bash
 cd backend
 go tool cover -func=coverage.packages.out
-```
-
-To refresh `coverage.packages.out`, run:
-
-```bash
-cd backend
-go test -coverpkg=./internal/...,./pkg/... ./... -coverprofile=coverage.packages.out
 ```
 
 ---

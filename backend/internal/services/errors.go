@@ -2,6 +2,9 @@ package services
 
 import "errors"
 
+// Sentinel errors returned by service methods. Controllers map these to HTTP
+// status codes via respondWithServiceError — add new sentinels here rather
+// than using raw errors.New at the call site.
 var (
 	ErrNotFound         = errors.New("not found")
 	ErrUnauthorized     = errors.New("unauthorized")

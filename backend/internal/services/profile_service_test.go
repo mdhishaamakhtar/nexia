@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -56,6 +57,10 @@ func (f *fakeProfileRepo) Update(profile *models.Profile) error {
 	}
 	f.updated = profile
 	return nil
+}
+
+func (f *fakeProfileRepo) LoadForEmbedding(_ context.Context, _ uint) (*models.Profile, error) {
+	return nil, nil
 }
 
 func (f *fakeProfileRepo) Delete(id uint64, userID uint64) error {
@@ -206,6 +211,21 @@ func TestProfileServiceDeleteQueueError(t *testing.T) {
 	}
 	if repo.deleted.id != 5 {
 		t.Fatalf("expected delete called for id 5")
+	}
+}
+
+func TestProfileServiceCreateQueueError(t *testing.T) {
+	// repo succeeds but queue fails — CreateProfile should still return nil (queue error is logged, not returned)
+	repo := &fakeProfileRepo{}
+	queue := &fakeEmbeddingQueue{err: errors.New("queue unavailable")}
+	svc := services.NewProfileService(repo, queue, zap.NewNop())
+
+	err := svc.CreateProfile(&models.Profile{TopSongs: []models.TopSong{{Name: "Song", Artist: "Artist"}}}, 1)
+	if err != nil {
+		t.Fatalf("expected nil (queue error is logged, not returned), got %v", err)
+	}
+	if repo.created == nil {
+		t.Fatalf("expected profile to be created in repo")
 	}
 }
 

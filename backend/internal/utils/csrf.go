@@ -6,6 +6,8 @@ import (
 	"fmt"
 )
 
+// GenerateCSRFToken returns a cryptographically random 32-byte hex string
+// used as the double-submit CSRF token.
 func GenerateCSRFToken() (string, error) {
 	raw := make([]byte, 32)
 	if _, err := rand.Read(raw); err != nil {

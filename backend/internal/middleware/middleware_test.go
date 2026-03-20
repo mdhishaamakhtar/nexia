@@ -2,16 +2,34 @@ package middleware_test
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"nexia-backend/internal/config"
 	"nexia-backend/internal/middleware"
+	"nexia-backend/internal/models"
 	"nexia-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
+
+// fakeUserLookup implements middleware.UserLookup for unit tests.
+type fakeUserLookup struct {
+	user *models.User
+	err  error
+}
+
+func (f *fakeUserLookup) FindByID(id uint64) (*models.User, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	if f.user == nil || f.user.ID != id {
+		return nil, errors.New("not found")
+	}
+	return f.user, nil
+}
 
 func TestGetUserID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -40,9 +58,11 @@ func TestAuthMiddleware(t *testing.T) {
 		t.Fatalf("generate token: %v", err)
 	}
 
-	mkRouter := func() *gin.Engine {
+	existingUser := &fakeUserLookup{user: &models.User{ID: 101}}
+
+	mkRouter := func(ul middleware.UserLookup) *gin.Engine {
 		r := gin.New()
-		r.Use(middleware.AuthMiddleware(cfg))
+		r.Use(middleware.AuthMiddleware(cfg, ul))
 		r.GET("/protected", func(c *gin.Context) {
 			id, _ := c.Get("userID")
 			c.JSON(http.StatusOK, gin.H{"user_id": id})
@@ -53,7 +73,7 @@ func TestAuthMiddleware(t *testing.T) {
 	t.Run("missing token", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
-		mkRouter().ServeHTTP(w, req)
+		mkRouter(existingUser).ServeHTTP(w, req)
 		if w.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401 got %d", w.Code)
 		}
@@ -63,17 +83,17 @@ func TestAuthMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.Header.Set("Authorization", "Token x")
-		mkRouter().ServeHTTP(w, req)
+		mkRouter(existingUser).ServeHTTP(w, req)
 		if w.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401 got %d", w.Code)
 		}
 	})
 
-	t.Run("valid bearer token", func(t *testing.T) {
+	t.Run("valid bearer token user exists", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
-		mkRouter().ServeHTTP(w, req)
+		mkRouter(existingUser).ServeHTTP(w, req)
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
 		}
@@ -86,11 +106,11 @@ func TestAuthMiddleware(t *testing.T) {
 		}
 	})
 
-	t.Run("valid cookie token", func(t *testing.T) {
+	t.Run("valid cookie token user exists", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.AddCookie(&http.Cookie{Name: "nexia_token", Value: token})
-		mkRouter().ServeHTTP(w, req)
+		mkRouter(existingUser).ServeHTTP(w, req)
 		if w.Code != http.StatusOK {
 			t.Fatalf("expected 200 got %d", w.Code)
 		}
@@ -100,7 +120,29 @@ func TestAuthMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.Header.Set("Authorization", "Bearer bad-token")
-		mkRouter().ServeHTTP(w, req)
+		mkRouter(existingUser).ServeHTTP(w, req)
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("expected 401 got %d", w.Code)
+		}
+	})
+
+	t.Run("valid token but user deleted from db", func(t *testing.T) {
+		noUser := &fakeUserLookup{} // FindByID returns "not found"
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		mkRouter(noUser).ServeHTTP(w, req)
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("expected 401 got %d", w.Code)
+		}
+	})
+
+	t.Run("valid token but db lookup error", func(t *testing.T) {
+		errLookup := &fakeUserLookup{err: errors.New("db connection lost")}
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		mkRouter(errLookup).ServeHTTP(w, req)
 		if w.Code != http.StatusUnauthorized {
 			t.Fatalf("expected 401 got %d", w.Code)
 		}

@@ -12,6 +12,9 @@ import (
 
 const requestIDKey = "requestID"
 
+// RequestContext assigns a request ID (from X-Request-ID header or a fresh UUID),
+// echoes it back in the response header, and logs a structured access-log entry
+// after the request completes. Log level is keyed on the response status code.
 func RequestContext(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		requestID := c.GetHeader("X-Request-ID")
@@ -56,6 +59,8 @@ func RequestContext(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
+// Recovery catches panics in downstream handlers, logs a full stack trace, and
+// returns a 500 JSON error response so the server stays alive.
 func Recovery(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
@@ -80,6 +85,8 @@ func Recovery(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
+// GetRequestID retrieves the request ID stored by RequestContext middleware.
+// Returns an empty string if the middleware was not applied.
 func GetRequestID(c *gin.Context) string {
 	if v, ok := c.Get(requestIDKey); ok {
 		if s, ok := v.(string); ok {

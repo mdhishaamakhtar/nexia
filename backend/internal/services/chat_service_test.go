@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"nexia-backend/internal/ai"
+	"nexia-backend/internal/repositories"
 	"nexia-backend/internal/services"
 )
 
@@ -34,16 +34,16 @@ func (f *fakeGeminiClient) GenerateChatResponse(ctx context.Context, systemPromp
 }
 
 type fakeVectorClient struct {
-	results []ai.SearchResult
+	results []repositories.SearchResult
 	err     error
 }
 
-func (f *fakeVectorClient) SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit int) ([]ai.SearchResult, error) {
+func (f *fakeVectorClient) SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit int) ([]repositories.SearchResult, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
 	if f.results == nil {
-		return []ai.SearchResult{{Payload: map[string]any{"full_name": "Alice", "top_songs": []any{map[string]any{"name": "Numb", "artist": "LP"}}}}}, nil
+		return []repositories.SearchResult{{Payload: map[string]any{"full_name": "Alice", "top_songs": []any{map[string]any{"name": "Numb", "artist": "LP"}}}}}, nil
 	}
 	return f.results, nil
 }
@@ -90,7 +90,7 @@ func TestChatServiceChatFailure(t *testing.T) {
 
 func TestChatServiceSuccess(t *testing.T) {
 	gemini := &fakeGeminiClient{chatResp: "Answer"}
-	vector := &fakeVectorClient{results: []ai.SearchResult{{
+	vector := &fakeVectorClient{results: []repositories.SearchResult{{
 		Payload: map[string]any{
 			"full_name":         "Alice Example",
 			"score":             float64(1.23),
@@ -109,6 +109,26 @@ func TestChatServiceSuccess(t *testing.T) {
 	svc := services.NewChatService(gemini, vector)
 
 	resp, err := svc.Chat(context.Background(), 1, "Tell me about Alice")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp != "Answer" {
+		t.Fatalf("expected Answer got %s", resp)
+	}
+}
+
+func TestChatServiceAssociatedSongNoName(t *testing.T) {
+	// associated_song as a map without a "name" key — formatPayloadValue map branch returns ""
+	gemini := &fakeGeminiClient{chatResp: "Answer"}
+	vector := &fakeVectorClient{results: []repositories.SearchResult{{
+		Payload: map[string]any{
+			"full_name":       "Bob",
+			"associated_song": map[string]any{"unknown_field": "value"},
+		},
+	}}}
+	svc := services.NewChatService(gemini, vector)
+
+	resp, err := svc.Chat(context.Background(), 1, "Tell me about Bob")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

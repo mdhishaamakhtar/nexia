@@ -12,6 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// respondWithServiceError maps service-layer sentinel errors to the appropriate
+// HTTP status code and writes a structured error response. Unrecognised errors
+// fall through to 500.
 func respondWithServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, services.ErrAccountNotFound):

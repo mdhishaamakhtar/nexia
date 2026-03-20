@@ -2,6 +2,8 @@ package models
 
 import "time"
 
+// User holds authentication credentials. The Password field is bcrypt-hashed
+// and excluded from JSON serialisation. Login requires EmailVerified to be true.
 type User struct {
 	ID            uint64    `gorm:"primaryKey;autoIncrement" json:"id"`
 	Email         string    `gorm:"type:varchar(255);uniqueIndex;not null" json:"email"`
