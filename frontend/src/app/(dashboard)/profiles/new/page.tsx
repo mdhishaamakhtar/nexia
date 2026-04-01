@@ -49,7 +49,7 @@ export default function NewProfilePage() {
       success("Profile created successfully");
       router.push("/profiles");
     } catch (err: unknown) {
-      error(getErrorMessage(err, "Failed to create profile"));
+      error(await getErrorMessage(err, "Failed to create profile"));
     } finally {
       setIsLoading(false);
     }

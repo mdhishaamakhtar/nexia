@@ -294,7 +294,7 @@ features/
   profiles/components — ProfileForm, FieldArrayInput, ProfileFormSection, ZodiacIcon
 
 shared/
-  api/client.ts       — Axios instance (base URL + withCredentials)
+  api/client.ts       — ky instance (base URL + credentials + CSRF/401 hooks)
   types/              — TypeScript types: Profile, API response shapes
   providers/          — React Query QueryClientProvider wrapper
   ui/                 — Toast, AIIcons
@@ -448,7 +448,7 @@ go run ./cmd/sync/main.go
 6. **Cookie auth**: the frontend relies on `withCredentials: true`. Don't
    switch to localStorage tokens without a coordinated backend change.
 7. **TypeScript strict**: don't use `any`. Define types in `src/shared/types/`.
-8. **Lint before commit**: run `npm run lint` to catch ESLint + Prettier issues.
+8. **Lint and format after every change**: run `npm run lint && npm run format` from `frontend/` after any frontend file is modified. Do this before marking a task complete or committing.
 
 ### Git
 

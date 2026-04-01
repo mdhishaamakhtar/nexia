@@ -38,7 +38,7 @@ export default function EditProfilePage() {
       success("Profile updated successfully");
       router.push(`/profiles/${id}`);
     } catch (err: unknown) {
-      error(getErrorMessage(err, "Failed to update profile"));
+      error(await getErrorMessage(err, "Failed to update profile"));
     } finally {
       setIsSubmitting(false);
     }
