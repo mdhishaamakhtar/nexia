@@ -6,7 +6,7 @@ ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 
 # Install dependencies
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 # Copy source code
