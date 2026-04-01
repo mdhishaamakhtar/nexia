@@ -40,7 +40,7 @@ export default function ResetPasswordPage() {
       setSuccess(true);
       setTimeout(() => router.push("/login"), 2500);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Failed to reset password"));
+      setError(await getErrorMessage(err, "Failed to reset password"));
     } finally {
       setIsLoading(false);
     }
