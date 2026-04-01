@@ -88,7 +88,7 @@ export default function ChatPage() {
         },
       ]);
     } catch (error: unknown) {
-      showError(getErrorMessage(error, "Failed to send message"));
+      showError(await getErrorMessage(error, "Failed to send message"));
       setMessages((prev) => [
         ...prev,
         {
