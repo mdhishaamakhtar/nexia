@@ -1,19 +1,19 @@
 # Build stage
-FROM node:23-alpine AS builder
+FROM oven/bun:1 AS builder
 WORKDIR /app
 
 ARG NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci
+# Install dependencies
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build Next.js
-RUN npm run build
+RUN bun run build
 
 # Runner stage
 FROM node:23-alpine AS runner
@@ -21,8 +21,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Re-create next.config.ts for the runner if needed (standalone mode copies it though)
-# But standard standalone mode requires some specific copies:
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static

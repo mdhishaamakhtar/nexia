@@ -14,7 +14,7 @@ This is the official Nexia client interface, built with **Next.js 16**, **Tailwi
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Framer Motion](https://img.shields.io/badge/Framer_Motion-12-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
 [![TanStack Query](https://img.shields.io/badge/TanStack_Query-5-FF4154?style=for-the-badge&logo=reactquery&logoColor=white)](https://tanstack.com/query)
-[![Axios](https://img.shields.io/badge/Axios-1.13-5A29E4?style=for-the-badge&logo=axios&logoColor=white)](https://axios-http.com/)
+[![Bun](https://img.shields.io/badge/Bun-1.x-FBF0DF?style=for-the-badge&logo=bun&logoColor=black)](https://bun.sh/)
 
 ---
 
@@ -30,8 +30,7 @@ This is the official Nexia client interface, built with **Next.js 16**, **Tailwi
 
 ## 🛠 Prerequisites
 
-- **Node.js**: 18.x or 20.x
-- **npm** or **bun**
+- **Bun**: 1.x ([install](https://bun.sh/docs/installation))
 
 ---
 
@@ -58,14 +57,14 @@ This will automatically proxy `/api` calls to the internal backend.
 
    ```bash
    cd frontend
-   npm install
+   bun install
    ```
 
 2. **Launch Dev Server**
 
    ```bash
    cd frontend
-   npm run dev
+   bun run dev
    ```
 
    Visit [http://localhost:3000](http://localhost:3000).
