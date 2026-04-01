@@ -9,32 +9,29 @@ export interface ListProfilesParams {
 }
 
 export async function listProfiles(params: ListProfilesParams) {
-  const query = new URLSearchParams();
-  query.set("page", String(params.page ?? 1));
-  query.set("limit", String(params.limit ?? 100));
-  if (params.search) query.set("search", params.search);
-  if (params.relationship_type) query.set("relationship_type", params.relationship_type);
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(params.page ?? 1));
+  searchParams.set("limit", String(params.limit ?? 100));
+  if (params.search) searchParams.set("search", params.search);
+  if (params.relationship_type) searchParams.set("relationship_type", params.relationship_type);
 
-  const response = await api.get<ProfilesResponse>(`/profiles?${query.toString()}`);
-  return response.data;
+  return api.get("profiles", { searchParams }).json<ProfilesResponse>();
 }
 
 export async function getProfile(id: string | number) {
-  const response = await api.get<Profile>(`/profiles/${id}`);
-  return response.data;
+  return api.get(`profiles/${id}`).json<Profile>();
 }
 
 export async function createProfile(payload: ProfileFormValues) {
-  const response = await api.post<{ id: number }>("/profiles", toProfilePayload(payload));
-  return response.data;
+  return api.post("profiles", { json: toProfilePayload(payload) }).json<{ id: number }>();
 }
 
 export async function updateProfile(id: string | number, payload: ProfileFormValues) {
-  await api.put(`/profiles/${id}`, toProfilePayload(payload));
+  await api.put(`profiles/${id}`, { json: toProfilePayload(payload) });
 }
 
 export async function deleteProfile(id: string | number) {
-  await api.delete(`/profiles/${id}`);
+  await api.delete(`profiles/${id}`);
 }
 
 function toProfilePayload(values: ProfileFormValues) {

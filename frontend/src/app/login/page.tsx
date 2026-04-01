@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import { login, signup } from "@/features/auth/api";
 import { getErrorMessage } from "@/shared/api/client";
 import type { ApiErrorResponse } from "@/shared/types/api";
-import type { AxiosError } from "axios";
+import { HTTPError } from "ky";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -41,14 +41,22 @@ export default function LoginPage() {
         await authLogin();
       }
     } catch (err: unknown) {
-      const axiosErr = err as AxiosError<ApiErrorResponse>;
-      const code = axiosErr?.response?.data?.error?.code;
-      if (code === "ACCOUNT_NOT_FOUND") {
-        setError("No account found with that email. Try signing up instead.");
-      } else if (code === "EMAIL_NOT_VERIFIED") {
-        setError("Please verify your email before signing in.");
+      if (err instanceof HTTPError) {
+        try {
+          const data = (await err.response.clone().json()) as ApiErrorResponse;
+          const code = data?.error?.code;
+          if (code === "ACCOUNT_NOT_FOUND") {
+            setError("No account found with that email. Try signing up instead.");
+          } else if (code === "EMAIL_NOT_VERIFIED") {
+            setError("Please verify your email before signing in.");
+          } else {
+            setError(data?.error?.message ?? "Authentication failed");
+          }
+        } catch {
+          setError("Authentication failed");
+        }
       } else {
-        setError(getErrorMessage(err, "Authentication failed"));
+        setError(await getErrorMessage(err, "Authentication failed"));
       }
     } finally {
       setIsLoading(false);

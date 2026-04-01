@@ -152,7 +152,7 @@ export default function ProfileDetailPage() {
       success("Profile deleted");
       router.push("/profiles");
     } catch (err: unknown) {
-      error(getErrorMessage(err, "Failed to delete profile"));
+      error(await getErrorMessage(err, "Failed to delete profile"));
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
