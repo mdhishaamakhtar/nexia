@@ -313,10 +313,10 @@ arrays (tags, songs, genres, etc.) use `useFieldArray`.
 
 ### API Client
 
-`src/shared/api/client.ts` exports a pre-configured Axios instance:
+`src/shared/api/client.ts` exports a pre-configured `ky` instance:
 - Base URL from `NEXT_PUBLIC_BACKEND_URL` env var — browser calls the backend
   **directly** (no Vercel proxy). Falls back to `http://localhost:8080`.
-- `withCredentials: true` so the `nexia_token` cookie is sent on every request.
+- `credentials: "include"` so the `nexia_token` cookie is sent on every request.
 
 ### Auth
 
@@ -332,7 +332,7 @@ no separate `ProtectedRoute` component.
 
 - Docker + Docker Compose
 - Go 1.25+
-- Node.js 20+ / npm
+- Bun 1.x (package manager and runtime for the frontend)
 - A Google Gemini API key (optional; required for AI/chat features)
 
 ### Local Development (hybrid: infra in Docker, services native)
@@ -347,8 +347,8 @@ docker compose up -d postgres redis
 go run ./cmd/server/main.go
 
 # Run frontend (from frontend/)
-npm install
-npm run dev        # http://localhost:3000
+bun install
+bun run dev        # http://localhost:3000
 ```
 
 ### Full Docker Stack
@@ -389,8 +389,8 @@ go test ./...
 
 ```bash
 cd frontend
-npm run lint      # ESLint + Prettier auto-fix
-npm run format    # Prettier write
+bun run lint      # ESLint + Prettier auto-fix
+bun run format    # Prettier write
 ```
 
 ### Regenerating Swagger Docs
@@ -443,12 +443,12 @@ go run ./cmd/sync/main.go
 2. **Server state via React Query**: avoid `useState`+`useEffect` for API data.
 3. **Form validation**: React Hook Form + Zod schema. No ad-hoc validation.
 4. **Atomic component structure**: atoms → molecules → features → pages.
-5. **Single Axios instance**: always use `src/shared/api/client.ts`. Don't
-   create additional Axios instances.
+5. **Single ky instance**: always use `src/shared/api/client.ts`. Don't
+   create additional ky/fetch instances.
 6. **Cookie auth**: the frontend relies on `withCredentials: true`. Don't
    switch to localStorage tokens without a coordinated backend change.
 7. **TypeScript strict**: don't use `any`. Define types in `src/shared/types/`.
-8. **Lint and format after every change**: run `npm run lint && npm run format` from `frontend/` after any frontend file is modified. Do this before marking a task complete or committing.
+8. **Lint and format after every change**: run `bun run lint && bun run format` from `frontend/` after any frontend file is modified. Do this before marking a task complete or committing.
 
 ### Git
 
