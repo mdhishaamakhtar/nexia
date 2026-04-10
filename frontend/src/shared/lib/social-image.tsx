@@ -104,10 +104,10 @@ export async function createSocialImage() {
                     justifyContent: "center",
                     width: "100%",
                     height: "100%",
-                    fontSize: 26,
+                    fontSize: 24,
                     lineHeight: 1,
                     fontWeight: 700,
-                    transform: "translateY(-1px)",
+                    transform: "translateY(1px)",
                   }}
                 >
                   N

@@ -70,7 +70,7 @@
 
   <g transform="translate(72 64)">
     <rect width="46" height="46" rx="16" fill="#ffffff" stroke="#94a3b8" stroke-opacity="0.24"/>
-    <text x="23" y="24" class="name" text-anchor="middle" dominant-baseline="middle">N</text>
+    <text x="23" y="31" class="name" text-anchor="middle">N</text>
     <text x="62" y="18" class="brand">Digital Slambook</text>
     <text x="62" y="46" class="name">Nexia</text>
 
