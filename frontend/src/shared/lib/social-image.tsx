@@ -92,6 +92,7 @@ export async function createSocialImage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  position: "relative",
                   borderRadius: 16,
                   background: "#ffffff",
                   border: "1px solid rgba(148,163,184,0.24)",
@@ -100,17 +101,46 @@ export async function createSocialImage() {
                 <div
                   style={{
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "100%",
-                    height: "100%",
-                    fontSize: 24,
-                    lineHeight: 1,
-                    fontWeight: 700,
-                    transform: "translateY(1px)",
+                    position: "relative",
+                    width: 18,
+                    height: 20,
                   }}
                 >
-                  N
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      width: 4,
+                      height: 20,
+                      borderRadius: 999,
+                      background: "#1f2937",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 0,
+                      top: 0,
+                      width: 4,
+                      height: 20,
+                      borderRadius: 999,
+                      background: "#1f2937",
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 7,
+                      top: -1,
+                      width: 4,
+                      height: 22,
+                      borderRadius: 999,
+                      background: "#1f2937",
+                      transform: "rotate(-31deg)",
+                      transformOrigin: "center",
+                    }}
+                  />
                 </div>
               </div>
               <div
