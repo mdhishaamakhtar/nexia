@@ -70,7 +70,11 @@
 
   <g transform="translate(72 64)">
     <rect width="46" height="46" rx="16" fill="#ffffff" stroke="#94a3b8" stroke-opacity="0.24"/>
-    <text x="23" y="31" class="name" text-anchor="middle">N</text>
+    <g transform="translate(14 13)">
+      <rect width="4" height="20" rx="2" fill="#1f2937"/>
+      <rect x="14" width="4" height="20" rx="2" fill="#1f2937"/>
+      <rect x="7" y="-1" width="4" height="22" rx="2" fill="#1f2937" transform="rotate(-31 9 10)"/>
+    </g>
     <text x="62" y="18" class="brand">Digital Slambook</text>
     <text x="62" y="46" class="name">Nexia</text>
 
