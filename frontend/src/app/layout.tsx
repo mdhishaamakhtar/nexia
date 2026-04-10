@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     description: "Your personal digital slambook — capture friends, memories, and connections.",
     images: [
       {
-        url: "/assets/nexia-banner.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "Nexia — Your Digital Slambook",
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Nexia — Your Digital Slambook",
     description: "Your personal digital slambook — capture friends, memories, and connections.",
-    images: ["/assets/nexia-banner.png"],
+    images: ["/twitter-image"],
   },
 };
 
