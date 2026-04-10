@@ -95,11 +95,23 @@ export async function createSocialImage() {
                   borderRadius: 16,
                   background: "#ffffff",
                   border: "1px solid rgba(148,163,184,0.24)",
-                  fontSize: 26,
-                  fontWeight: 700,
                 }}
               >
-                N
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                    height: "100%",
+                    fontSize: 26,
+                    lineHeight: 1,
+                    fontWeight: 700,
+                    transform: "translateY(-1px)",
+                  }}
+                >
+                  N
+                </div>
               </div>
               <div
                 style={{
@@ -139,20 +151,26 @@ export async function createSocialImage() {
             >
               {["friends", "memories", "lookup"].map((label, index) => {
                 const backgrounds = ["#fdba74", "#c4b5fd", "#93c5fd"];
+                const widths = [88, 104, 88];
 
                 return (
                   <div
                     key={label}
                     style={{
-                      padding: "10px 16px",
+                      width: widths[index],
+                      height: 40,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                       borderRadius: 999,
                       fontSize: 16,
                       fontWeight: 600,
+                      lineHeight: 1,
                       color: "#1f2937",
                       background: backgrounds[index],
                     }}
                   >
-                    {label}
+                    <div style={{ display: "flex", transform: "translateY(-1px)" }}>{label}</div>
                   </div>
                 );
               })}
