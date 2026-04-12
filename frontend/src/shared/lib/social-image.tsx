@@ -14,14 +14,31 @@ const siteDomain = "nexia.hishaam.dev";
 const siteDescription =
   "Your personal digital slambook for friends, memories, and the little details you want to keep.";
 
-async function loadGeistRegular() {
-  return readFile(
-    join(process.cwd(), "node_modules/next/dist/compiled/@vercel/og/Geist-Regular.ttf")
-  );
+const NUNITO_FONT_DIR = join(process.cwd(), "node_modules/@expo-google-fonts/nunito");
+
+function loadFont(subdir: string, filename: string) {
+  return readFile(join(NUNITO_FONT_DIR, subdir, filename));
 }
 
+/*
+ * Optical margin corrections derived from Nunito TTF hmtx left-side-bearings.
+ * Every glyph has invisible padding before its ink starts. At large sizes
+ * this becomes visible misalignment. Values below shift each text element
+ * left by its exact LSB so all ink edges align with geometric elements.
+ *
+ * Nunito Bold  N: lsb 77/1000em → 9.39px @122px
+ * Nunito Regular generic: lsb 87/1000em → 2.96px @34px, 1.57px @18px
+ * Nunito Bold  N: lsb 77/1000em → 2.16px @28px
+ */
+const LSB_TITLE = -9.5; // Bold "N" at 122px
+const LSB_BODY = -3; // Regular at 34px
+const LSB_META = -1.5; // Regular at 18px
+
 export async function createSocialImage() {
-  const geistRegular = await loadGeistRegular();
+  const [nunitoRegular, nunitoBold] = await Promise.all([
+    loadFont("400Regular", "Nunito_400Regular.ttf"),
+    loadFont("700Bold", "Nunito_700Bold.ttf"),
+  ]);
 
   return new ImageResponse(
     <div
@@ -31,7 +48,7 @@ export async function createSocialImage() {
         display: "flex",
         background: "#fff7ed",
         color: "#1f2937",
-        fontFamily: "Geist",
+        fontFamily: "Nunito",
       }}
     >
       <div
@@ -156,6 +173,7 @@ export async function createSocialImage() {
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
                     color: "#6b7280",
+                    marginLeft: LSB_META,
                   }}
                 >
                   Digital Slambook
@@ -165,6 +183,7 @@ export async function createSocialImage() {
                     fontSize: 28,
                     fontWeight: 700,
                     letterSpacing: "-0.04em",
+                    marginLeft: -2,
                   }}
                 >
                   {siteName}
@@ -228,6 +247,7 @@ export async function createSocialImage() {
                   lineHeight: 0.88,
                   fontWeight: 700,
                   letterSpacing: "-0.08em",
+                  marginLeft: LSB_TITLE,
                 }}
               >
                 NEXIA
@@ -238,6 +258,7 @@ export async function createSocialImage() {
                   lineHeight: 1.22,
                   color: "#374151",
                   maxWidth: 690,
+                  marginLeft: LSB_BODY,
                 }}
               >
                 {siteDescription}
@@ -282,6 +303,7 @@ export async function createSocialImage() {
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
                 color: "#6b7280",
+                marginLeft: LSB_META,
               }}
             >
               Personal • Warm • Playful
@@ -304,10 +326,16 @@ export async function createSocialImage() {
       ...socialImageSize,
       fonts: [
         {
-          name: "Geist",
-          data: geistRegular,
+          name: "Nunito",
+          data: nunitoRegular,
           style: "normal",
           weight: 400,
+        },
+        {
+          name: "Nunito",
+          data: nunitoBold,
+          style: "normal",
+          weight: 700,
         },
       ],
     }
