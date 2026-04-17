@@ -52,8 +52,9 @@ nexia/
 │   ├── migrations/           # SQL migration files (golang-migrate)
 │   ├── pkg/db/               # DB connection + migration runner
 │   └── tests/
-│       ├── integration/      # Integration tests (require running DB)
-│       └── unit/             # Unit tests (use fakes/mocks)
+│       └── integration/      # Integration tests (testcontainers-backed)
+│   # Unit tests are colocated with the code they cover (e.g.
+│   # internal/services/*_test.go).
 ├── frontend/                 # Next.js application
 │   └── src/
 │       ├── app/              # Next.js App Router pages
@@ -375,14 +376,19 @@ GEMINI_API_KEY=your_key_here ./nexia.sh ra   # build + start everything
 ```bash
 cd backend
 
-# Unit tests (no external dependencies — use fakes)
-go test ./tests/unit/...
+# Unit tests — colocated with the code under internal/... (no external deps)
+go test ./internal/...
 
-# Integration tests (requires running Postgres + Redis)
+# Integration tests — spin up Postgres + Redis via testcontainers-go
+# (Docker daemon must be reachable)
 go test ./tests/integration/...
 
 # All tests
 go test ./...
+
+# Coverage profile + summary
+go test -coverprofile=cover.out -coverpkg=./internal/...,./pkg/... ./...
+go tool cover -func=cover.out
 ```
 
 ### Frontend Linting / Formatting
@@ -434,8 +440,10 @@ go run ./cmd/sync/main.go
    controller.
 8. **Swagger annotations**: all public endpoints must have godoc Swagger
    comments. Re-run `go tool swag init` after changes.
-9. **Unit tests**: use the fake/stub pattern (see `tests/unit/`). No real DB
-   or network in unit tests.
+9. **Unit tests**: colocated with the code they cover (e.g.
+   `internal/services/profile_service_test.go`). Use the fake/stub pattern —
+   no real DB or network in unit tests. Integration tests live under
+   `tests/integration/` and use testcontainers-go for Postgres and Redis.
 
 ### Frontend (TypeScript / Next.js)
 
