@@ -31,9 +31,10 @@ import (
 )
 
 type integrationKit struct {
-	router *gin.Engine
-	db     *gorm.DB
-	users  *repositories.UserRepository
+	router   *gin.Engine
+	db       *gorm.DB
+	users    *repositories.UserRepository
+	redisURL string
 }
 
 type fakeEmailSender struct{}
@@ -147,9 +148,10 @@ func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 	chatController := controllers.NewChatController(chatService)
 
 	return &integrationKit{
-		router: routes.SetupRouter(profileController, authController, chatController, cfg, routes.WithLogger(zap.NewNop()), routes.WithDB(db), routes.WithUserLookup(userRepository)),
-		db:     db,
-		users:  userRepository,
+		router:   routes.SetupRouter(profileController, authController, chatController, cfg, routes.WithLogger(zap.NewNop()), routes.WithDB(db), routes.WithUserLookup(userRepository)),
+		db:       db,
+		users:    userRepository,
+		redisURL: redisURL,
 	}
 }
 
