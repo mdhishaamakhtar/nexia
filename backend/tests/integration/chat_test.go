@@ -5,6 +5,10 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"nexia-backend/internal/config"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestChatFlowIntegration(t *testing.T) {
@@ -13,39 +17,24 @@ func TestChatFlowIntegration(t *testing.T) {
 
 	t.Run("chat succeeds", func(t *testing.T) {
 		w := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "Who likes rock music?"}, token)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
-		}
+		requireStatus(t, w, http.StatusOK)
 		result := decodeJSONMap(t, w)
-		if strings.TrimSpace(fmt.Sprintf("%v", result["response"])) == "" {
-			t.Fatalf("expected non-empty response")
-		}
+		require.NotEmpty(t, strings.TrimSpace(fmt.Sprintf("%v", result["response"])))
 	})
 
 	t.Run("chat validation error", func(t *testing.T) {
 		w := postJSON(t, kit, "/api/v1/chat", map[string]any{}, token)
-		if w.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400 got %d", w.Code)
-		}
+		requireStatus(t, w, http.StatusBadRequest)
 	})
 
 	t.Run("chat unauthorized", func(t *testing.T) {
 		w := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "hello"}, "")
-		if w.Code != http.StatusUnauthorized {
-			t.Fatalf("expected 401 got %d", w.Code)
-		}
+		requireStatus(t, w, http.StatusUnauthorized)
 	})
 
 	t.Run("chat internal failure returns server error envelope", func(t *testing.T) {
 		w := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "trigger-ai-fail"}, token)
-		if w.Code != http.StatusInternalServerError {
-			t.Fatalf("expected 500 got %d body=%s", w.Code, w.Body.String())
-		}
-		result := decodeJSONMap(t, w)
-		errObj := result["error"].(map[string]any)
-		if errObj["code"] != "SERVER_ERROR" {
-			t.Fatalf("expected SERVER_ERROR got %v", errObj["code"])
-		}
+		requireErrorCode(t, w, http.StatusInternalServerError, "SERVER_ERROR")
 	})
 }
 
@@ -54,12 +43,21 @@ func TestChatUnavailableIntegration(t *testing.T) {
 	token, _, _ := signupAndGetToken(t, kit, "chat-unavailable@example.com")
 
 	w := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "hello"}, token)
-	if w.Code != http.StatusServiceUnavailable {
-		t.Fatalf("expected 503 got %d body=%s", w.Code, w.Body.String())
-	}
-	result := decodeJSONMap(t, w)
-	errObj := result["error"].(map[string]any)
-	if errObj["code"] != "AI_UNAVAILABLE" {
-		t.Fatalf("expected AI_UNAVAILABLE got %v", errObj["code"])
-	}
+	requireErrorCode(t, w, http.StatusServiceUnavailable, "AI_UNAVAILABLE")
+}
+
+func TestChatRateLimitIntegration(t *testing.T) {
+	kit := buildRouterWithServerConfig(t, true, config.ServerConfig{
+		ChatRateLimitRequests:      1,
+		ChatRateLimitWindowSeconds: 60,
+		ChatRateLimitBurst:         1,
+	})
+	token, _, _ := signupAndGetToken(t, kit, "chat-rate-limit@example.com")
+
+	first := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "first"}, token)
+	requireStatus(t, first, http.StatusOK)
+
+	second := postJSON(t, kit, "/api/v1/chat", map[string]any{"message": "second"}, token)
+	requireErrorCode(t, second, http.StatusTooManyRequests, "RATE_LIMITED")
+	require.Equal(t, "60", second.Header().Get("Retry-After"))
 }

@@ -9,6 +9,7 @@ import (
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/services"
 
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -96,18 +97,11 @@ func TestProfileServiceCreateProfile(t *testing.T) {
 	birthday := models.Date(time.Date(2001, time.March, 22, 0, 0, 0, 0, time.UTC))
 	profile := &models.Profile{FullName: "Alice", TopSongs: []models.TopSong{{Name: "Song", Artist: "Artist"}}, Birthday: &birthday}
 
-	if err := svc.CreateProfile(profile, 77); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if profile.UserID != 77 {
-		t.Fatalf("expected user id 77, got %d", profile.UserID)
-	}
-	if profile.ZodiacSign == nil || *profile.ZodiacSign != models.ZodiacAries {
-		t.Fatalf("expected Aries, got %v", profile.ZodiacSign)
-	}
-	if len(queue.embedded) != 1 || queue.embedded[0] != uint(profile.ID) {
-		t.Fatalf("expected enqueue for profile id %d", profile.ID)
-	}
+	require.NoError(t, svc.CreateProfile(profile, 77))
+	require.Equal(t, uint64(77), profile.UserID)
+	require.NotNil(t, profile.ZodiacSign)
+	require.Equal(t, models.ZodiacAries, *profile.ZodiacSign)
+	require.Equal(t, []uint{uint(profile.ID)}, queue.embedded)
 }
 
 func TestProfileServiceCreateValidation(t *testing.T) {
@@ -115,9 +109,7 @@ func TestProfileServiceCreateValidation(t *testing.T) {
 	profile := &models.Profile{TopSongs: []models.TopSong{{}, {}, {}, {}}}
 
 	err := svc.CreateProfile(profile, 1)
-	if !errors.Is(err, services.ErrValidation) {
-		t.Fatalf("expected ErrValidation, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrValidation)
 }
 
 func TestProfileServiceListProfilesBounds(t *testing.T) {
@@ -125,12 +117,9 @@ func TestProfileServiceListProfilesBounds(t *testing.T) {
 	svc := services.NewProfileService(repo, nil, zap.NewNop())
 
 	profiles, total, err := svc.ListProfiles(0, 500, "", "", 1)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(profiles) != 1 || total != 1 {
-		t.Fatalf("unexpected list result")
-	}
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	require.Equal(t, int64(1), total)
 }
 
 func TestProfileServiceUpdateAndDelete(t *testing.T) {
@@ -139,25 +128,16 @@ func TestProfileServiceUpdateAndDelete(t *testing.T) {
 	svc := services.NewProfileService(repo, queue, zap.NewNop())
 
 	p := &models.Profile{FullName: "Bob", TopSongs: []models.TopSong{{Name: "Song", Artist: "A"}}}
-	if err := svc.UpdateProfile(10, p, 3); err != nil {
-		t.Fatalf("unexpected update error: %v", err)
-	}
-	if repo.updated == nil || repo.updated.ID != 10 || repo.updated.UserID != 3 {
-		t.Fatalf("update did not set id/user correctly")
-	}
-	if len(queue.embedded) != 1 || queue.embedded[0] != 10 {
-		t.Fatalf("expected queue update enqueue")
-	}
+	require.NoError(t, svc.UpdateProfile(10, p, 3))
+	require.NotNil(t, repo.updated)
+	require.Equal(t, uint64(10), repo.updated.ID)
+	require.Equal(t, uint64(3), repo.updated.UserID)
+	require.Equal(t, []uint{10}, queue.embedded)
 
-	if err := svc.DeleteProfile(10, 3); err != nil {
-		t.Fatalf("unexpected delete error: %v", err)
-	}
-	if repo.deleted.id != 10 || repo.deleted.userID != 3 {
-		t.Fatalf("delete repo args mismatch")
-	}
-	if len(queue.deleted) != 1 || queue.deleted[0] != 10 {
-		t.Fatalf("expected queue delete enqueue")
-	}
+	require.NoError(t, svc.DeleteProfile(10, 3))
+	require.Equal(t, uint64(10), repo.deleted.id)
+	require.Equal(t, uint64(3), repo.deleted.userID)
+	require.Equal(t, []uint64{10}, queue.deleted)
 }
 
 func TestProfileServiceRepositoryAndQueueErrorPaths(t *testing.T) {
@@ -165,15 +145,9 @@ func TestProfileServiceRepositoryAndQueueErrorPaths(t *testing.T) {
 	repo := &fakeProfileRepo{err: repoErr}
 	svc := services.NewProfileService(repo, &fakeEmbeddingQueue{err: errors.New("queue failed")}, zap.NewNop())
 
-	if err := svc.CreateProfile(&models.Profile{TopSongs: []models.TopSong{{Name: "a", Artist: "b"}}}, 1); !errors.Is(err, repoErr) {
-		t.Fatalf("expected repo error on create, got %v", err)
-	}
-	if err := svc.UpdateProfile(1, &models.Profile{TopSongs: []models.TopSong{{Name: "a", Artist: "b"}}}, 1); !errors.Is(err, repoErr) {
-		t.Fatalf("expected repo error on update, got %v", err)
-	}
-	if err := svc.DeleteProfile(1, 1); !errors.Is(err, repoErr) {
-		t.Fatalf("expected repo error on delete, got %v", err)
-	}
+	require.ErrorIs(t, svc.CreateProfile(&models.Profile{TopSongs: []models.TopSong{{Name: "a", Artist: "b"}}}, 1), repoErr)
+	require.ErrorIs(t, svc.UpdateProfile(1, &models.Profile{TopSongs: []models.TopSong{{Name: "a", Artist: "b"}}}, 1), repoErr)
+	require.ErrorIs(t, svc.DeleteProfile(1, 1), repoErr)
 }
 
 func TestProfileServiceUpdateValidation(t *testing.T) {
@@ -181,9 +155,7 @@ func TestProfileServiceUpdateValidation(t *testing.T) {
 	profile := &models.Profile{TopSongs: []models.TopSong{{}, {}, {}, {}}}
 
 	err := svc.UpdateProfile(1, profile, 1)
-	if !errors.Is(err, services.ErrValidation) {
-		t.Fatalf("expected ErrValidation on update, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrValidation)
 }
 
 func TestProfileServiceListProfilesLimitZero(t *testing.T) {
@@ -191,46 +163,32 @@ func TestProfileServiceListProfilesLimitZero(t *testing.T) {
 	svc := services.NewProfileService(repo, nil, zap.NewNop())
 
 	profiles, total, err := svc.ListProfiles(1, 0, "", "", 1)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(profiles) != 1 || total != 1 {
-		t.Fatalf("unexpected result: profiles=%d total=%d", len(profiles), total)
-	}
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	require.Equal(t, int64(1), total)
 }
 
 func TestProfileServiceDeleteQueueError(t *testing.T) {
-	// repo succeeds but queue fails — DeleteProfile should still return nil (logs and continues)
 	repo := &fakeProfileRepo{}
 	queue := &fakeEmbeddingQueue{err: errors.New("queue unavailable")}
 	svc := services.NewProfileService(repo, queue, zap.NewNop())
 
 	err := svc.DeleteProfile(5, 1)
-	if err != nil {
-		t.Fatalf("expected nil (queue error is logged, not returned), got %v", err)
-	}
-	if repo.deleted.id != 5 {
-		t.Fatalf("expected delete called for id 5")
-	}
+	require.NoError(t, err)
+	require.Equal(t, uint64(5), repo.deleted.id)
 }
 
 func TestProfileServiceCreateQueueError(t *testing.T) {
-	// repo succeeds but queue fails — CreateProfile should still return nil (queue error is logged, not returned)
 	repo := &fakeProfileRepo{}
 	queue := &fakeEmbeddingQueue{err: errors.New("queue unavailable")}
 	svc := services.NewProfileService(repo, queue, zap.NewNop())
 
 	err := svc.CreateProfile(&models.Profile{TopSongs: []models.TopSong{{Name: "Song", Artist: "Artist"}}}, 1)
-	if err != nil {
-		t.Fatalf("expected nil (queue error is logged, not returned), got %v", err)
-	}
-	if repo.created == nil {
-		t.Fatalf("expected profile to be created in repo")
-	}
+	require.NoError(t, err)
+	require.NotNil(t, repo.created)
 }
 
 func TestProfileServiceUpdatePassesAssociationsThrough(t *testing.T) {
-	// Service must pass the caller's associations unchanged to the repo — no accumulation.
 	repo := &fakeProfileRepo{}
 	queue := &fakeEmbeddingQueue{}
 	svc := services.NewProfileService(repo, queue, zap.NewNop())
@@ -240,18 +198,10 @@ func TestProfileServiceUpdatePassesAssociationsThrough(t *testing.T) {
 		TopSongs: []models.TopSong{{Name: "Only Song", Artist: "Artist"}},
 		Tags:     []models.Tag{{Tag: "cool"}},
 	}
-	if err := svc.UpdateProfile(10, p, 3); err != nil {
-		t.Fatalf("unexpected update error: %v", err)
-	}
-	if len(repo.updated.TopSongs) != 1 {
-		t.Fatalf("expected 1 top song passed to repo, got %d", len(repo.updated.TopSongs))
-	}
-	if len(repo.updated.Tags) != 1 {
-		t.Fatalf("expected 1 tag passed to repo, got %d", len(repo.updated.Tags))
-	}
-	if repo.updated.Tags[0].Tag != "cool" {
-		t.Fatalf("expected tag 'cool', got %q", repo.updated.Tags[0].Tag)
-	}
+	require.NoError(t, svc.UpdateProfile(10, p, 3))
+	require.Len(t, repo.updated.TopSongs, 1)
+	require.Len(t, repo.updated.Tags, 1)
+	require.Equal(t, "cool", repo.updated.Tags[0].Tag)
 }
 
 func TestDeriveZodiacBoundaries(t *testing.T) {
@@ -260,7 +210,6 @@ func TestDeriveZodiacBoundaries(t *testing.T) {
 		date     time.Time
 		expected models.ZodiacSign
 	}{
-		// Late-month (sign starts mid-month)
 		{name: "January Capricorn (early)", date: time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC), expected: models.ZodiacCapricorn},
 		{name: "January Aquarius (late)", date: time.Date(2024, time.January, 20, 0, 0, 0, 0, time.UTC), expected: models.ZodiacAquarius},
 		{name: "February Aquarius (early)", date: time.Date(2024, time.February, 18, 0, 0, 0, 0, time.UTC), expected: models.ZodiacAquarius},
@@ -289,10 +238,7 @@ func TestDeriveZodiacBoundaries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := services.DeriveZodiac(tt.date)
-			if got != tt.expected {
-				t.Fatalf("expected %s, got %s", tt.expected, got)
-			}
+			require.Equal(t, tt.expected, services.DeriveZodiac(tt.date))
 		})
 	}
 }

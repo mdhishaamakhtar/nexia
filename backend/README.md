@@ -158,19 +158,61 @@ go fmt ./...
 
 ```bash
 cd backend
-go test ./...
+go test -count=1 -v ./...
 ```
+
+`-v` shows the active test and container startup logs in real time. `-count=1` disables cached package results so you can see what is actually running.
+
+### Run Unit Tests Only
+
+```bash
+cd backend
+go test -count=1 -v ./internal/... ./pkg/...
+```
+
+Use this for the fast feedback loop. It skips the `tests/integration` package and its testcontainers startup cost.
+
+### Run Integration Tests Only
+
+```bash
+cd backend
+go test -count=1 -v ./tests/integration/...
+```
+
+Use this when you want to exercise the real Postgres/Redis paths without waiting for the whole repo.
 
 ### Generate Coverage
 
 ```bash
 cd backend
+APP_COVERPKG=$(go list ./... | grep -Ev '(^nexia-backend/cmd/|^nexia-backend/docs/swagger$|^nexia-backend/tests/integration$|^nexia-backend/internal/app$)' | paste -sd, -)
 go test \
-  -coverpkg=$(go list ./internal/... | grep -Ev 'internal/(app|logging|ai)' | paste -sd, -) \
+  -count=1 \
+  -v \
+  -coverpkg="$APP_COVERPKG" \
   ./... -coverprofile=coverage.packages.out
 ```
 
-Excluded packages: `internal/app` (fx DI wiring), `internal/logging` (zap/gorm/asynq adapters), `internal/ai` (Gemini SDK calls) — testing these is testing the libraries, not application logic.
+### Generate Unit Coverage Only
+
+```bash
+cd backend
+APP_COVERPKG=$(go list ./... | grep -Ev '(^nexia-backend/cmd/|^nexia-backend/docs/swagger$|^nexia-backend/tests/integration$|^nexia-backend/internal/app$)' | paste -sd, -)
+go test \
+  -count=1 \
+  -v \
+  -coverpkg="$APP_COVERPKG" \
+  ./internal/... ./pkg/... \
+  -coverprofile=coverage.unit.out
+```
+
+Coverage scope:
+
+- Included: application logic in `internal/*` and shared runtime code in `pkg/db`.
+- Excluded: `cmd/*` entrypoints, `docs/swagger` generated docs, `tests/integration` test-only code, `internal/app` Fx composition root.
+- Intentional gap: `internal/ai` remains untested because it is an external Gemini SDK boundary.
+
+Integration tests use testcontainers, so Docker must be running for the combined and integration commands above.
 
 ### View Coverage
 
@@ -178,6 +220,34 @@ Excluded packages: `internal/app` (fx DI wiring), `internal/logging` (zap/gorm/a
 cd backend
 go tool cover -func=coverage.packages.out
 ```
+
+### Rate Limiting
+
+Authentication and chat endpoints use in-memory per-IP token buckets.
+
+Auth limiter settings:
+
+- `server.auth_rate_limit_requests`
+- `server.auth_rate_limit_window_seconds`
+- `server.auth_rate_limit_burst`
+
+Chat limiter settings:
+
+- `server.chat_rate_limit_requests`
+- `server.chat_rate_limit_window_seconds`
+- `server.chat_rate_limit_burst`
+
+Environment variable overrides:
+
+- `NEXIA_SERVER_AUTH_RATE_LIMIT_REQUESTS`
+- `NEXIA_SERVER_AUTH_RATE_LIMIT_WINDOW_SECONDS`
+- `NEXIA_SERVER_AUTH_RATE_LIMIT_BURST`
+- `NEXIA_SERVER_CHAT_RATE_LIMIT_REQUESTS`
+- `NEXIA_SERVER_CHAT_RATE_LIMIT_WINDOW_SECONDS`
+- `NEXIA_SERVER_CHAT_RATE_LIMIT_BURST`
+
+Default auth behavior is `10` requests per `10` seconds with a burst of `10`.
+Default chat behavior is `10` requests per `60` seconds with a burst of `3`.
 
 ---
 

@@ -62,7 +62,8 @@ func SetupRouter(profileController *controllers.ProfileController, authControlle
 	r.Use(middleware.RequestContext(options.logger.Named("http")))
 	r.Use(middleware.Recovery(options.logger.Named("http")))
 
-	authRateLimit := middleware.NewAuthRateLimit(options.logger)
+	authRateLimit := middleware.NewAuthRateLimit(options.logger, cfg)
+	chatRateLimit := middleware.NewChatRateLimit(options.logger, cfg)
 
 	// CORS Middleware
 	r.Use(cors.New(cors.Config{
@@ -106,7 +107,7 @@ func SetupRouter(profileController *controllers.ProfileController, authControlle
 		v1.POST("/auth/reset-password", authRateLimit, authController.ResetPassword)
 
 		// Chat (Protected)
-		v1.POST("/chat", middleware.AuthMiddleware(cfg, options.userLookup), middleware.CSRFMiddleware(), chatController.Chat)
+		v1.POST("/chat", middleware.AuthMiddleware(cfg, options.userLookup), middleware.CSRFMiddleware(), chatRateLimit, chatController.Chat)
 
 		// Profiles (Protected)
 		profiles := v1.Group("/profiles")

@@ -52,8 +52,9 @@ nexia/
 │   ├── migrations/           # SQL migration files (golang-migrate)
 │   ├── pkg/db/               # DB connection + migration runner
 │   └── tests/
-│       ├── integration/      # Integration tests (require running DB)
-│       └── unit/             # Unit tests (use fakes/mocks)
+│       └── integration/      # Integration tests (testcontainers-backed)
+│   # Unit tests are colocated with the code they cover (e.g.
+│   # internal/services/*_test.go).
 ├── frontend/                 # Next.js application
 │   └── src/
 │       ├── app/              # Next.js App Router pages
@@ -141,6 +142,39 @@ Key config fields:
 | `ai.gemini_api_key` | Gemini API key (optional; RAG disabled if empty) |
 | `ai.redis_url` | Redis URL for Asynq queue (optional; RAG disabled if empty) |
 
+### Rate Limiting
+
+Auth and chat routes use in-memory per-IP token buckets backed by `golang.org/x/time/rate`.
+
+Auth route family:
+
+- `POST /api/v1/auth/signup`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/forgot-password`
+- `POST /api/v1/auth/reset-password`
+
+Chat route family:
+
+- `POST /api/v1/chat`
+
+Config fields:
+
+| Field | Purpose |
+|---|---|
+| `server.auth_rate_limit_requests` | Token refill budget for auth endpoints |
+| `server.auth_rate_limit_window_seconds` | Auth refill window in seconds |
+| `server.auth_rate_limit_burst` | Auth burst size |
+| `server.chat_rate_limit_requests` | Token refill budget for chat endpoint |
+| `server.chat_rate_limit_window_seconds` | Chat refill window in seconds |
+| `server.chat_rate_limit_burst` | Chat burst size |
+
+Implementation notes:
+
+- The shared limiter engine lives in `internal/middleware/rate_limit.go`.
+- Route-specific defaults live in `internal/middleware/auth_rate_limit.go` and `internal/middleware/chat_rate_limit.go`.
+- Requests beyond the burst are rejected with HTTP 429 and `RATE_LIMITED`.
+- This is in-memory only, so limits are per process, not global across replicas.
+
 ### API Endpoints
 
 All routes are under `/api/v1`.
@@ -162,6 +196,39 @@ All routes are under `/api/v1`.
 
 `GET /profiles` accepts query params: `page`, `limit`, `search` (name substring),
 `relationship_type`.
+
+### Testing
+
+Recommended commands:
+
+```bash
+cd backend
+go test -count=1 -v ./...
+```
+
+```bash
+cd backend
+go test -count=1 -v ./internal/... ./pkg/...
+```
+
+```bash
+cd backend
+go test -count=1 -v ./tests/integration/...
+```
+
+Coverage commands:
+
+```bash
+cd backend
+APP_COVERPKG=$(go list ./... | grep -Ev '(^nexia-backend/cmd/|^nexia-backend/docs/swagger$|^nexia-backend/tests/integration$|^nexia-backend/internal/app$)' | paste -sd, -)
+go test -count=1 -v -coverpkg="$APP_COVERPKG" ./... -coverprofile=coverage.packages.out
+```
+
+```bash
+cd backend
+APP_COVERPKG=$(go list ./... | grep -Ev '(^nexia-backend/cmd/|^nexia-backend/docs/swagger$|^nexia-backend/tests/integration$|^nexia-backend/internal/app$)' | paste -sd, -)
+go test -count=1 -v -coverpkg="$APP_COVERPKG" ./internal/... ./pkg/... -coverprofile=coverage.unit.out
+```
 
 ### Error Handling Convention
 
@@ -375,14 +442,19 @@ GEMINI_API_KEY=your_key_here ./nexia.sh ra   # build + start everything
 ```bash
 cd backend
 
-# Unit tests (no external dependencies — use fakes)
-go test ./tests/unit/...
+# Unit tests — colocated with the code under internal/... (no external deps)
+go test ./internal/...
 
-# Integration tests (requires running Postgres + Redis)
+# Integration tests — spin up Postgres + Redis via testcontainers-go
+# (Docker daemon must be reachable)
 go test ./tests/integration/...
 
 # All tests
 go test ./...
+
+# Coverage profile + summary
+go test -coverprofile=cover.out -coverpkg=./internal/...,./pkg/... ./...
+go tool cover -func=cover.out
 ```
 
 ### Frontend Linting / Formatting
@@ -434,8 +506,10 @@ go run ./cmd/sync/main.go
    controller.
 8. **Swagger annotations**: all public endpoints must have godoc Swagger
    comments. Re-run `go tool swag init` after changes.
-9. **Unit tests**: use the fake/stub pattern (see `tests/unit/`). No real DB
-   or network in unit tests.
+9. **Unit tests**: colocated with the code they cover (e.g.
+   `internal/services/profile_service_test.go`). Use the fake/stub pattern —
+   no real DB or network in unit tests. Integration tests live under
+   `tests/integration/` and use testcontainers-go for Postgres and Redis.
 
 ### Frontend (TypeScript / Next.js)
 

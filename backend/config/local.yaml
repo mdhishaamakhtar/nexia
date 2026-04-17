@@ -3,6 +3,12 @@ server:
   mode: debug
   jwt_secret: "super-secret-key-for-dev"
   jwt_expiry_minutes: 1440
+  auth_rate_limit_requests: 10
+  auth_rate_limit_window_seconds: 10
+  auth_rate_limit_burst: 10
+  chat_rate_limit_requests: 10
+  chat_rate_limit_window_seconds: 60
+  chat_rate_limit_burst: 3
   cors_origins:
     - "http://localhost:3000"
   cookie_domain: "" # empty = browser defaults to request host (fine for localhost)

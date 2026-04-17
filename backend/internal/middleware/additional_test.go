@@ -9,6 +9,7 @@ import (
 	"nexia-backend/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -34,9 +35,7 @@ func TestCSRFMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		mkRouter(http.MethodGet, true).ServeHTTP(w, req)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("bearer auth bypasses csrf", func(t *testing.T) {
@@ -51,18 +50,14 @@ func TestCSRFMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/protected", nil)
 		r.ServeHTTP(w, req)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("missing csrf cookie", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/protected", nil)
 		mkRouter(http.MethodPost, true).ServeHTTP(w, req)
-		if w.Code != http.StatusForbidden {
-			t.Fatalf("expected 403 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusForbidden, w.Code)
 	})
 
 	t.Run("mismatched csrf header", func(t *testing.T) {
@@ -71,9 +66,7 @@ func TestCSRFMiddleware(t *testing.T) {
 		req.AddCookie(&http.Cookie{Name: middleware.CSRFCookieName, Value: "cookie-token"})
 		req.Header.Set(middleware.CSRFHeaderName, "header-token")
 		mkRouter(http.MethodPost, true).ServeHTTP(w, req)
-		if w.Code != http.StatusForbidden {
-			t.Fatalf("expected 403 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusForbidden, w.Code)
 	})
 
 	t.Run("matching csrf token succeeds", func(t *testing.T) {
@@ -82,9 +75,7 @@ func TestCSRFMiddleware(t *testing.T) {
 		req.AddCookie(&http.Cookie{Name: middleware.CSRFCookieName, Value: "same-token"})
 		req.Header.Set(middleware.CSRFHeaderName, "same-token")
 		mkRouter(http.MethodPost, true).ServeHTTP(w, req)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 	})
 }
 
@@ -108,27 +99,16 @@ func TestRequestContextAndRecovery(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/ok", nil)
 	req.Header.Set("X-Request-ID", "req-123")
 	r.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200 got %d", w.Code)
-	}
-	if w.Header().Get("X-Request-ID") != "req-123" {
-		t.Fatalf("expected response request id, got %q", w.Header().Get("X-Request-ID"))
-	}
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "req-123", w.Header().Get("X-Request-ID"))
+
 	var out map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
-		t.Fatalf("unmarshal response: %v", err)
-	}
-	if out["request_id"] != "req-123" {
-		t.Fatalf("expected request id in handler, got %v", out["request_id"])
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &out))
+	require.Equal(t, "req-123", out["request_id"])
 
 	panicW := httptest.NewRecorder()
 	panicReq := httptest.NewRequest(http.MethodGet, "/panic", nil)
 	r.ServeHTTP(panicW, panicReq)
-	if panicW.Code != http.StatusInternalServerError {
-		t.Fatalf("expected 500 got %d", panicW.Code)
-	}
-	if observed.Len() < 2 {
-		t.Fatalf("expected request and recovery logs, got %d", observed.Len())
-	}
+	require.Equal(t, http.StatusInternalServerError, panicW.Code)
+	require.GreaterOrEqual(t, observed.Len(), 2)
 }

@@ -2,12 +2,12 @@ package email
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"nexia-backend/internal/config"
 
 	resend "github.com/resend/resend-go/v2"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -21,19 +21,10 @@ func TestNewEmailServiceDisabledWithoutAPIKey(t *testing.T) {
 
 	svc := NewEmailService(cfg, zap.NewNop())
 
-	if svc.enabled {
-		t.Fatal("expected email service to be disabled")
-	}
-	if svc.sendEmail != nil {
-		t.Fatal("expected sendEmail func to be nil when disabled")
-	}
-
-	if err := svc.SendVerificationEmail("user@example.com", "token"); err != nil {
-		t.Fatalf("disabled verification email should be skipped: %v", err)
-	}
-	if err := svc.SendPasswordResetEmail("user@example.com", "token"); err != nil {
-		t.Fatalf("disabled password reset email should be skipped: %v", err)
-	}
+	require.False(t, svc.enabled)
+	require.Nil(t, svc.sendEmail)
+	require.NoError(t, svc.SendVerificationEmail("user@example.com", "token"))
+	require.NoError(t, svc.SendPasswordResetEmail("user@example.com", "token"))
 }
 
 func TestNewEmailServiceEnabled(t *testing.T) {
@@ -47,9 +38,9 @@ func TestNewEmailServiceEnabled(t *testing.T) {
 
 	svc := NewEmailService(cfg, zap.NewNop())
 
-	if !svc.enabled || svc.sendEmail == nil || svc.client == nil {
-		t.Fatalf("expected enabled email service, got %+v", svc)
-	}
+	require.True(t, svc.enabled)
+	require.NotNil(t, svc.sendEmail)
+	require.NotNil(t, svc.client)
 }
 
 func TestEmailServiceSendVerificationEmail(t *testing.T) {
@@ -65,18 +56,10 @@ func TestEmailServiceSendVerificationEmail(t *testing.T) {
 		},
 	}
 
-	if err := svc.SendVerificationEmail("user@example.com", "token with spaces"); err != nil {
-		t.Fatalf("SendVerificationEmail returned error: %v", err)
-	}
-	if req == nil {
-		t.Fatal("expected resend request")
-	}
-	if req.Subject != "Verify your Nexia email address" {
-		t.Fatalf("unexpected subject %q", req.Subject)
-	}
-	if !strings.Contains(req.Html, "token+with+spaces") {
-		t.Fatalf("expected escaped token in html: %s", req.Html)
-	}
+	require.NoError(t, svc.SendVerificationEmail("user@example.com", "token with spaces"))
+	require.NotNil(t, req)
+	require.Equal(t, "Verify your Nexia email address", req.Subject)
+	require.Contains(t, req.Html, "token+with+spaces")
 }
 
 func TestEmailServiceSendPasswordResetEmailError(t *testing.T) {
@@ -91,9 +74,8 @@ func TestEmailServiceSendPasswordResetEmailError(t *testing.T) {
 	}
 
 	err := svc.SendPasswordResetEmail("user@example.com", "reset-token")
-	if err == nil || !strings.Contains(err.Error(), "send password reset email") {
-		t.Fatalf("expected wrapped resend error, got %v", err)
-	}
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "send password reset email")
 }
 
 func TestEmailServiceSendPasswordResetEmailSuccess(t *testing.T) {
@@ -109,22 +91,18 @@ func TestEmailServiceSendPasswordResetEmailSuccess(t *testing.T) {
 		},
 	}
 
-	if err := svc.SendPasswordResetEmail("user@example.com", "reset-token"); err != nil {
-		t.Fatalf("SendPasswordResetEmail returned error: %v", err)
-	}
-	if req == nil || req.Subject != "Reset your Nexia password" || !strings.Contains(req.Html, "reset-token") {
-		t.Fatalf("unexpected request %+v", req)
-	}
+	require.NoError(t, svc.SendPasswordResetEmail("user@example.com", "reset-token"))
+	require.NotNil(t, req)
+	require.Equal(t, "Reset your Nexia password", req.Subject)
+	require.Contains(t, req.Html, "reset-token")
 }
 
 func TestEmailTemplatesIncludeExpectedFields(t *testing.T) {
 	verifyHTML := buildVerificationEmailHTML("https://app.example.com/verify?token=abc")
-	if !strings.Contains(verifyHTML, "Verify Email Address") || !strings.Contains(verifyHTML, "https://app.example.com/verify?token=abc") {
-		t.Fatalf("verification template missing expected content: %s", verifyHTML)
-	}
+	require.Contains(t, verifyHTML, "Verify Email Address")
+	require.Contains(t, verifyHTML, "https://app.example.com/verify?token=abc")
 
 	resetHTML := buildPasswordResetEmailHTML("reset-token", "https://app.example.com/reset-password")
-	if !strings.Contains(resetHTML, "reset-token") || !strings.Contains(resetHTML, "Reset Password") {
-		t.Fatalf("reset template missing expected content: %s", resetHTML)
-	}
+	require.Contains(t, resetHTML, "reset-token")
+	require.Contains(t, resetHTML, "Reset Password")
 }

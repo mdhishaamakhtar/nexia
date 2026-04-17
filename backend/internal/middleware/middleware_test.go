@@ -13,9 +13,9 @@ import (
 	"nexia-backend/internal/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
-// fakeUserLookup implements middleware.UserLookup for unit tests.
 type fakeUserLookup struct {
 	user *models.User
 	err  error
@@ -35,28 +35,23 @@ func TestGetUserID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 
-	if _, err := middleware.GetUserID(c); err == nil {
-		t.Fatal("expected error when user id missing")
-	}
+	_, err := middleware.GetUserID(c)
+	require.Error(t, err)
 
 	c.Set("userID", "bad")
-	if _, err := middleware.GetUserID(c); err == nil {
-		t.Fatal("expected error for wrong type")
-	}
+	_, err = middleware.GetUserID(c)
+	require.Error(t, err)
 
 	c.Set("userID", uint64(55))
 	id, err := middleware.GetUserID(c)
-	if err != nil || id != 55 {
-		t.Fatalf("expected 55, got %d err=%v", id, err)
-	}
+	require.NoError(t, err)
+	require.Equal(t, uint64(55), id)
 }
 
 func TestAuthMiddleware(t *testing.T) {
 	cfg := &config.Config{Server: config.ServerConfig{JWTSecret: "secret", JWTExpiryMinutes: 30}}
 	token, err := utils.GenerateToken(101, cfg)
-	if err != nil {
-		t.Fatalf("generate token: %v", err)
-	}
+	require.NoError(t, err)
 
 	existingUser := &fakeUserLookup{user: &models.User{ID: 101}}
 
@@ -74,9 +69,7 @@ func TestAuthMiddleware(t *testing.T) {
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		mkRouter(existingUser).ServeHTTP(w, req)
-		if w.Code != http.StatusUnauthorized {
-			t.Fatalf("expected 401 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 
 	t.Run("invalid header format", func(t *testing.T) {
@@ -84,9 +77,7 @@ func TestAuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.Header.Set("Authorization", "Token x")
 		mkRouter(existingUser).ServeHTTP(w, req)
-		if w.Code != http.StatusUnauthorized {
-			t.Fatalf("expected 401 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 
 	t.Run("valid bearer token user exists", func(t *testing.T) {
@@ -94,16 +85,11 @@ func TestAuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		mkRouter(existingUser).ServeHTTP(w, req)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
-		}
+		require.Equal(t, http.StatusOK, w.Code, w.Body.String())
+
 		var out map[string]any
-		if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
-			t.Fatalf("unmarshal: %v", err)
-		}
-		if out["user_id"].(float64) != 101 {
-			t.Fatalf("expected user_id=101 got %v", out["user_id"])
-		}
+		require.NoError(t, json.Unmarshal(w.Body.Bytes(), &out))
+		require.Equal(t, float64(101), out["user_id"])
 	})
 
 	t.Run("valid cookie token user exists", func(t *testing.T) {
@@ -111,9 +97,7 @@ func TestAuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.AddCookie(&http.Cookie{Name: "nexia_token", Value: token})
 		mkRouter(existingUser).ServeHTTP(w, req)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusOK, w.Code)
 	})
 
 	t.Run("invalid token", func(t *testing.T) {
@@ -121,20 +105,16 @@ func TestAuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.Header.Set("Authorization", "Bearer bad-token")
 		mkRouter(existingUser).ServeHTTP(w, req)
-		if w.Code != http.StatusUnauthorized {
-			t.Fatalf("expected 401 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 
 	t.Run("valid token but user deleted from db", func(t *testing.T) {
-		noUser := &fakeUserLookup{} // FindByID returns "not found"
+		noUser := &fakeUserLookup{}
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		mkRouter(noUser).ServeHTTP(w, req)
-		if w.Code != http.StatusUnauthorized {
-			t.Fatalf("expected 401 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 
 	t.Run("valid token but db lookup error", func(t *testing.T) {
@@ -143,8 +123,6 @@ func TestAuthMiddleware(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/protected", nil)
 		req.Header.Set("Authorization", "Bearer "+token)
 		mkRouter(errLookup).ServeHTTP(w, req)
-		if w.Code != http.StatusUnauthorized {
-			t.Fatalf("expected 401 got %d", w.Code)
-		}
+		require.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
