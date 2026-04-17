@@ -6,92 +6,96 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
+	"nexia-backend/internal/config"
+
+	"github.com/stretchr/testify/require"
 )
 
-// TestAuthRateLimitDelaysBurstRequests sends N requests at rate 1/per and
-// asserts the wall-clock duration is at least (N-1)*per — i.e. the limiter
-// actually throttled the burst, with no individual-request flakiness window.
-func TestAuthRateLimitDelaysBurstRequests(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	const (
-		per = 50 * time.Millisecond
-		n   = 5
-	)
-
-	r := gin.New()
-	r.Use(newAuthRateLimit(zap.NewNop(), 1, per))
-	r.POST("/auth/login", func(c *gin.Context) {
-		c.Status(http.StatusOK)
+func TestAuthRateLimitRejectsRequestsBeyondBurst(t *testing.T) {
+	r := newRateLimitTestRouter(t, "/auth/login", "auth", "Too many authentication requests", rateLimitConfig{
+		requests: 2,
+		burst:    2,
+		window:   time.Minute,
 	})
 
-	start := time.Now()
-	for i := 0; i < n; i++ {
+	for i := 0; i < 2; i++ {
 		req := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
 		req.RemoteAddr = "127.0.0.1:1234"
 		rec := httptest.NewRecorder()
 		r.ServeHTTP(rec, req)
-		if rec.Code != http.StatusOK {
-			t.Fatalf("request %d: expected 200 got %d", i, rec.Code)
-		}
+		require.Equal(t, http.StatusOK, rec.Code, "request %d", i)
+		require.Equal(t, "2 requests per 1m0s (burst 2)", rec.Header().Get("X-RateLimit-Limit"))
 	}
-	elapsed := time.Since(start)
 
-	// With rate 1/per and no slack the Nth request waits (N-1)*per in total.
-	// Allow a small tolerance for scheduling jitter.
-	wantMin := time.Duration(n-1)*per - 5*time.Millisecond
-	if elapsed < wantMin {
-		t.Fatalf("expected at least %v of throttling, got %v", wantMin, elapsed)
-	}
+	req := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
+	req.RemoteAddr = "127.0.0.1:1234"
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	requireRateLimited(t, rec, "2 requests per 1m0s (burst 2)", "30", "Too many authentication requests")
 }
 
-// TestAuthRateLimitPartitionsByClientIP verifies the limiter tracks per-IP
-// state: a fresh IP should not be throttled even if another IP just exhausted
-// its budget.
 func TestAuthRateLimitPartitionsByClientIP(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	const per = 100 * time.Millisecond
-
-	r := gin.New()
-	r.Use(newAuthRateLimit(zap.NewNop(), 1, per))
-	r.POST("/auth/login", func(c *gin.Context) {
-		c.Status(http.StatusOK)
+	r := newRateLimitTestRouter(t, "/auth/login", "auth", "Too many authentication requests", rateLimitConfig{
+		requests: 1,
+		burst:    1,
+		window:   time.Minute,
 	})
 
-	// Exhaust IP A's first token.
 	reqA := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
 	reqA.RemoteAddr = "10.0.0.1:1111"
-	r.ServeHTTP(httptest.NewRecorder(), reqA)
+	recA1 := httptest.NewRecorder()
+	r.ServeHTTP(recA1, reqA)
+	require.Equal(t, http.StatusOK, recA1.Code)
 
-	// A second call on IP B, issued immediately after, should not have been
-	// queued behind IP A.
-	start := time.Now()
+	reqAAgain := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
+	reqAAgain.RemoteAddr = "10.0.0.1:1111"
+	recA2 := httptest.NewRecorder()
+	r.ServeHTTP(recA2, reqAAgain)
+	require.Equal(t, http.StatusTooManyRequests, recA2.Code)
+
 	reqB := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
 	reqB.RemoteAddr = "10.0.0.2:2222"
 	recB := httptest.NewRecorder()
 	r.ServeHTTP(recB, reqB)
-	elapsed := time.Since(start)
-
-	if recB.Code != http.StatusOK {
-		t.Fatalf("expected IP B to pass, got %d", recB.Code)
-	}
-	// IP B should have been served without a full `per` delay. Give a
-	// generous ceiling for CI noise (half of per).
-	if elapsed >= per/2 {
-		t.Fatalf("IP B was throttled by IP A's bucket: waited %v", elapsed)
-	}
+	require.Equal(t, http.StatusOK, recB.Code)
 }
 
-// TestAuthRateLimitPanicsWithNilLogger protects against misuse — the factory
-// explicitly panics rather than silently returning a non-logging limiter.
-func TestAuthRateLimitPanicsWithNilLogger(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("expected panic with nil logger")
-		}
-	}()
-	newAuthRateLimit(nil, 1, time.Second)
+func TestAuthRateLimitConfigUsesDefaultsAndClampsBurst(t *testing.T) {
+	defaults := authRateLimitConfigFromConfig(nil)
+	require.Equal(t, rateLimitConfig{
+		requests: defaultAuthRateLimitRequests,
+		burst:    defaultAuthRateLimitBurst,
+		window:   defaultAuthRateLimitWindow,
+	}, defaults)
+
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			AuthRateLimitRequests:      5,
+			AuthRateLimitWindowSeconds: 30,
+			AuthRateLimitBurst:         99,
+		},
+	}
+
+	require.Equal(t, rateLimitConfig{
+		requests: 5,
+		burst:    5,
+		window:   30 * time.Second,
+	}, authRateLimitConfigFromConfig(cfg))
+}
+
+func TestAuthRateLimitConfigIgnoresNonPositiveOverrides(t *testing.T) {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			AuthRateLimitRequests:      -1,
+			AuthRateLimitWindowSeconds: 0,
+			AuthRateLimitBurst:         -2,
+		},
+	}
+
+	require.Equal(t, rateLimitConfig{
+		requests: defaultAuthRateLimitRequests,
+		burst:    defaultAuthRateLimitBurst,
+		window:   defaultAuthRateLimitWindow,
+	}, authRateLimitConfigFromConfig(cfg))
 }

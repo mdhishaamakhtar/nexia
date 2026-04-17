@@ -9,12 +9,11 @@ import (
 	"nexia-backend/internal/models"
 	"nexia-backend/internal/services"
 
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
-
-// ── fakes ──────────────────────────────────────────────────────────────────
 
 type fakeUserRepo struct {
 	user                *models.User
@@ -156,8 +155,6 @@ func (f *fakeEmailSvc) SendPasswordResetEmail(toEmail, token string) error {
 	return nil
 }
 
-// ── helpers ────────────────────────────────────────────────────────────────
-
 func newAuthService(userRepo *fakeUserRepo, resetRepo *fakeResetRepo, verifyRepo *fakeVerifyRepo, emailSvc *fakeEmailSvc) *services.AuthService {
 	return services.NewAuthService(
 		userRepo,
@@ -173,116 +170,85 @@ func newAuthServiceDefaults(userRepo *fakeUserRepo) *services.AuthService {
 	return newAuthService(userRepo, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 }
 
-// ── Signup tests ───────────────────────────────────────────────────────────
-
 func TestSignupSuccess(t *testing.T) {
 	repo := &fakeUserRepo{}
 	emailSvc := &fakeEmailSvc{}
 	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, emailSvc)
 
 	err := svc.Signup("alice@example.com", "password123")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if repo.user == nil {
-		t.Fatal("expected user to be created")
-	}
-	if repo.user.Password == "password123" {
-		t.Fatal("expected password to be hashed")
-	}
-	if repo.user.EmailVerified {
-		t.Fatal("new user should not have email verified")
-	}
-	if len(emailSvc.sentVerification) != 1 {
-		t.Fatal("expected verification email to be sent")
-	}
+	require.NoError(t, err)
+	require.NotNil(t, repo.user)
+	require.NotEqual(t, "password123", repo.user.Password)
+	require.False(t, repo.user.EmailVerified)
+	require.Len(t, emailSvc.sentVerification, 1)
 }
 
 func TestSignupEmailConflict(t *testing.T) {
-	existing := &models.User{ID: 1, Email: "alice@example.com", Password: "hash"}
-	repo := &fakeUserRepo{user: existing}
+	repo := &fakeUserRepo{user: &models.User{ID: 1, Email: "alice@example.com", Password: "hash"}}
 	svc := newAuthServiceDefaults(repo)
 
 	err := svc.Signup("alice@example.com", "password123")
-	if !errors.Is(err, services.ErrEmailConflict) {
-		t.Fatalf("expected ErrEmailConflict, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrEmailConflict)
 }
 
 func TestSignupValidationErrorBadEmail(t *testing.T) {
 	svc := newAuthServiceDefaults(&fakeUserRepo{})
-
 	err := svc.Signup("not-an-email", "password123")
-	if !errors.Is(err, services.ErrValidation) {
-		t.Fatalf("expected ErrValidation, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrValidation)
 }
 
 func TestSignupValidationErrorShortPassword(t *testing.T) {
 	svc := newAuthServiceDefaults(&fakeUserRepo{})
-
 	err := svc.Signup("alice@example.com", "abc")
-	if !errors.Is(err, services.ErrValidation) {
-		t.Fatalf("expected ErrValidation, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrValidation)
 }
 
-// ── Login tests ────────────────────────────────────────────────────────────
-
 func TestLoginSuccess(t *testing.T) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
+	require.NoError(t, err)
+
 	repo := &fakeUserRepo{user: &models.User{ID: 9, Email: "alice@example.com", Password: string(hash), EmailVerified: true}}
 	svc := newAuthServiceDefaults(repo)
 
 	token, err := svc.Login("alice@example.com", "validpass")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if token == "" {
-		t.Fatal("expected non-empty token")
-	}
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
 }
 
 func TestLoginEmailNotVerified(t *testing.T) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
+	require.NoError(t, err)
+
 	repo := &fakeUserRepo{user: &models.User{ID: 9, Email: "alice@example.com", Password: string(hash), EmailVerified: false}}
 	svc := newAuthServiceDefaults(repo)
 
-	_, err := svc.Login("alice@example.com", "validpass")
-	if !errors.Is(err, services.ErrEmailNotVerified) {
-		t.Fatalf("expected ErrEmailNotVerified, got %v", err)
-	}
+	_, err = svc.Login("alice@example.com", "validpass")
+	require.ErrorIs(t, err, services.ErrEmailNotVerified)
 }
 
 func TestLoginWrongPassword(t *testing.T) {
-	hash, _ := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte("validpass"), bcrypt.DefaultCost)
+	require.NoError(t, err)
+
 	repo := &fakeUserRepo{user: &models.User{ID: 9, Email: "alice@example.com", Password: string(hash), EmailVerified: true}}
 	svc := newAuthServiceDefaults(repo)
 
-	_, err := svc.Login("alice@example.com", "wrongpass")
-	if !errors.Is(err, services.ErrUnauthorized) {
-		t.Fatalf("expected ErrUnauthorized, got %v", err)
-	}
+	_, err = svc.Login("alice@example.com", "wrongpass")
+	require.ErrorIs(t, err, services.ErrUnauthorized)
 }
 
 func TestLoginUserNotFound(t *testing.T) {
-	repo := &fakeUserRepo{} // no user stored
-	svc := newAuthServiceDefaults(repo)
-
+	svc := newAuthServiceDefaults(&fakeUserRepo{})
 	_, err := svc.Login("nobody@example.com", "pass")
-	if !errors.Is(err, services.ErrAccountNotFound) {
-		t.Fatalf("expected ErrAccountNotFound, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrAccountNotFound)
 }
-
-// ── VerifyEmail tests ──────────────────────────────────────────────────────
 
 func TestVerifyEmailSuccess(t *testing.T) {
 	stored := &models.EmailVerificationToken{
 		ID:        1,
 		UserID:    5,
 		Token:     "validtoken",
-		ExpiresAt: time.Now().Add(1 * time.Hour),
+		ExpiresAt: time.Now().Add(time.Hour),
 		Used:      false,
 	}
 	userRepo := &fakeUserRepo{user: &models.User{ID: 5}}
@@ -290,48 +256,36 @@ func TestVerifyEmailSuccess(t *testing.T) {
 	svc := newAuthService(userRepo, &fakeResetRepo{}, verifyRepo, &fakeEmailSvc{})
 
 	err := svc.VerifyEmail("validtoken")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if userRepo.emailVerifiedUserID != 5 {
-		t.Fatal("expected user email to be marked verified")
-	}
-	if verifyRepo.markedID != 1 {
-		t.Fatal("expected token to be marked as used")
-	}
+	require.NoError(t, err)
+	require.Equal(t, uint64(5), userRepo.emailVerifiedUserID)
+	require.Equal(t, uint64(1), verifyRepo.markedID)
 }
 
 func TestVerifyEmailExpired(t *testing.T) {
 	stored := &models.EmailVerificationToken{
 		ID:        1,
 		Token:     "expiredtoken",
-		ExpiresAt: time.Now().Add(-1 * time.Hour),
+		ExpiresAt: time.Now().Add(-time.Hour),
 		Used:      false,
 	}
 	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{stored: stored}, &fakeEmailSvc{})
 
 	err := svc.VerifyEmail("expiredtoken")
-	if !errors.Is(err, services.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound for expired token, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrNotFound)
 }
 
 func TestVerifyEmailAlreadyUsed(t *testing.T) {
 	stored := &models.EmailVerificationToken{
 		ID:        1,
 		Token:     "usedtoken",
-		ExpiresAt: time.Now().Add(1 * time.Hour),
+		ExpiresAt: time.Now().Add(time.Hour),
 		Used:      true,
 	}
 	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{stored: stored}, &fakeEmailSvc{})
 
 	err := svc.VerifyEmail("usedtoken")
-	if !errors.Is(err, services.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound for used token, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrNotFound)
 }
-
-// ── ForgotPassword tests ───────────────────────────────────────────────────
 
 func TestForgotPasswordSendsEmail(t *testing.T) {
 	repo := &fakeUserRepo{user: &models.User{ID: 1, Email: "alice@example.com", Password: "hash"}}
@@ -340,32 +294,16 @@ func TestForgotPasswordSendsEmail(t *testing.T) {
 	svc := newAuthService(repo, resetRepo, &fakeVerifyRepo{}, emailSvc)
 
 	err := svc.ForgotPassword("alice@example.com")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resetRepo.stored == nil {
-		t.Fatal("expected token to be stored")
-	}
-	if resetRepo.stored.Used {
-		t.Fatal("new token should not be marked used")
-	}
-	if !resetRepo.stored.ExpiresAt.After(time.Now()) {
-		t.Fatal("token should expire in the future")
-	}
-	if len(emailSvc.sentReset) != 1 {
-		t.Fatal("expected password reset email to be sent")
-	}
+	require.NoError(t, err)
+	require.NotNil(t, resetRepo.stored)
+	require.False(t, resetRepo.stored.Used)
+	require.True(t, resetRepo.stored.ExpiresAt.After(time.Now()))
+	require.Len(t, emailSvc.sentReset, 1)
 }
 
 func TestForgotPasswordUserNotFound(t *testing.T) {
-	repo := &fakeUserRepo{} // no user
-	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
-
-	// Should return nil silently (no enumeration)
-	err := svc.ForgotPassword("nobody@example.com")
-	if err != nil {
-		t.Fatalf("expected nil (silent), got %v", err)
-	}
+	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
+	require.NoError(t, svc.ForgotPassword("nobody@example.com"))
 }
 
 func TestForgotPasswordFindEmailGenericError(t *testing.T) {
@@ -374,9 +312,7 @@ func TestForgotPasswordFindEmailGenericError(t *testing.T) {
 	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ForgotPassword("alice@example.com")
-	if !errors.Is(err, dbErr) {
-		t.Fatalf("expected db error propagated, got %v", err)
-	}
+	require.ErrorIs(t, err, dbErr)
 }
 
 func TestSignupEmailSendErrorDoesNotFail(t *testing.T) {
@@ -384,9 +320,7 @@ func TestSignupEmailSendErrorDoesNotFail(t *testing.T) {
 	emailSvc := &fakeEmailSvc{sendErr: errors.New("smtp down")}
 	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, emailSvc)
 
-	if err := svc.Signup("alice@example.com", "password123"); err != nil {
-		t.Fatalf("expected signup success despite email failure, got %v", err)
-	}
+	require.NoError(t, svc.Signup("alice@example.com", "password123"))
 }
 
 func TestForgotPasswordEmailSendErrorDoesNotFail(t *testing.T) {
@@ -394,12 +328,8 @@ func TestForgotPasswordEmailSendErrorDoesNotFail(t *testing.T) {
 	emailSvc := &fakeEmailSvc{sendErr: errors.New("smtp down")}
 	svc := newAuthService(repo, &fakeResetRepo{}, &fakeVerifyRepo{}, emailSvc)
 
-	if err := svc.ForgotPassword("alice@example.com"); err != nil {
-		t.Fatalf("expected forgot password success despite email failure, got %v", err)
-	}
+	require.NoError(t, svc.ForgotPassword("alice@example.com"))
 }
-
-// ── ResetPassword tests ────────────────────────────────────────────────────
 
 func TestResetPasswordSuccess(t *testing.T) {
 	stored := &models.PasswordResetToken{
@@ -414,27 +344,16 @@ func TestResetPasswordSuccess(t *testing.T) {
 	svc := newAuthService(userRepo, resetRepo, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("validtoken", "newpassword123")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if userRepo.updatedPassword == "" {
-		t.Fatal("expected password to be updated")
-	}
-	if resetRepo.markedID != stored.ID {
-		t.Fatal("expected token to be marked as used")
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(userRepo.updatedPassword), []byte("newpassword123")); err != nil {
-		t.Fatal("stored password is not a valid bcrypt hash of the new password")
-	}
+	require.NoError(t, err)
+	require.NotEmpty(t, userRepo.updatedPassword)
+	require.Equal(t, stored.ID, resetRepo.markedID)
+	require.NoError(t, bcrypt.CompareHashAndPassword([]byte(userRepo.updatedPassword), []byte("newpassword123")))
 }
 
 func TestResetPasswordTokenNotFound(t *testing.T) {
 	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
-
 	err := svc.ResetPassword("nosuchtoken", "newpass123")
-	if !errors.Is(err, services.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrNotFound)
 }
 
 func TestResetPasswordTokenAlreadyUsed(t *testing.T) {
@@ -447,33 +366,26 @@ func TestResetPasswordTokenAlreadyUsed(t *testing.T) {
 	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{stored: stored}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("usedtoken", "newpass123")
-	if !errors.Is(err, services.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound for used token, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrNotFound)
 }
 
 func TestResetPasswordTokenExpired(t *testing.T) {
 	stored := &models.PasswordResetToken{
 		ID:        3,
 		Token:     "expiredtoken",
-		ExpiresAt: time.Now().Add(-1 * time.Minute),
+		ExpiresAt: time.Now().Add(-time.Minute),
 		Used:      false,
 	}
 	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{stored: stored}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("expiredtoken", "newpass123")
-	if !errors.Is(err, services.ErrNotFound) {
-		t.Fatalf("expected ErrNotFound for expired token, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrNotFound)
 }
 
 func TestResetPasswordTooShort(t *testing.T) {
 	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, &fakeVerifyRepo{}, &fakeEmailSvc{})
-
 	err := svc.ResetPassword("anytoken", "abc")
-	if !errors.Is(err, services.ErrValidation) {
-		t.Fatalf("expected ErrValidation, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrValidation)
 }
 
 func TestResetPasswordUpdatePasswordError(t *testing.T) {
@@ -489,12 +401,8 @@ func TestResetPasswordUpdatePasswordError(t *testing.T) {
 	svc := newAuthService(userRepo, &fakeResetRepo{stored: stored}, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ResetPassword("validtoken", "newpass123")
-	if !errors.Is(err, updateErr) {
-		t.Fatalf("expected updateErr, got %v", err)
-	}
+	require.ErrorIs(t, err, updateErr)
 }
-
-// ── Signup additional error paths ──────────────────────────────────────────
 
 func TestSignupFindEmailGenericError(t *testing.T) {
 	dbErr := errors.New("connection timeout")
@@ -502,9 +410,7 @@ func TestSignupFindEmailGenericError(t *testing.T) {
 	svc := newAuthServiceDefaults(repo)
 
 	err := svc.Signup("alice@example.com", "password123")
-	if !errors.Is(err, dbErr) {
-		t.Fatalf("expected db error propagated, got %v", err)
-	}
+	require.ErrorIs(t, err, dbErr)
 }
 
 func TestSignupVerifyRepoError(t *testing.T) {
@@ -514,12 +420,8 @@ func TestSignupVerifyRepoError(t *testing.T) {
 	svc := newAuthService(repo, &fakeResetRepo{}, verifyRepo, &fakeEmailSvc{})
 
 	err := svc.Signup("alice@example.com", "password123")
-	if !errors.Is(err, repoErr) {
-		t.Fatalf("expected verifyRepo error, got %v", err)
-	}
+	require.ErrorIs(t, err, repoErr)
 }
-
-// ── VerifyEmail additional error paths ─────────────────────────────────────
 
 func TestVerifyEmailFindTokenGenericError(t *testing.T) {
 	dbErr := errors.New("db read failed")
@@ -527,12 +429,8 @@ func TestVerifyEmailFindTokenGenericError(t *testing.T) {
 	svc := newAuthService(&fakeUserRepo{}, &fakeResetRepo{}, verifyRepo, &fakeEmailSvc{})
 
 	err := svc.VerifyEmail("anytoken")
-	if !errors.Is(err, dbErr) {
-		t.Fatalf("expected db error propagated, got %v", err)
-	}
+	require.ErrorIs(t, err, dbErr)
 }
-
-// ── ForgotPassword additional error paths ──────────────────────────────────
 
 func TestForgotPasswordResetRepoError(t *testing.T) {
 	repoErr := errors.New("reset repo failed")
@@ -541,7 +439,5 @@ func TestForgotPasswordResetRepoError(t *testing.T) {
 	svc := newAuthService(userRepo, resetRepo, &fakeVerifyRepo{}, &fakeEmailSvc{})
 
 	err := svc.ForgotPassword("alice@example.com")
-	if !errors.Is(err, repoErr) {
-		t.Fatalf("expected resetRepo error, got %v", err)
-	}
+	require.ErrorIs(t, err, repoErr)
 }

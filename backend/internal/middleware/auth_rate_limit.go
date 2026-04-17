@@ -1,87 +1,37 @@
 package middleware
 
 import (
-	"sync"
 	"time"
 
+	"nexia-backend/internal/config"
+
 	"github.com/gin-gonic/gin"
-	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
 )
 
-type authRateLimiter struct {
-	logger *zap.Logger
-	limit  int
-	per    time.Duration
+const (
+	defaultAuthRateLimitRequests = 10
+	defaultAuthRateLimitBurst    = 10
+	defaultAuthRateLimitWindow   = 10 * time.Second
+)
 
-	mu       sync.Mutex
-	limiters map[string]*visitorLimiter
+// NewAuthRateLimit returns an in-memory per-IP token-bucket limiter for auth endpoints.
+// Requests that exceed the configured budget are rejected with HTTP 429.
+func NewAuthRateLimit(logger *zap.Logger, cfg *config.Config) gin.HandlerFunc {
+	return newRateLimit(logger, "auth", "Too many authentication requests", authRateLimitConfigFromConfig(cfg))
 }
 
-type visitorLimiter struct {
-	limiter  ratelimit.Limiter
-	lastSeen time.Time
-}
-
-// NewAuthRateLimit returns a per-IP rate-limit middleware capped at 10 requests
-// per 10 seconds. Excess requests are slowed via token-bucket (not rejected),
-// and the delay is logged as a warning. Intended for auth endpoints only.
-func NewAuthRateLimit(logger *zap.Logger) gin.HandlerFunc {
-	return newAuthRateLimit(logger, 10, 10*time.Second)
-}
-
-func newAuthRateLimit(logger *zap.Logger, limit int, per time.Duration) gin.HandlerFunc {
-	if logger == nil {
-		panic("auth rate limit requires a logger")
+func authRateLimitConfigFromConfig(cfg *config.Config) rateLimitConfig {
+	if cfg == nil {
+		return rateLimitConfigFromValues(defaultAuthRateLimitRequests, defaultAuthRateLimitBurst, defaultAuthRateLimitWindow, 0, 0, 0)
 	}
 
-	limiter := &authRateLimiter{
-		logger:   logger.Named("auth_rate_limit"),
-		limit:    limit,
-		per:      per,
-		limiters: make(map[string]*visitorLimiter),
-	}
-
-	return limiter.middleware()
-}
-
-func (l *authRateLimiter) middleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		key := c.FullPath() + ":" + c.ClientIP()
-		now := time.Now()
-
-		l.mu.Lock()
-		for k, entry := range l.limiters {
-			if now.Sub(entry.lastSeen) > 10*l.per {
-				delete(l.limiters, k)
-			}
-		}
-
-		entry, ok := l.limiters[key]
-		if !ok {
-			entry = &visitorLimiter{
-				limiter:  ratelimit.New(l.limit, ratelimit.Per(l.per), ratelimit.WithoutSlack),
-				lastSeen: now,
-			}
-			l.limiters[key] = entry
-		}
-		entry.lastSeen = now
-		limiter := entry.limiter
-		l.mu.Unlock()
-
-		before := time.Now()
-		limiter.Take()
-		waited := time.Since(before)
-
-		if waited > 0 {
-			l.logger.Warn("auth rate limit delay applied",
-				zap.String("path", c.FullPath()),
-				zap.String("client_ip", c.ClientIP()),
-				zap.Duration("waited", waited),
-			)
-		}
-
-		c.Header("X-RateLimit-Limit", "10 per 10 seconds")
-		c.Next()
-	}
+	return rateLimitConfigFromValues(
+		defaultAuthRateLimitRequests,
+		defaultAuthRateLimitBurst,
+		defaultAuthRateLimitWindow,
+		cfg.Server.AuthRateLimitRequests,
+		cfg.Server.AuthRateLimitBurst,
+		cfg.Server.AuthRateLimitWindowSeconds,
+	)
 }

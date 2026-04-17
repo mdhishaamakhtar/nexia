@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestProfileCRUDFlowIntegration(t *testing.T) {
@@ -12,50 +14,29 @@ func TestProfileCRUDFlowIntegration(t *testing.T) {
 
 	t.Run("protected endpoint rejects without auth", func(t *testing.T) {
 		resp := doRequest(t, kit, http.MethodGet, "/api/v1/profiles", nil, "")
-		if resp.Code != http.StatusUnauthorized {
-			t.Fatalf("expected 401 got %d", resp.Code)
-		}
+		requireStatus(t, resp, http.StatusUnauthorized)
 	})
 
 	createPayload := newProfilePayload()
 	resp := postJSON(t, kit, "/api/v1/profiles", createPayload, token)
-	if resp.Code != http.StatusCreated {
-		t.Fatalf("create profile expected 201 got %d body=%s", resp.Code, resp.Body.String())
-	}
-	created := decodeJSONMap(t, resp)
-	idFloat, ok := created["id"].(float64)
-	if !ok {
-		t.Fatalf("expected id in create response")
-	}
-	profileID := uint64(idFloat)
+	requireStatus(t, resp, http.StatusCreated)
+	profileID := jsonID(t, decodeJSONMap(t, resp))
 
 	t.Run("list profiles using cookie auth", func(t *testing.T) {
 		w := doRequest(t, kit, http.MethodGet, "/api/v1/profiles?page=1&limit=10&search=alice", nil, "", authCookie, csrfCookie)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
-		}
-		result := decodeJSONMap(t, w)
-		if result["total"].(float64) != 1 {
-			t.Fatalf("expected total 1 got %v", result["total"])
-		}
+		requireStatus(t, w, http.StatusOK)
+		require.Equal(t, float64(1), decodeJSONMap(t, w)["total"])
 	})
 
 	t.Run("get profile", func(t *testing.T) {
 		w := doRequest(t, kit, http.MethodGet, fmt.Sprintf("/api/v1/profiles/%d", profileID), nil, token)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
-		}
-		result := decodeJSONMap(t, w)
-		if result["full_name"] != "Alice Example" {
-			t.Fatalf("unexpected full_name: %v", result["full_name"])
-		}
+		requireStatus(t, w, http.StatusOK)
+		require.Equal(t, "Alice Example", decodeJSONMap(t, w)["full_name"])
 	})
 
 	t.Run("invalid id format returns bad request", func(t *testing.T) {
 		w := doRequest(t, kit, http.MethodGet, "/api/v1/profiles/not-a-number", nil, token)
-		if w.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
-		}
+		requireStatus(t, w, http.StatusBadRequest)
 	})
 
 	t.Run("update profile", func(t *testing.T) {
@@ -63,9 +44,7 @@ func TestProfileCRUDFlowIntegration(t *testing.T) {
 		updatePayload["full_name"] = "Alice Updated"
 		updatePayload["top_songs"] = []map[string]string{{"name": "New Song", "artist": "New Artist"}}
 		w := doRequest(t, kit, http.MethodPut, fmt.Sprintf("/api/v1/profiles/%d", profileID), mustJSON(t, updatePayload), token)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
-		}
+		requireStatus(t, w, http.StatusOK)
 	})
 
 	t.Run("validation path for top songs", func(t *testing.T) {
@@ -77,68 +56,40 @@ func TestProfileCRUDFlowIntegration(t *testing.T) {
 			{"name": "4", "artist": "d"},
 		}
 		w := postJSON(t, kit, "/api/v1/profiles", badPayload, token)
-		if w.Code != http.StatusBadRequest {
-			t.Fatalf("expected 400 got %d body=%s", w.Code, w.Body.String())
-		}
-		result := decodeJSONMap(t, w)
-		errObj := result["error"].(map[string]any)
-		if errObj["code"] != "VALIDATION_ERROR" {
-			t.Fatalf("expected VALIDATION_ERROR got %v", errObj["code"])
-		}
+		requireErrorCode(t, w, http.StatusBadRequest, "VALIDATION_ERROR")
 	})
 
 	t.Run("update replaces associations not appends", func(t *testing.T) {
-		// First update: set 2 tags
 		p1 := newProfilePayload()
 		p1["tags"] = []map[string]string{{"tag": "original-a"}, {"tag": "original-b"}}
 		w := doRequest(t, kit, http.MethodPut, fmt.Sprintf("/api/v1/profiles/%d", profileID), mustJSON(t, p1), token)
-		if w.Code != http.StatusOK {
-			t.Fatalf("first update: expected 200 got %d body=%s", w.Code, w.Body.String())
-		}
+		requireStatus(t, w, http.StatusOK)
 
-		// Second update: replace with 1 different tag — must NOT accumulate the previous 2
 		p2 := newProfilePayload()
 		p2["tags"] = []map[string]string{{"tag": "replaced"}}
 		w = doRequest(t, kit, http.MethodPut, fmt.Sprintf("/api/v1/profiles/%d", profileID), mustJSON(t, p2), token)
-		if w.Code != http.StatusOK {
-			t.Fatalf("second update: expected 200 got %d body=%s", w.Code, w.Body.String())
-		}
+		requireStatus(t, w, http.StatusOK)
 
-		// GET and verify exactly 1 tag with the new value
 		getResp := doRequest(t, kit, http.MethodGet, fmt.Sprintf("/api/v1/profiles/%d", profileID), nil, token)
-		if getResp.Code != http.StatusOK {
-			t.Fatalf("get after update: expected 200 got %d", getResp.Code)
-		}
+		requireStatus(t, getResp, http.StatusOK)
 		body := decodeJSONMap(t, getResp)
 		tags, ok := body["tags"].([]any)
-		if !ok {
-			t.Fatalf("expected tags array, got %T", body["tags"])
-		}
-		if len(tags) != 1 {
-			t.Fatalf("expected exactly 1 tag after update (got %d) — duplicate associations bug!", len(tags))
-		}
-		if tags[0].(map[string]any)["tag"] != "replaced" {
-			t.Fatalf("expected tag value 'replaced', got %v", tags[0].(map[string]any)["tag"])
-		}
+		require.True(t, ok)
+		require.Len(t, tags, 1)
+		require.Equal(t, "replaced", tags[0].(map[string]any)["tag"])
 	})
 
 	t.Run("delete profile", func(t *testing.T) {
 		w := doRequest(t, kit, http.MethodDelete, fmt.Sprintf("/api/v1/profiles/%d", profileID), nil, token)
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d body=%s", w.Code, w.Body.String())
-		}
+		requireStatus(t, w, http.StatusOK)
 
 		w = doRequest(t, kit, http.MethodGet, fmt.Sprintf("/api/v1/profiles/%d", profileID), nil, token)
-		if w.Code != http.StatusNotFound {
-			t.Fatalf("expected 404 after delete got %d body=%s", w.Code, w.Body.String())
-		}
+		requireStatus(t, w, http.StatusNotFound)
 	})
 
 	t.Run("update missing record returns not found", func(t *testing.T) {
 		w := doRequest(t, kit, http.MethodPut, "/api/v1/profiles/999", mustJSON(t, newProfilePayload()), token)
-		if w.Code != http.StatusNotFound {
-			t.Fatalf("expected 404 got %d body=%s", w.Code, w.Body.String())
-		}
+		requireStatus(t, w, http.StatusNotFound)
 	})
 }
 

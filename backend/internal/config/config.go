@@ -28,12 +28,18 @@ type AIConfig struct {
 }
 
 type ServerConfig struct {
-	Port             int      `mapstructure:"port"`
-	Mode             string   `mapstructure:"mode"`
-	JWTSecret        string   `mapstructure:"jwt_secret"`
-	JWTExpiryMinutes int      `mapstructure:"jwt_expiry_minutes"`
-	CORSOrigins      []string `mapstructure:"cors_origins"`
-	CookieDomain     string   `mapstructure:"cookie_domain"`
+	Port                       int      `mapstructure:"port"`
+	Mode                       string   `mapstructure:"mode"`
+	JWTSecret                  string   `mapstructure:"jwt_secret"`
+	JWTExpiryMinutes           int      `mapstructure:"jwt_expiry_minutes"`
+	CORSOrigins                []string `mapstructure:"cors_origins"`
+	CookieDomain               string   `mapstructure:"cookie_domain"`
+	AuthRateLimitRequests      int      `mapstructure:"auth_rate_limit_requests"`
+	AuthRateLimitWindowSeconds int      `mapstructure:"auth_rate_limit_window_seconds"`
+	AuthRateLimitBurst         int      `mapstructure:"auth_rate_limit_burst"`
+	ChatRateLimitRequests      int      `mapstructure:"chat_rate_limit_requests"`
+	ChatRateLimitWindowSeconds int      `mapstructure:"chat_rate_limit_window_seconds"`
+	ChatRateLimitBurst         int      `mapstructure:"chat_rate_limit_burst"`
 }
 
 type DBConfig struct {

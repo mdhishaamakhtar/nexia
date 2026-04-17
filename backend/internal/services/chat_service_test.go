@@ -7,90 +7,86 @@ import (
 
 	"nexia-backend/internal/repositories"
 	"nexia-backend/internal/services"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
-
-type fakeGeminiClient struct {
-	embedding []float32
-	embedErr  error
-	chatResp  string
-	chatErr   error
-}
-
-func (f *fakeGeminiClient) GenerateEmbedding(ctx context.Context, text string) ([]float32, error) {
-	if f.embedErr != nil {
-		return nil, f.embedErr
-	}
-	if f.embedding == nil {
-		return []float32{0.1, 0.2}, nil
-	}
-	return f.embedding, nil
-}
-
-func (f *fakeGeminiClient) GenerateChatResponse(ctx context.Context, systemPrompt string, userMessage string) (string, error) {
-	if f.chatErr != nil {
-		return "", f.chatErr
-	}
-	return f.chatResp, nil
-}
-
-type fakeVectorClient struct {
-	results []repositories.SearchResult
-	err     error
-}
-
-func (f *fakeVectorClient) SearchContext(ctx context.Context, userID uint64, queryEmbedding []float32, limit int) ([]repositories.SearchResult, error) {
-	if f.err != nil {
-		return nil, f.err
-	}
-	if f.results == nil {
-		return []repositories.SearchResult{{Payload: map[string]any{"full_name": "Alice", "top_songs": []any{map[string]any{"name": "Numb", "artist": "LP"}}}}}, nil
-	}
-	return f.results, nil
-}
 
 func TestChatServiceAIUnavailable(t *testing.T) {
 	svc := services.NewChatService(nil, nil)
 	_, err := svc.Chat(context.Background(), 1, "hello")
-	if !errors.Is(err, services.ErrAIUnavailable) {
-		t.Fatalf("expected ErrAIUnavailable, got %v", err)
-	}
+	require.ErrorIs(t, err, services.ErrAIUnavailable)
 }
 
 func TestChatServiceEmbeddingFailure(t *testing.T) {
-	svc := services.NewChatService(&fakeGeminiClient{embedErr: errors.New("embed fail")}, &fakeVectorClient{})
+	ctrl := gomock.NewController(t)
+	gemini := NewMockGeminiClient(ctrl)
+	vector := NewMockVectorSearchClient(ctrl)
+
+	gemini.EXPECT().GenerateEmbedding(gomock.Any(), "hello").Return(nil, errors.New("embed fail"))
+
+	svc := services.NewChatService(gemini, vector)
 	_, err := svc.Chat(context.Background(), 1, "hello")
-	if err == nil || err.Error() != "embedding failed: embed fail" {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.EqualError(t, err, "embedding failed: embed fail")
 }
 
 func TestChatServiceSearchFailure(t *testing.T) {
-	svc := services.NewChatService(&fakeGeminiClient{}, &fakeVectorClient{err: errors.New("search fail")})
+	ctrl := gomock.NewController(t)
+	gemini := NewMockGeminiClient(ctrl)
+	vector := NewMockVectorSearchClient(ctrl)
+
+	queryEmbedding := []float32{0.1, 0.2}
+	gomock.InOrder(
+		gemini.EXPECT().GenerateEmbedding(gomock.Any(), "hello").Return(queryEmbedding, nil),
+		vector.EXPECT().SearchContext(gomock.Any(), uint64(1), queryEmbedding, 5).Return(nil, errors.New("search fail")),
+	)
+
+	svc := services.NewChatService(gemini, vector)
 	_, err := svc.Chat(context.Background(), 1, "hello")
-	if err == nil || err.Error() != "search failed: search fail" {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.EqualError(t, err, "search failed: search fail")
 }
 
 func TestChatServiceEmptyResponse(t *testing.T) {
-	svc := services.NewChatService(&fakeGeminiClient{chatResp: "   "}, &fakeVectorClient{})
+	ctrl := gomock.NewController(t)
+	gemini := NewMockGeminiClient(ctrl)
+	vector := NewMockVectorSearchClient(ctrl)
+
+	queryEmbedding := []float32{0.1, 0.2}
+	gomock.InOrder(
+		gemini.EXPECT().GenerateEmbedding(gomock.Any(), "hello").Return(queryEmbedding, nil),
+		vector.EXPECT().SearchContext(gomock.Any(), uint64(1), queryEmbedding, 5).Return(nil, nil),
+		gemini.EXPECT().GenerateChatResponse(gomock.Any(), gomock.Any(), gomock.Any()).Return("   ", nil),
+	)
+
+	svc := services.NewChatService(gemini, vector)
 	_, err := svc.Chat(context.Background(), 1, "hello")
-	if err == nil || err.Error() != "empty response from ai" {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.EqualError(t, err, "empty response from ai")
 }
 
 func TestChatServiceChatFailure(t *testing.T) {
-	svc := services.NewChatService(&fakeGeminiClient{chatErr: errors.New("chat fail")}, &fakeVectorClient{})
+	ctrl := gomock.NewController(t)
+	gemini := NewMockGeminiClient(ctrl)
+	vector := NewMockVectorSearchClient(ctrl)
+
+	queryEmbedding := []float32{0.1, 0.2}
+	gomock.InOrder(
+		gemini.EXPECT().GenerateEmbedding(gomock.Any(), "hello").Return(queryEmbedding, nil),
+		vector.EXPECT().SearchContext(gomock.Any(), uint64(1), queryEmbedding, 5).Return(nil, nil),
+		gemini.EXPECT().GenerateChatResponse(gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("chat fail")),
+	)
+
+	svc := services.NewChatService(gemini, vector)
 	_, err := svc.Chat(context.Background(), 1, "hello")
-	if err == nil || err.Error() != "chat fail" {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.EqualError(t, err, "chat fail")
 }
 
 func TestChatServiceSuccess(t *testing.T) {
-	gemini := &fakeGeminiClient{chatResp: "Answer"}
-	vector := &fakeVectorClient{results: []repositories.SearchResult{{
+	ctrl := gomock.NewController(t)
+	gemini := NewMockGeminiClient(ctrl)
+	vector := NewMockVectorSearchClient(ctrl)
+
+	queryEmbedding := []float32{0.1, 0.2}
+	vectorResults := []repositories.SearchResult{{
 		Payload: map[string]any{
 			"full_name":         "Alice Example",
 			"score":             float64(1.23),
@@ -105,34 +101,41 @@ func TestChatServiceSuccess(t *testing.T) {
 			"is_best_friend":    true,
 			"misc":              []any{"x", "y"},
 		},
-	}}}
-	svc := services.NewChatService(gemini, vector)
+	}}
 
+	gomock.InOrder(
+		gemini.EXPECT().GenerateEmbedding(gomock.Any(), "Tell me about Alice").Return(queryEmbedding, nil),
+		vector.EXPECT().SearchContext(gomock.Any(), uint64(1), queryEmbedding, 5).Return(vectorResults, nil),
+		gemini.EXPECT().GenerateChatResponse(gomock.Any(), gomock.Any(), gomock.Any()).Return("Answer", nil),
+	)
+
+	svc := services.NewChatService(gemini, vector)
 	resp, err := svc.Chat(context.Background(), 1, "Tell me about Alice")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp != "Answer" {
-		t.Fatalf("expected Answer got %s", resp)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "Answer", resp)
 }
 
 func TestChatServiceAssociatedSongNoName(t *testing.T) {
-	// associated_song as a map without a "name" key — formatPayloadValue map branch returns ""
-	gemini := &fakeGeminiClient{chatResp: "Answer"}
-	vector := &fakeVectorClient{results: []repositories.SearchResult{{
+	ctrl := gomock.NewController(t)
+	gemini := NewMockGeminiClient(ctrl)
+	vector := NewMockVectorSearchClient(ctrl)
+
+	queryEmbedding := []float32{0.1, 0.2}
+	vectorResults := []repositories.SearchResult{{
 		Payload: map[string]any{
 			"full_name":       "Bob",
 			"associated_song": map[string]any{"unknown_field": "value"},
 		},
-	}}}
-	svc := services.NewChatService(gemini, vector)
+	}}
 
+	gomock.InOrder(
+		gemini.EXPECT().GenerateEmbedding(gomock.Any(), "Tell me about Bob").Return(queryEmbedding, nil),
+		vector.EXPECT().SearchContext(gomock.Any(), uint64(1), queryEmbedding, 5).Return(vectorResults, nil),
+		gemini.EXPECT().GenerateChatResponse(gomock.Any(), gomock.Any(), gomock.Any()).Return("Answer", nil),
+	)
+
+	svc := services.NewChatService(gemini, vector)
 	resp, err := svc.Chat(context.Background(), 1, "Tell me about Bob")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if resp != "Answer" {
-		t.Fatalf("expected Answer got %s", resp)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "Answer", resp)
 }

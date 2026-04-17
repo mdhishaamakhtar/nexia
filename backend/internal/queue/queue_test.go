@@ -9,10 +9,9 @@ import (
 	"nexia-backend/internal/services"
 
 	"github.com/hibiken/asynq"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
-
-// --- Producer fakes ---
 
 type fakeEnqueuer struct {
 	tasks  []*asynq.Task
@@ -33,8 +32,6 @@ func (f *fakeEnqueuer) Close() error {
 	return nil
 }
 
-// --- Handler fake ---
-
 type fakeEmbeddingRunner struct {
 	embedErr  error
 	deleteErr error
@@ -52,51 +49,29 @@ func (f *fakeEmbeddingRunner) DeleteEmbedding(_ context.Context, profileID uint6
 	return f.deleteErr
 }
 
-// --- Producer tests ---
-
 func TestParseRedisOpt(t *testing.T) {
-	if got := ParseRedisOpt("redis://localhost:6379/0"); got == nil {
-		t.Fatal("expected parsed redis opt")
-	}
-	if got := ParseRedisOpt("localhost:6379"); got == nil {
-		t.Fatal("expected fallback redis opt")
-	}
+	require.NotNil(t, ParseRedisOpt("redis://localhost:6379/0"))
+	require.NotNil(t, ParseRedisOpt("localhost:6379"))
 }
 
 func TestQueueClientEnqueueAndClose(t *testing.T) {
 	fake := &fakeEnqueuer{}
 	client := newQueueClientWithClient(fake, zap.NewNop())
 
-	if err := client.EnqueueEmbeddingTask(7); err != nil {
-		t.Fatalf("EnqueueEmbeddingTask returned error: %v", err)
-	}
-	if err := client.EnqueueDeletionTask(11); err != nil {
-		t.Fatalf("EnqueueDeletionTask returned error: %v", err)
-	}
-	if len(fake.tasks) != 2 {
-		t.Fatalf("expected 2 tasks, got %d", len(fake.tasks))
-	}
+	require.NoError(t, client.EnqueueEmbeddingTask(7))
+	require.NoError(t, client.EnqueueDeletionTask(11))
+	require.Len(t, fake.tasks, 2)
 
 	var embeddingPayload EmbeddingPayload
-	if err := json.Unmarshal(fake.tasks[0].Payload(), &embeddingPayload); err != nil {
-		t.Fatalf("unmarshal embedding payload: %v", err)
-	}
-	if embeddingPayload.ProfileID != 7 {
-		t.Fatalf("unexpected embedding payload %+v", embeddingPayload)
-	}
+	require.NoError(t, json.Unmarshal(fake.tasks[0].Payload(), &embeddingPayload))
+	require.Equal(t, uint(7), embeddingPayload.ProfileID)
 
 	var deletionPayload DeletionPayload
-	if err := json.Unmarshal(fake.tasks[1].Payload(), &deletionPayload); err != nil {
-		t.Fatalf("unmarshal deletion payload: %v", err)
-	}
-	if deletionPayload.ProfileID != 11 {
-		t.Fatalf("unexpected deletion payload %+v", deletionPayload)
-	}
+	require.NoError(t, json.Unmarshal(fake.tasks[1].Payload(), &deletionPayload))
+	require.Equal(t, uint64(11), deletionPayload.ProfileID)
 
 	client.Close()
-	if !fake.closed {
-		t.Fatal("expected client close")
-	}
+	require.True(t, fake.closed)
 }
 
 func TestNewQueueClient(t *testing.T) {
@@ -109,53 +84,40 @@ func TestNewQueueClient(t *testing.T) {
 	}
 
 	client := NewQueueClient("redis://localhost:6379/0", zap.NewNop())
-	if client == nil {
-		t.Fatal("expected queue client")
-	}
-	if client.client != fake {
-		t.Fatal("expected injected asynq client")
-	}
+	require.NotNil(t, client)
+	require.Same(t, fake, client.client)
 }
-
-// --- Handler tests (dispatch only) ---
 
 func TestTaskHandlerEmbeddingTask(t *testing.T) {
 	runner := &fakeEmbeddingRunner{}
 	handler := &TaskHandler{svc: runner, logger: zap.NewNop()}
 
-	payload, _ := json.Marshal(EmbeddingPayload{ProfileID: 7})
-	if err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload)); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(runner.embedded) != 1 || runner.embedded[0] != 7 {
-		t.Fatalf("expected EmbedProfile(7), got %v", runner.embedded)
-	}
+	payload, err := json.Marshal(EmbeddingPayload{ProfileID: 7})
+	require.NoError(t, err)
+	require.NoError(t, handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload)))
+	require.Equal(t, []uint{7}, runner.embedded)
 }
 
 func TestTaskHandlerEmbeddingTaskErrors(t *testing.T) {
 	t.Run("invalid payload skips retry", func(t *testing.T) {
 		handler := &TaskHandler{svc: &fakeEmbeddingRunner{}, logger: zap.NewNop()}
 		err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, []byte("bad")))
-		if !errors.Is(err, asynq.SkipRetry) {
-			t.Fatalf("expected SkipRetry, got %v", err)
-		}
+		require.ErrorIs(t, err, asynq.SkipRetry)
 	})
 
 	t.Run("ErrNotFound skips retry", func(t *testing.T) {
 		handler := &TaskHandler{svc: &fakeEmbeddingRunner{embedErr: services.ErrNotFound}, logger: zap.NewNop()}
-		payload, _ := json.Marshal(EmbeddingPayload{ProfileID: 1})
-		err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload))
-		if !errors.Is(err, asynq.SkipRetry) {
-			t.Fatalf("expected SkipRetry on ErrNotFound, got %v", err)
-		}
+		payload, err := json.Marshal(EmbeddingPayload{ProfileID: 1})
+		require.NoError(t, err)
+		err = handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload))
+		require.ErrorIs(t, err, asynq.SkipRetry)
 	})
 
 	t.Run("other error propagated", func(t *testing.T) {
 		handler := &TaskHandler{svc: &fakeEmbeddingRunner{embedErr: errors.New("transient failure")}, logger: zap.NewNop()}
-		payload, _ := json.Marshal(EmbeddingPayload{ProfileID: 1})
-		if err := handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload)); err == nil {
-			t.Fatal("expected error to propagate")
-		}
+		payload, err := json.Marshal(EmbeddingPayload{ProfileID: 1})
+		require.NoError(t, err)
+		require.Error(t, handler.HandleEmbeddingTask(context.Background(), asynq.NewTask(TypeEmbeddingTask, payload)))
 	})
 }
 
@@ -163,29 +125,23 @@ func TestTaskHandlerDeletionTask(t *testing.T) {
 	runner := &fakeEmbeddingRunner{}
 	handler := &TaskHandler{svc: runner, logger: zap.NewNop()}
 
-	payload, _ := json.Marshal(DeletionPayload{ProfileID: 22})
-	if err := handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, payload)); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(runner.deleted) != 1 || runner.deleted[0] != 22 {
-		t.Fatalf("expected DeleteEmbedding(22), got %v", runner.deleted)
-	}
+	payload, err := json.Marshal(DeletionPayload{ProfileID: 22})
+	require.NoError(t, err)
+	require.NoError(t, handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, payload)))
+	require.Equal(t, []uint64{22}, runner.deleted)
 }
 
 func TestTaskHandlerDeletionTaskErrors(t *testing.T) {
 	t.Run("invalid payload skips retry", func(t *testing.T) {
 		handler := &TaskHandler{svc: &fakeEmbeddingRunner{}, logger: zap.NewNop()}
 		err := handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, []byte("bad")))
-		if !errors.Is(err, asynq.SkipRetry) {
-			t.Fatalf("expected SkipRetry, got %v", err)
-		}
+		require.ErrorIs(t, err, asynq.SkipRetry)
 	})
 
 	t.Run("deletion error propagated", func(t *testing.T) {
 		handler := &TaskHandler{svc: &fakeEmbeddingRunner{deleteErr: errors.New("delete failed")}, logger: zap.NewNop()}
-		payload, _ := json.Marshal(DeletionPayload{ProfileID: 4})
-		if err := handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, payload)); err == nil {
-			t.Fatal("expected error to propagate")
-		}
+		payload, err := json.Marshal(DeletionPayload{ProfileID: 4})
+		require.NoError(t, err)
+		require.Error(t, handler.HandleDeletionTask(context.Background(), asynq.NewTask(TypeDeletionTask, payload)))
 	})
 }

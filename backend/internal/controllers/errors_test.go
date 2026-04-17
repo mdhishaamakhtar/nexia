@@ -11,13 +11,11 @@ import (
 	"nexia-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )
 
-// TestRespondWithServiceErrorMapping verifies every branch of the switch —
-// each sentinel service error maps to the expected HTTP status and error code.
-// Previously only partially covered through integration tests; this pins the
-// contract at the unit level.
+// TestRespondWithServiceErrorMapping verifies every branch of the switch.
 func TestRespondWithServiceErrorMapping(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -44,20 +42,14 @@ func TestRespondWithServiceErrorMapping(t *testing.T) {
 			c, _ := gin.CreateTestContext(w)
 			respondWithServiceError(c, tc.err)
 
-			if w.Code != tc.wantCode {
-				t.Fatalf("status: want %d got %d", tc.wantCode, w.Code)
-			}
+			require.Equal(t, tc.wantCode, w.Code)
+
 			var body map[string]any
-			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
-				t.Fatalf("unmarshal: %v", err)
-			}
+			require.NoError(t, json.Unmarshal(w.Body.Bytes(), &body))
+
 			errObj, ok := body["error"].(map[string]any)
-			if !ok {
-				t.Fatalf("expected error envelope, got %s", w.Body.String())
-			}
-			if errObj["code"] != tc.wantKey {
-				t.Fatalf("code: want %s got %v", tc.wantKey, errObj["code"])
-			}
+			require.True(t, ok, w.Body.String())
+			require.Equal(t, tc.wantKey, errObj["code"])
 		})
 	}
 }

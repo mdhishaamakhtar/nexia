@@ -20,13 +20,8 @@ import (
 	"nexia-backend/internal/services"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/modules/redis"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	gormPostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -39,10 +34,8 @@ type integrationKit struct {
 
 type fakeEmailSender struct{}
 
-func (f *fakeEmailSender) SendVerificationEmail(toEmail, token string) error { return nil }
-func (f *fakeEmailSender) SendPasswordResetEmail(toEmail, token string) error {
-	return nil
-}
+func (f *fakeEmailSender) SendVerificationEmail(toEmail, token string) error  { return nil }
+func (f *fakeEmailSender) SendPasswordResetEmail(toEmail, token string) error { return nil }
 
 type fakeGemini struct{}
 
@@ -59,56 +52,14 @@ func (fakeGemini) GenerateChatResponse(ctx context.Context, systemPrompt string,
 
 func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 	t.Helper()
+	return buildRouterWithServerConfig(t, enableAI, config.ServerConfig{})
+}
+
+func buildRouterWithServerConfig(t *testing.T, enableAI bool, serverCfg config.ServerConfig) *integrationKit {
+	t.Helper()
 	gin.SetMode(gin.TestMode)
-	ctx := context.Background()
-
-	pgContainer, err := postgres.Run(ctx,
-		"pgvector/pgvector:pg16",
-		postgres.WithDatabase("nexia"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("secret"),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Fatalf("run postgres container: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = pgContainer.Terminate(ctx)
-	})
-
-	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("get db connection string: %v", err)
-	}
-
-	redisContainer, err := redis.Run(ctx, "redis:7")
-	if err != nil {
-		t.Fatalf("run redis container: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = redisContainer.Terminate(ctx)
-	})
-	redisURL, err := redisContainer.ConnectionString(ctx)
-	if err != nil {
-		t.Fatalf("get redis connection string: %v", err)
-	}
-
-	db, err := gorm.Open(gormPostgres.Open(connStr), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open postgres: %v", err)
-	}
-
-	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector;").Error; err != nil {
-		t.Fatalf("create vector extension: %v", err)
-	}
-
-	migrator, err := migrate.New("file://../../migrations", connStr)
-	if err != nil {
-		t.Fatalf("create migrator: %v", err)
-	}
-	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
-		t.Fatalf("run migrations: %v", err)
-	}
+	lockSharedInfra(t, true)
+	db, _ := createIsolatedTestDatabase(t, true)
 
 	userRepository := repositories.NewUserRepository(db)
 	profileRepository := repositories.NewProfileRepository(db)
@@ -118,25 +69,29 @@ func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			Mode:             gin.TestMode,
-			JWTSecret:        "integration-secret",
-			JWTExpiryMinutes: 30,
-			CORSOrigins:      []string{"http://localhost:3000"},
+			Mode:                       gin.TestMode,
+			JWTSecret:                  "integration-secret",
+			JWTExpiryMinutes:           30,
+			CORSOrigins:                []string{"http://localhost:3000"},
+			AuthRateLimitRequests:      serverCfg.AuthRateLimitRequests,
+			AuthRateLimitWindowSeconds: serverCfg.AuthRateLimitWindowSeconds,
+			AuthRateLimitBurst:         serverCfg.AuthRateLimitBurst,
+			ChatRateLimitRequests:      serverCfg.ChatRateLimitRequests,
+			ChatRateLimitWindowSeconds: serverCfg.ChatRateLimitWindowSeconds,
+			ChatRateLimitBurst:         serverCfg.ChatRateLimitBurst,
 		},
 		AI: config.AIConfig{
-			RedisURL: redisURL, // Enable Asynq and pass in the testcontainer URL
+			RedisURL: sharedRedisURL,
 		},
 	}
 
 	authService := services.NewAuthService(userRepository, resetTokenRepo, verifyTokenRepo, emailSender, cfg, zap.NewNop())
-
-	// Real embedded queue pointing to Redis
-	qClient := queue.NewQueueClient(redisURL, zap.NewNop())
+	qClient := queue.NewQueueClient(sharedRedisURL, zap.NewNop())
+	t.Cleanup(qClient.Close)
 	profileService := services.NewProfileService(profileRepository, qClient, zap.NewNop())
 
 	var chatService *services.ChatService
 	if enableAI {
-		// Real embedding repository instead of fakeVector
 		pgClient := repositories.NewEmbeddingRepository(db, zap.NewNop())
 		chatService = services.NewChatService(fakeGemini{}, pgClient)
 	} else {
@@ -148,54 +103,25 @@ func buildRouter(t *testing.T, enableAI bool) *integrationKit {
 	chatController := controllers.NewChatController(chatService)
 
 	return &integrationKit{
-		router:   routes.SetupRouter(profileController, authController, chatController, cfg, routes.WithLogger(zap.NewNop()), routes.WithDB(db), routes.WithUserLookup(userRepository)),
+		router: routes.SetupRouter(
+			profileController,
+			authController,
+			chatController,
+			cfg,
+			routes.WithLogger(zap.NewNop()),
+			routes.WithDB(db),
+			routes.WithUserLookup(userRepository),
+		),
 		db:       db,
 		users:    userRepository,
-		redisURL: redisURL,
+		redisURL: sharedRedisURL,
 	}
 }
 
-// buildDB spins up a postgres container with pgvector, runs migrations, and
-// returns a connected *gorm.DB. Used by tests that need a real DB but not
-// the full HTTP router.
 func buildDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	ctx := context.Background()
-
-	pgContainer, err := postgres.Run(ctx,
-		"pgvector/pgvector:pg16",
-		postgres.WithDatabase("nexia"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("secret"),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Fatalf("run postgres container: %v", err)
-	}
-	t.Cleanup(func() { _ = pgContainer.Terminate(ctx) })
-
-	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("get db connection string: %v", err)
-	}
-
-	db, err := gorm.Open(gormPostgres.Open(connStr), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open postgres: %v", err)
-	}
-
-	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS vector;").Error; err != nil {
-		t.Fatalf("create vector extension: %v", err)
-	}
-
-	migrator, err := migrate.New("file://../../migrations", connStr)
-	if err != nil {
-		t.Fatalf("create migrator: %v", err)
-	}
-	if err := migrator.Up(); err != nil && err != migrate.ErrNoChange {
-		t.Fatalf("run migrations: %v", err)
-	}
-
+	lockSharedInfra(t, false)
+	db, _ := createIsolatedTestDatabase(t, true)
 	return db
 }
 
@@ -203,26 +129,18 @@ func (k *integrationKit) verifyUserEmail(t *testing.T, email string) {
 	t.Helper()
 
 	user, err := k.users.FindByEmail(email)
-	if err != nil {
-		t.Fatalf("find user by email: %v", err)
-	}
-	if err := k.users.UpdateEmailVerified(user.ID); err != nil {
-		t.Fatalf("verify user email: %v", err)
-	}
+	require.NoError(t, err)
+	require.NoError(t, k.users.UpdateEmailVerified(user.ID))
 }
 
 func (k *integrationKit) getVerifyTokenForEmail(t *testing.T, email string) string {
 	t.Helper()
 
 	user, err := k.users.FindByEmail(email)
-	if err != nil {
-		t.Fatalf("find user by email: %v", err)
-	}
+	require.NoError(t, err)
 
 	var token models.EmailVerificationToken
-	if err := k.db.Where("user_id = ?", user.ID).Order("id DESC").First(&token).Error; err != nil {
-		t.Fatalf("find verification token: %v", err)
-	}
+	require.NoError(t, k.db.Where("user_id = ?", user.ID).Order("id DESC").First(&token).Error)
 	return token.Token
 }
 
@@ -230,23 +148,17 @@ func (k *integrationKit) getResetTokenForEmail(t *testing.T, email string) strin
 	t.Helper()
 
 	user, err := k.users.FindByEmail(email)
-	if err != nil {
-		t.Fatalf("find user by email: %v", err)
-	}
+	require.NoError(t, err)
 
 	var token models.PasswordResetToken
-	if err := k.db.Where("user_id = ?", user.ID).Order("id DESC").First(&token).Error; err != nil {
-		t.Fatalf("find reset token: %v", err)
-	}
+	require.NoError(t, k.db.Where("user_id = ?", user.ID).Order("id DESC").First(&token).Error)
 	return token.Token
 }
 
 func postJSON(t *testing.T, kit *integrationKit, path string, body any, token string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 	t.Helper()
 	payload, err := json.Marshal(body)
-	if err != nil {
-		t.Fatalf("marshal body: %v", err)
-	}
+	require.NoError(t, err)
 	return doRequest(t, kit, http.MethodPost, path, payload, token, cookies...)
 }
 
@@ -268,48 +180,56 @@ func doRequest(t *testing.T, kit *integrationKit, method, path string, body []by
 	return w
 }
 
+func requireStatus(t *testing.T, w *httptest.ResponseRecorder, status int) {
+	t.Helper()
+	require.Equal(t, status, w.Code, w.Body.String())
+}
+
 func decodeJSONMap(t *testing.T, w *httptest.ResponseRecorder) map[string]any {
 	t.Helper()
 	var out map[string]any
-	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
-		t.Fatalf("unmarshal json: %v, body: %s", err, w.Body.String())
-	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &out), w.Body.String())
 	return out
+}
+
+func requireErrorCode(t *testing.T, w *httptest.ResponseRecorder, status int, code string) {
+	t.Helper()
+	requireStatus(t, w, status)
+	errObj, ok := decodeJSONMap(t, w)["error"].(map[string]any)
+	require.True(t, ok, w.Body.String())
+	require.Equal(t, code, errObj["code"])
 }
 
 func mustJSON(t *testing.T, v any) []byte {
 	t.Helper()
 	b, err := json.Marshal(v)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
+	require.NoError(t, err)
 	return b
+}
+
+func jsonID(t *testing.T, body map[string]any) uint64 {
+	t.Helper()
+	id, ok := body["id"].(float64)
+	require.True(t, ok, "%T", body["id"])
+	return uint64(id)
 }
 
 func signupAndGetToken(t *testing.T, kit *integrationKit, email string) (string, *http.Cookie, *http.Cookie) {
 	t.Helper()
 
 	signupResp := postJSON(t, kit, "/api/v1/auth/signup", map[string]any{"email": email, "password": "pass123"}, "")
-	if signupResp.Code != http.StatusCreated {
-		t.Fatalf("signup expected 201, got %d body=%s", signupResp.Code, signupResp.Body.String())
-	}
+	requireStatus(t, signupResp, http.StatusCreated)
 
 	kit.verifyUserEmail(t, email)
 
 	loginResp := postJSON(t, kit, "/api/v1/auth/login", map[string]any{"email": email, "password": "pass123"}, "")
-	if loginResp.Code != http.StatusOK {
-		t.Fatalf("login expected 200, got %d body=%s", loginResp.Code, loginResp.Body.String())
-	}
+	requireStatus(t, loginResp, http.StatusOK)
 
 	var out struct {
 		Token string `json:"token"`
 	}
-	if err := json.Unmarshal(loginResp.Body.Bytes(), &out); err != nil {
-		t.Fatalf("decode auth: %v", err)
-	}
-	if out.Token == "" {
-		t.Fatalf("expected token")
-	}
+	require.NoError(t, json.Unmarshal(loginResp.Body.Bytes(), &out))
+	require.NotEmpty(t, out.Token)
 
 	var authCookie *http.Cookie
 	var csrfCookie *http.Cookie
@@ -321,12 +241,8 @@ func signupAndGetToken(t *testing.T, kit *integrationKit, email string) (string,
 			csrfCookie = c
 		}
 	}
-	if authCookie == nil {
-		t.Fatalf("expected nexia_token cookie")
-	}
-	if csrfCookie == nil {
-		t.Fatalf("expected csrf cookie")
-	}
+	require.NotNil(t, authCookie)
+	require.NotNil(t, csrfCookie)
 
 	return out.Token, authCookie, csrfCookie
 }
