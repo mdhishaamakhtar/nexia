@@ -29,6 +29,7 @@ import Button from "@/components/atoms/Button";
 import QuoteModal from "@/components/molecules/QuoteModal";
 import ZodiacIcon from "@/features/profiles/components/ZodiacIcon";
 import { deleteProfile, getProfile } from "@/features/profiles/api";
+import { exportProfilePdf } from "@/features/profiles/exportProfilePdf";
 import type { Profile } from "@/shared/types/profile";
 import { useToast } from "@/shared/ui/toast";
 import { getErrorMessage } from "@/shared/api/client";
@@ -149,46 +150,6 @@ function hasAssociatedSong(song?: Profile["associated_song"]) {
   return Boolean(song && (hasText(song.name) || hasText(song.artist)));
 }
 
-function PrintField({ label, value }: { label: string; value?: string | null }) {
-  if (!hasText(value)) return null;
-  const displayValue = value?.trim();
-
-  return (
-    <div className="profile-print-field">
-      <div className="profile-print-label">{label}</div>
-      <div className="profile-print-value">{displayValue}</div>
-    </div>
-  );
-}
-
-function PrintPills({ items }: { items: string[] }) {
-  if (items.length === 0) return null;
-  return (
-    <div className="profile-print-pills">
-      {items.map((item, index) => (
-        <span key={`${item}-${index}`}>{item}</span>
-      ))}
-    </div>
-  );
-}
-
-function PrintSection({
-  title,
-  accent = "peach",
-  children,
-}: {
-  title: string;
-  accent?: "peach" | "lavender" | "blue";
-  children: React.ReactNode;
-}) {
-  return (
-    <section className={`profile-print-section profile-print-section-${accent}`}>
-      <div className="profile-print-section-title">{title}</div>
-      <div className="profile-print-section-body">{children}</div>
-    </section>
-  );
-}
-
 export default function ProfileDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -198,6 +159,7 @@ export default function ProfileDetailPage() {
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: profile, isLoading } = useQuery<Profile>({
     enabled: !!id,
@@ -270,18 +232,17 @@ export default function ProfileDetailPage() {
   const hasDeep =
     hasText(profile.long_term_goals) || hasText(profile.favorite_memory) || quotes.length > 0;
 
-  const handleExportPdf = () => {
-    const previousTitle = document.title;
-    const safeName = profile.full_name?.trim() || "Profile";
-
-    const restoreTitle = () => {
-      document.title = previousTitle;
-      window.removeEventListener("afterprint", restoreTitle);
-    };
-
-    document.title = `${safeName} - Nexia profile`;
-    window.addEventListener("afterprint", restoreTitle, { once: true });
-    window.print();
+  const handleExportPdf = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportProfilePdf(profile);
+      success("PDF exported");
+    } catch (err: unknown) {
+      error(await getErrorMessage(err, "Failed to export PDF"));
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -419,7 +380,12 @@ export default function ProfileDetailPage() {
                 </p>
               </div>
             </div>
-            <Button onClick={handleExportPdf} variant="primary" className="w-full sm:w-auto">
+            <Button
+              onClick={handleExportPdf}
+              variant="primary"
+              className="w-full sm:w-auto"
+              isLoading={isExporting}
+            >
               <Download className="mr-2 h-4 w-4" aria-hidden="true" />
               Export PDF
             </Button>
@@ -684,125 +650,6 @@ export default function ProfileDetailPage() {
           )}
         </div>
       </div>
-
-      <article className="profile-print-root" aria-label={`${profile.full_name} printable profile`}>
-        <div className="profile-print-paper">
-          <div className="profile-print-washi" aria-hidden="true" />
-          <header className="profile-print-hero">
-            <div className="profile-print-avatar">
-              {profile.full_name?.charAt(0)?.toUpperCase() || "?"}
-            </div>
-            <div>
-              <div className="profile-print-kicker">Nexia profile</div>
-              <h1>{profile.full_name}</h1>
-              <div className="profile-print-meta">
-                <span>{profile.relationship_type}</span>
-                {birthdayShort && <span>{birthdayShort}</span>}
-                {profile.zodiac_sign && <span>{profile.zodiac_sign}</span>}
-              </div>
-            </div>
-          </header>
-
-          {hasText(profile.bio) && <p className="profile-print-bio">&ldquo;{profile.bio}&rdquo;</p>}
-
-          {hasOverview && (
-            <PrintSection title="Overview" accent="lavender">
-              <div className="profile-print-grid">
-                <PrintField label="Profession" value={profile.profession} />
-                <PrintField label="Birthday" value={birthdayFull} />
-                <PrintField label="Zodiac" value={profile.zodiac_sign} />
-              </div>
-              <PrintPills items={tags.map((tag) => `#${tag}`)} />
-            </PrintSection>
-          )}
-
-          {hasFavorites && (
-            <PrintSection title="Favorites & Interests" accent="peach">
-              <div className="profile-print-grid">
-                <PrintField label="Favorite Movie" value={profile.favorite_movie} />
-                <PrintField label="Favorite Book" value={profile.favorite_book} />
-                <PrintField label="Music Preference" value={profile.music_preference} />
-              </div>
-              {associatedSong && (
-                <div className="profile-print-song">
-                  <span>Associated Song</span>
-                  {hasText(associatedSong.name) && <strong>{associatedSong.name}</strong>}
-                  {hasText(associatedSong.artist) && <em>{associatedSong.artist}</em>}
-                </div>
-              )}
-              {topSongs.length > 0 && (
-                <div className="profile-print-list">
-                  <div className="profile-print-label">Top Songs</div>
-                  {topSongs.map((song, index) => (
-                    <div key={song.id ?? `${song.name}-${index}`} className="profile-print-row">
-                      <span>{index + 1}</span>
-                      <div>
-                        {hasText(song.name) && <strong>{song.name}</strong>}
-                        {hasText(song.artist) && <em>{song.artist}</em>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {movieGenres.length > 0 && (
-                <>
-                  <div className="profile-print-label">Movie Genres</div>
-                  <PrintPills items={movieGenres} />
-                </>
-              )}
-              {bookGenres.length > 0 && (
-                <>
-                  <div className="profile-print-label">Book Genres</div>
-                  <PrintPills items={bookGenres} />
-                </>
-              )}
-            </PrintSection>
-          )}
-
-          {hasLifestyle && (
-            <PrintSection title="Lifestyle" accent="blue">
-              {hangoutPlaces.length > 0 && (
-                <>
-                  <div className="profile-print-label">Hangout Places</div>
-                  <PrintPills items={hangoutPlaces} />
-                </>
-              )}
-              {foodRestrictions.length > 0 && (
-                <>
-                  <div className="profile-print-label">Food Restrictions</div>
-                  <PrintPills items={foodRestrictions} />
-                </>
-              )}
-              {politicalViews.length > 0 && (
-                <>
-                  <div className="profile-print-label">Political Views</div>
-                  <PrintPills items={politicalViews} />
-                </>
-              )}
-            </PrintSection>
-          )}
-
-          {hasDeep && (
-            <PrintSection title="Deep Dive" accent="lavender">
-              <PrintField label="Long-Term Goals" value={profile.long_term_goals} />
-              {hasText(profile.favorite_memory) && (
-                <div className="profile-print-memory">
-                  <span>Favorite Memory</span>
-                  <p>&ldquo;{profile.favorite_memory}&rdquo;</p>
-                </div>
-              )}
-              {quotes.length > 0 && (
-                <div className="profile-print-quotes">
-                  <div className="profile-print-label">Their Quotes</div>
-                  {quotes.map((quote) => (
-                    <p key={quote.id ?? quote.quote}>&ldquo;{quote.quote}&rdquo;</p>
-                  ))}
-                </div>
-              )}
-            </PrintSection>
-          )}
-        </div>
-      </article>
 
       {selectedQuote && <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />}
       <ConfirmDialog

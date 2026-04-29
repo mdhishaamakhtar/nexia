@@ -247,7 +247,7 @@ Profile cards are the signature browse component. They use a glass card, a sligh
 
 ### Profile PDF Export
 
-The export surface is a print-only keepsake page. It uses A4 sizing, warm paper, subtle grid texture, washi tape, pill metadata, and section panels that only render when data exists. The exported PDF should feel like a tidy scrapbook page, not a browser screenshot.
+The export surface is a generated keepsake PDF, not a browser print view. It uses full-page warm paper, subtle grid texture, washi tape, pill metadata, and free-flowing profile sections that only render when data exists. The exported file should have no browser headers, footers, URLs, dates, page numbers, page border, or print-dialog chrome.
 
 ## 6. Do's and Don'ts
 

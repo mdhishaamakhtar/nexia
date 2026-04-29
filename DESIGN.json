@@ -263,7 +263,7 @@
       "name": "Profile PDF Panel",
       "kind": "custom",
       "refersTo": "glass-card",
-      "description": "Print-only keepsake section styling for profile exports.",
+      "description": "Generated keepsake PDF section styling for profile exports.",
       "html": "<section class=\"ds-print-section\"><div class=\"ds-print-tape\"></div><h2>Favorites & Interests</h2><p>Favorite Book</p><strong>Kitchen by Banana Yoshimoto</strong></section>",
       "css": ".ds-print-section { position: relative; border: 1px solid oklch(82% 0.035 78 / 0.72); border-radius: 24px; background: oklch(99% 0.011 82 / 0.94); color: oklch(25% 0.028 260); padding: 20px; font-family: Nunito, system-ui, sans-serif; } .ds-print-tape { position: absolute; top: -12px; left: 44px; width: 80px; height: 20px; transform: rotate(-1deg); border-radius: 8px; background: oklch(83% 0.12 61); opacity: 0.58; } .ds-print-section h2 { margin: 0 0 16px; color: oklch(48% 0.032 260); font: 800 10px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-print-section p { margin: 0 0 4px; color: oklch(48% 0.032 260); font: 800 10px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-print-section strong { display: block; color: oklch(25% 0.028 260); font: 700 14px/1.35 Nunito, system-ui, sans-serif; }"
     }
