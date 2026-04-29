@@ -1,0 +1,337 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-29T15:26:45Z",
+  "title": "Design System: Nexia",
+  "extensions": {
+    "colorMeta": {
+      "warm-page": {
+        "role": "neutral",
+        "displayName": "Warm Page Cream",
+        "canonical": "#fff7ed",
+        "tonalRamp": [
+          "oklch(16% 0.016 78)",
+          "oklch(27% 0.016 78)",
+          "oklch(39% 0.016 78)",
+          "oklch(52% 0.016 78)",
+          "oklch(66% 0.016 78)",
+          "oklch(80% 0.016 78)",
+          "oklch(91% 0.016 78)",
+          "oklch(98.5% 0.016 78)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Clean Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(16% 0.006 78)",
+          "oklch(28% 0.006 78)",
+          "oklch(42% 0.006 78)",
+          "oklch(56% 0.006 78)",
+          "oklch(70% 0.006 78)",
+          "oklch(84% 0.006 78)",
+          "oklch(94% 0.006 78)",
+          "oklch(99% 0.006 78)"
+        ]
+      },
+      "glass": {
+        "role": "neutral",
+        "displayName": "Translucent Paper",
+        "canonical": "#ffffffb8",
+        "tonalRamp": [
+          "oklch(18% 0.006 78 / 0.72)",
+          "oklch(30% 0.006 78 / 0.72)",
+          "oklch(43% 0.006 78 / 0.72)",
+          "oklch(57% 0.006 78 / 0.72)",
+          "oklch(71% 0.006 78 / 0.72)",
+          "oklch(84% 0.006 78 / 0.72)",
+          "oklch(94% 0.006 78 / 0.72)",
+          "oklch(99% 0.006 78 / 0.72)"
+        ]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Graphite Ink",
+        "canonical": "#1f2937",
+        "tonalRamp": [
+          "oklch(18% 0.028 260)",
+          "oklch(25% 0.028 260)",
+          "oklch(34% 0.028 260)",
+          "oklch(46% 0.028 260)",
+          "oklch(58% 0.028 260)",
+          "oklch(72% 0.028 260)",
+          "oklch(86% 0.028 260)",
+          "oklch(95% 0.028 260)"
+        ]
+      },
+      "peach": {
+        "role": "primary",
+        "displayName": "Pressed Peach",
+        "canonical": "#fdba74",
+        "tonalRamp": [
+          "oklch(18% 0.12 61)",
+          "oklch(28% 0.12 61)",
+          "oklch(40% 0.12 61)",
+          "oklch(53% 0.12 61)",
+          "oklch(66% 0.12 61)",
+          "oklch(78% 0.12 61)",
+          "oklch(88% 0.08 61)",
+          "oklch(96% 0.04 61)"
+        ]
+      },
+      "lavender": {
+        "role": "secondary",
+        "displayName": "Keepsake Lavender",
+        "canonical": "#c4b5fd",
+        "tonalRamp": [
+          "oklch(18% 0.08 300)",
+          "oklch(28% 0.08 300)",
+          "oklch(40% 0.08 300)",
+          "oklch(53% 0.08 300)",
+          "oklch(66% 0.08 300)",
+          "oklch(78% 0.08 300)",
+          "oklch(88% 0.05 300)",
+          "oklch(96% 0.026 300)"
+        ]
+      },
+      "blue": {
+        "role": "secondary",
+        "displayName": "Lookup Blue",
+        "canonical": "#93c5fd",
+        "tonalRamp": [
+          "oklch(18% 0.08 240)",
+          "oklch(28% 0.08 240)",
+          "oklch(40% 0.08 240)",
+          "oklch(53% 0.08 240)",
+          "oklch(66% 0.08 240)",
+          "oklch(78% 0.08 240)",
+          "oklch(88% 0.05 240)",
+          "oklch(96% 0.026 240)"
+        ]
+      },
+      "purple": {
+        "role": "tertiary",
+        "displayName": "Sticker Purple",
+        "canonical": "#5b21b6",
+        "tonalRamp": [
+          "oklch(18% 0.12 300)",
+          "oklch(28% 0.12 300)",
+          "oklch(40% 0.12 300)",
+          "oklch(53% 0.12 300)",
+          "oklch(66% 0.1 300)",
+          "oklch(78% 0.08 300)",
+          "oklch(88% 0.05 300)",
+          "oklch(96% 0.026 300)"
+        ]
+      },
+      "red": {
+        "role": "tertiary",
+        "displayName": "Soft Red",
+        "canonical": "#ff3b30",
+        "tonalRamp": [
+          "oklch(18% 0.12 30)",
+          "oklch(28% 0.12 30)",
+          "oklch(40% 0.12 30)",
+          "oklch(53% 0.12 30)",
+          "oklch(66% 0.11 30)",
+          "oklch(78% 0.08 30)",
+          "oklch(88% 0.05 30)",
+          "oklch(96% 0.026 30)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Slambook Display",
+        "purpose": "Major page titles and first-screen emotional anchors."
+      },
+      "headline": {
+        "displayName": "Profile Headline",
+        "purpose": "Profile names, large authenticated headings, and modal emphasis."
+      },
+      "title": {
+        "displayName": "Keepsake Title",
+        "purpose": "Modal titles, empty states, export cards, and section-leading copy."
+      },
+      "body": {
+        "displayName": "Journal Body",
+        "purpose": "App copy, fields, profile details, buttons, and chat content."
+      },
+      "label": {
+        "displayName": "Sticker Label",
+        "purpose": "Uppercase metadata, field labels, section captions, and chip text."
+      }
+    },
+    "shadows": [
+      {
+        "name": "glass-specular",
+        "value": "inset 0 1px 0 var(--specular)",
+        "purpose": "Subtle paper sheen on glass panels and cards."
+      },
+      {
+        "name": "paper-scrap-offset",
+        "value": "2px 2px 0px var(--border-mid)",
+        "purpose": "Deliberate scrapbook paper offset, not general elevation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "soft-spring-enter",
+        "value": "type: spring; stiffness: 140; damping: 22",
+        "purpose": "Profile pages, sections, and primary authenticated surfaces."
+      },
+      {
+        "name": "button-tap",
+        "value": "hover scale 1.015; tap scale 0.985; stiffness 800; damping 20",
+        "purpose": "Button feedback without slowing interaction."
+      },
+      {
+        "name": "scrapbook-card-hover",
+        "value": "hover y -6, rotate 0, scale 1.02; stiffness 400; damping 20",
+        "purpose": "Profile cards settle into place on hover."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Warm primary action with peach paper color and soft motion.",
+      "html": "<button class=\"ds-button-primary\">Save Profile</button>",
+      "css": ".ds-button-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--lavender-border, #7c3aed33); border-radius: 12px; background: var(--peach, #fdba74); color: var(--peach-text, #7c2d12); padding: 10px 20px; font: 600 14px/1.2 Nunito, system-ui, sans-serif; cursor: pointer; transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease; } .ds-button-primary:hover { transform: scale(1.015); } .ds-button-primary:active { transform: scale(0.985); } .ds-button-primary:focus-visible { outline: 2px solid var(--lavender, #c4b5fd); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet translucent control for secondary profile actions.",
+      "html": "<button class=\"ds-button-secondary\">Edit</button>",
+      "css": ".ds-button-secondary { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border, #94a3b847); border-radius: 12px; background: var(--fill, #ffffff9e); color: var(--text-2, #374151); padding: 10px 20px; font: 600 14px/1.2 Nunito, system-ui, sans-serif; cursor: pointer; transition: background 180ms ease, color 180ms ease, transform 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-secondary:hover { background: var(--fill-hover, #ffffffe6); color: var(--text-1, #1f2937); transform: scale(1.015); } .ds-button-secondary:focus-visible { outline: 2px solid var(--lavender, #c4b5fd); outline-offset: 2px; }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Soft red destructive action that warns without breaking the scrapbook tone.",
+      "html": "<button class=\"ds-button-destructive\">Delete</button>",
+      "css": ".ds-button-destructive { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--red-border, #ff3b302e); border-radius: 12px; background: var(--red-bg, #ff3b3014); color: var(--red, #ff3b30); padding: 10px 20px; font: 600 14px/1.2 Nunito, system-ui, sans-serif; cursor: pointer; transition: background 180ms ease, transform 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-destructive:hover { background: var(--red-bg-hover, #ff3b3026); transform: scale(1.015); } .ds-button-destructive:focus-visible { outline: 2px solid var(--red, #ff3b30); outline-offset: 2px; }"
+    },
+    {
+      "name": "Glass Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Soft translucent field used for forms, search, and chat input.",
+      "html": "<label class=\"ds-input-label\" for=\"ds-input\">Name</label><input id=\"ds-input\" class=\"ds-input\" placeholder=\"search by name...\" />",
+      "css": ".ds-input-label { display: block; margin: 0 0 8px 2px; color: var(--text-3, #6b7280); font: 700 11px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-input { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--border, #94a3b847); border-radius: 12px; background: var(--input-bg, #ffffffbf); color: var(--text-1, #1f2937); padding: 12px 16px; font: 500 14px/1.5 Nunito, system-ui, sans-serif; backdrop-filter: blur(12px); transition: border-color 200ms ease, background 200ms ease; } .ds-input::placeholder { color: var(--text-3, #6b7280); } .ds-input:focus { border-color: var(--lavender, #c4b5fd); background: var(--glass, #ffffffb8); outline: none; }"
+    },
+    {
+      "name": "Sticker Chip",
+      "kind": "chip",
+      "refersTo": "sticker-chip",
+      "description": "Small metadata sticker for relationships, tags, and profile details.",
+      "html": "<span class=\"ds-sticker-chip\">Friend</span>",
+      "css": ".ds-sticker-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-mid, #94a3b873); border-radius: 999px; background: var(--fill-hover, #ffffffe6); color: var(--text-2, #374151); padding: 4px 12px; font: 700 11px/1.2 Nunito, system-ui, sans-serif; } .ds-sticker-chip:hover { border-color: var(--border-mid, #94a3b873); color: var(--text-1, #1f2937); }"
+    },
+    {
+      "name": "Profile Card",
+      "kind": "card",
+      "refersTo": "glass-card",
+      "description": "Browse card for a person in the slambook.",
+      "html": "<article class=\"ds-profile-card\"><div class=\"ds-card-tape\"></div><div class=\"ds-avatar\">M</div><div><h3>Maya Patel</h3><p>Friend</p></div><span class=\"ds-tag\">#artist</span></article>",
+      "css": ".ds-profile-card { position: relative; display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: center; max-width: 320px; border: 1px solid var(--border, #94a3b847); border-radius: 16px; background: var(--glass, #ffffffb8); color: var(--text-1, #1f2937); padding: 20px; box-shadow: inset 0 1px 0 var(--specular, #fffffff2); backdrop-filter: blur(20px) saturate(140%); transform: rotate(-0.5deg); transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-profile-card:hover { transform: translateY(-6px) rotate(0deg) scale(1.02); } .ds-card-tape { position: absolute; top: -4px; left: 50%; width: 40px; height: 20px; transform: translateX(-50%) rotate(-2deg); background: var(--lavender, #c4b5fd); opacity: 0; clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%); transition: opacity 180ms ease; } .ds-profile-card:hover .ds-card-tape { opacity: 0.7; } .ds-avatar { display: flex; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 12px; background: var(--lavender, #c4b5fd); color: var(--text-1, #1f2937); font: 800 14px/1 Nunito, system-ui, sans-serif; transform: rotate(-3deg); } .ds-profile-card h3 { margin: 0; font: 700 15px/1.2 Nunito, system-ui, sans-serif; } .ds-profile-card p { margin: 3px 0 0; color: var(--text-2, #374151); font: 600 11px/1.2 Nunito, system-ui, sans-serif; } .ds-tag { grid-column: 1 / -1; width: fit-content; border: 1px solid var(--purple-border, #7c3aed3d); border-radius: 999px; background: var(--purple-bg, #c4b5fd3d); color: var(--purple, #5b21b6); padding: 3px 8px; font: 700 11px/1.2 Nunito, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Top Navigation",
+      "kind": "nav",
+      "refersTo": "glass-card",
+      "description": "Compact sticky navigation that keeps the app calm and task-first.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-brand\" href=\"#\">Nexia</a><div><a href=\"#\">Ask AI</a><button>Sign Out</button></div></nav>",
+      "css": ".ds-nav { display: flex; height: 48px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border, #94a3b847); background: var(--glass, #ffffffb8); padding: 0 24px; backdrop-filter: blur(20px) saturate(140%); box-shadow: inset 0 1px 0 var(--specular, #fffffff2); } .ds-nav a, .ds-nav button { border: 0; border-radius: 12px; background: transparent; color: var(--text-2, #374151); padding: 6px 12px; font: 600 14px/1.2 Nunito, system-ui, sans-serif; text-decoration: none; cursor: pointer; transition: background 150ms ease, color 150ms ease; } .ds-nav a:hover, .ds-nav button:hover { background: var(--fill, #ffffff9e); color: var(--text-1, #1f2937); } .ds-nav .ds-brand { color: var(--text-1, #1f2937); font-size: 15px; } .ds-nav div { display: flex; gap: 4px; align-items: center; }"
+    },
+    {
+      "name": "Profile PDF Panel",
+      "kind": "custom",
+      "refersTo": "glass-card",
+      "description": "Print-only keepsake section styling for profile exports.",
+      "html": "<section class=\"ds-print-section\"><div class=\"ds-print-tape\"></div><h2>Favorites & Interests</h2><p>Favorite Book</p><strong>Kitchen by Banana Yoshimoto</strong></section>",
+      "css": ".ds-print-section { position: relative; border: 1px solid oklch(82% 0.035 78 / 0.72); border-radius: 24px; background: oklch(99% 0.011 82 / 0.94); color: oklch(25% 0.028 260); padding: 20px; font-family: Nunito, system-ui, sans-serif; } .ds-print-tape { position: absolute; top: -12px; left: 44px; width: 80px; height: 20px; transform: rotate(-1deg); border-radius: 8px; background: oklch(83% 0.12 61); opacity: 0.58; } .ds-print-section h2 { margin: 0 0 16px; color: oklch(48% 0.032 260); font: 800 10px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-print-section p { margin: 0 0 4px; color: oklch(48% 0.032 260); font: 800 10px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-print-section strong { display: block; color: oklch(25% 0.028 260); font: 700 14px/1.35 Nunito, system-ui, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Tidy Memory Scrapbook",
+    "overview": "Nexia is a personal memory book, not a productivity dashboard. The interface should feel like a carefully kept slambook: warm paper, soft translucent layers, sticker chips, gentle color, and small washi-tape details that make profiles feel kept rather than stored.\n\nThe system is cute, polished, and controlled. Scrapbook details are allowed only when they support hierarchy. Alignment, readable type, and dependable lookup behavior come first. The app must stay light and friendly, with no drift toward a technical command center.",
+    "keyCharacteristics": [
+      "Warm light surfaces with restrained peach, lavender, and blue accents.",
+      "Rounded paper-like panels with translucent fills and fine borders.",
+      "Small decorative tape and sticker motifs used as hierarchy, not clutter.",
+      "Nunito everywhere, with compact labels and calm body text.",
+      "Playful motion for state and entrance, never choreography that slows lookup."
+    ],
+    "rules": [
+      {
+        "name": "The Warm Light Rule",
+        "body": "`warm-page` is the baseline for every app surface. Dark mode is forbidden.",
+        "section": "colors"
+      },
+      {
+        "name": "The Accent Ration Rule",
+        "body": "Peach, lavender, and blue must stay deliberate. If every card uses all three, the scrapbook stops feeling kept and starts feeling noisy.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper Before Chrome Rule",
+        "body": "Use translucent paper, fine borders, and tinted fills before reaching for heavy shadows or saturated UI chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Nunito carries the product. Do not introduce display fonts for app labels, buttons, forms, or profile detail content.",
+        "section": "typography"
+      },
+      {
+        "name": "The Compact Label Rule",
+        "body": "Labels are uppercase, small, and widely tracked. They should guide scanning without sounding corporate.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Keepsake Rule",
+        "body": "Surfaces are flat by default. Create depth through paper layering, translucent fills, and borders before using shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No Heavy Glass Rule",
+        "body": "Blur can support translucent paper panels, but decorative glassmorphism is prohibited.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the product light and warm, with `warm-page` as the default surface.",
+      "Do use peach, lavender, and blue with restraint so the product stays cute and controlled.",
+      "Do center washi-tape details and keep them tidy, deliberate, and subordinate to content.",
+      "Do use rounded, soft-edged shapes consistently across cards, buttons, inputs, chips, and modals.",
+      "Do make lookup easy: search, profile cards, forms, and chat responses must stay readable before decorative.",
+      "Do hide empty profile sections and avoid placeholders that make a profile feel unfinished.",
+      "Do preserve standard affordances for buttons, inputs, navigation, dialogs, and print export."
+    ],
+    "donts": [
+      "Don't add dark mode. PRODUCT.md says light theme only.",
+      "Don't make Nexia feel like a tech product.",
+      "Don't use dashboards, sterile SaaS patterns, terminal aesthetics, heavy data UI, or anything infrastructural.",
+      "Don't let scrapbook details become messy, novelty-first, loud, childish, or cluttered.",
+      "Don't use colored side-stripe borders, gradient text, decorative glassmorphism, hero-metric templates, or repeated identical card grids.",
+      "Don't use full-saturation accents on inactive states.",
+      "Don't invent custom controls where a standard input, select, button, or link would be clearer."
+    ]
+  }
+}

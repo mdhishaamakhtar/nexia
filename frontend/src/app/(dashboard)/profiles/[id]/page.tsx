@@ -9,7 +9,9 @@ import {
   Book,
   Calendar,
   Coffee,
+  Download,
   Edit,
+  FileText,
   Film,
   Heart,
   ListMusic,
@@ -88,7 +90,9 @@ function Field({
   value?: string | null;
   icon?: React.ElementType;
 }) {
-  if (!value) return null;
+  if (!hasText(value)) return null;
+  const displayValue = value?.trim();
+
   return (
     <div className="mb-3">
       <div
@@ -99,7 +103,7 @@ function Field({
         {label}
       </div>
       <div className="text-sm font-medium" style={{ color: "var(--text-1)" }}>
-        {value}
+        {displayValue}
       </div>
     </div>
   );
@@ -109,9 +113,9 @@ function PillList({ items }: { items: string[] }) {
   if (items.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5">
-      {items.map((item) => (
+      {items.map((item, index) => (
         <span
-          key={item}
+          key={`${item}-${index}`}
           className="rounded-full px-3 py-1 text-xs font-medium border"
           style={{
             background: "var(--fill)",
@@ -123,6 +127,65 @@ function PillList({ items }: { items: string[] }) {
         </span>
       ))}
     </div>
+  );
+}
+
+function compactStrings(values: Array<string | null | undefined>) {
+  return values.map((value) => value?.trim()).filter((value): value is string => Boolean(value));
+}
+
+function hasText(value?: string | null) {
+  return Boolean(value?.trim());
+}
+
+function formatDate(value?: string | null, options?: Intl.DateTimeFormatOptions) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(undefined, options);
+}
+
+function hasAssociatedSong(song?: Profile["associated_song"]) {
+  return Boolean(song && (hasText(song.name) || hasText(song.artist)));
+}
+
+function PrintField({ label, value }: { label: string; value?: string | null }) {
+  if (!hasText(value)) return null;
+  const displayValue = value?.trim();
+
+  return (
+    <div className="profile-print-field">
+      <div className="profile-print-label">{label}</div>
+      <div className="profile-print-value">{displayValue}</div>
+    </div>
+  );
+}
+
+function PrintPills({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="profile-print-pills">
+      {items.map((item, index) => (
+        <span key={`${item}-${index}`}>{item}</span>
+      ))}
+    </div>
+  );
+}
+
+function PrintSection({
+  title,
+  accent = "peach",
+  children,
+}: {
+  title: string;
+  accent?: "peach" | "lavender" | "blue";
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={`profile-print-section profile-print-section-${accent}`}>
+      <div className="profile-print-section-title">{title}</div>
+      <div className="profile-print-section-body">{children}</div>
+    </section>
   );
 }
 
@@ -171,9 +234,59 @@ export default function ProfileDetailPage() {
 
   if (!profile || !id) return null;
 
+  const birthdayShort = formatDate(profile.birthday, { month: "long", day: "numeric" });
+  const birthdayFull = formatDate(profile.birthday);
+  const tags = compactStrings(profile.tags?.map((tag) => tag.tag) ?? []);
+  const movieGenres = compactStrings(profile.movie_genres?.map((genre) => genre.genre) ?? []);
+  const bookGenres = compactStrings(profile.book_genres?.map((genre) => genre.genre) ?? []);
+  const hangoutPlaces = compactStrings(profile.hangout_places?.map((place) => place.place) ?? []);
+  const foodRestrictions = compactStrings(
+    profile.food_restrictions?.map((restriction) => restriction.restriction) ?? []
+  );
+  const politicalViews = compactStrings(profile.political_views?.map((view) => view.view) ?? []);
+  const quotes = (profile.quotes ?? []).filter((quote) => hasText(quote.quote));
+  const topSongs = (profile.top_songs ?? []).filter(
+    (song) => hasText(song.name) || hasText(song.artist)
+  );
+  const associatedSong = hasAssociatedSong(profile.associated_song)
+    ? profile.associated_song
+    : null;
+
+  const hasOverview =
+    hasText(profile.profession) ||
+    Boolean(birthdayFull) ||
+    hasText(profile.zodiac_sign) ||
+    tags.length > 0;
+  const hasFavorites =
+    hasText(profile.favorite_movie) ||
+    hasText(profile.favorite_book) ||
+    hasText(profile.music_preference) ||
+    Boolean(associatedSong) ||
+    topSongs.length > 0 ||
+    movieGenres.length > 0 ||
+    bookGenres.length > 0;
+  const hasLifestyle =
+    hangoutPlaces.length > 0 || foodRestrictions.length > 0 || politicalViews.length > 0;
+  const hasDeep =
+    hasText(profile.long_term_goals) || hasText(profile.favorite_memory) || quotes.length > 0;
+
+  const handleExportPdf = () => {
+    const previousTitle = document.title;
+    const safeName = profile.full_name?.trim() || "Profile";
+
+    const restoreTitle = () => {
+      document.title = previousTitle;
+      window.removeEventListener("afterprint", restoreTitle);
+    };
+
+    document.title = `${safeName} - Nexia profile`;
+    window.addEventListener("afterprint", restoreTitle, { once: true });
+    window.print();
+  };
+
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+    <div className="profile-detail-page min-h-screen">
+      <div className="profile-screen-root mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
         {/* Back + Actions */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
@@ -247,16 +360,13 @@ export default function ProfileDetailPage() {
                   <Heart className="h-3 w-3" />
                   {profile.relationship_type}
                 </span>
-                {profile.birthday && (
+                {birthdayShort && (
                   <span
                     className="flex items-center gap-1.5 text-xs"
                     style={{ color: "var(--text-3)" }}
                   >
                     <Calendar className="h-3 w-3" />
-                    {new Date(profile.birthday).toLocaleDateString(undefined, {
-                      month: "long",
-                      day: "numeric",
-                    })}
+                    {birthdayShort}
                   </span>
                 )}
                 {profile.zodiac_sign && (
@@ -281,17 +391,48 @@ export default function ProfileDetailPage() {
           )}
         </motion.div>
 
+        <motion.section
+          initial={{ opacity: 0, y: 12, rotate: 0.4 }}
+          animate={{ opacity: 1, y: 0, rotate: 0.25 }}
+          transition={{ type: "spring", stiffness: 140, damping: 22, delay: 0.08 }}
+          className="glass-panel mb-8 rounded-2xl p-5 sm:p-6 relative scrapbook-card"
+        >
+          <div
+            className="washi-tape-accent w-24 opacity-50"
+            style={{ background: "var(--blue)", top: "-10px" }}
+            aria-hidden="true"
+          />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="rounded-2xl p-3 shrink-0"
+                style={{ background: "var(--fill)", color: "var(--text-2)" }}
+              >
+                <FileText className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
+                  Export profile
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-3)" }}>
+                  PDF keepsake
+                </p>
+              </div>
+            </div>
+            <Button onClick={handleExportPdf} variant="primary" className="w-full sm:w-auto">
+              <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+              Export PDF
+            </Button>
+          </div>
+        </motion.section>
+
         {/* Sections */}
         <div className="space-y-4">
-          <div>
+          {hasOverview && (
             <DetailSection id="overview" title="Overview" icon={User} index={0}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Profession" value={profile.profession} />
-                <Field
-                  label="Birthday"
-                  value={profile.birthday ? new Date(profile.birthday).toLocaleDateString() : null}
-                  icon={Calendar}
-                />
+                <Field label="Birthday" value={birthdayFull} icon={Calendar} />
                 <Field
                   label="Zodiac"
                   value={profile.zodiac_sign}
@@ -304,7 +445,7 @@ export default function ProfileDetailPage() {
                   )}
                 />
               </div>
-              {profile.tags && profile.tags.length > 0 && (
+              {tags.length > 0 && (
                 <div className="pt-1">
                   <div
                     className="mb-2 text-[11px] uppercase tracking-[0.12em]"
@@ -313,9 +454,9 @@ export default function ProfileDetailPage() {
                     Tags
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {profile.tags.map((t, i) => (
+                    {tags.map((tag, index) => (
                       <span
-                        key={i}
+                        key={`${tag}-${index}`}
                         className="text-xs px-2.5 py-1 rounded-full border"
                         style={{
                           background: "var(--fill)",
@@ -323,23 +464,23 @@ export default function ProfileDetailPage() {
                           color: "var(--text-3)",
                         }}
                       >
-                        #{t.tag}
+                        #{tag}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
             </DetailSection>
-          </div>
+          )}
 
-          <div>
+          {hasFavorites && (
             <DetailSection id="favorites" title="Favorites & Interests" icon={Star} index={1}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Favorite Movie" value={profile.favorite_movie} icon={Film} />
                 <Field label="Favorite Book" value={profile.favorite_book} icon={Book} />
                 <Field label="Music Preference" value={profile.music_preference} icon={Music} />
               </div>
-              {profile.associated_song && (
+              {associatedSong && (
                 <div
                   className="flex items-center gap-4 rounded-xl p-4 mt-1 border"
                   style={{
@@ -360,16 +501,20 @@ export default function ProfileDetailPage() {
                     >
                       Associated Song
                     </div>
-                    <div className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
-                      {profile.associated_song.name}
-                    </div>
-                    <div className="text-xs" style={{ color: "var(--text-2)" }}>
-                      {profile.associated_song.artist}
-                    </div>
+                    {hasText(associatedSong.name) && (
+                      <div className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
+                        {associatedSong.name}
+                      </div>
+                    )}
+                    {hasText(associatedSong.artist) && (
+                      <div className="text-xs" style={{ color: "var(--text-2)" }}>
+                        {associatedSong.artist}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-              {profile.top_songs && profile.top_songs.length > 0 && (
+              {topSongs.length > 0 && (
                 <div>
                   <div
                     className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
@@ -378,7 +523,7 @@ export default function ProfileDetailPage() {
                     <ListMusic className="h-3 w-3" /> Top Songs
                   </div>
                   <div className="space-y-2">
-                    {profile.top_songs.map((song, i) => (
+                    {topSongs.map((song, i) => (
                       <div
                         key={song.id ?? i}
                         className="flex items-center gap-3 rounded-xl p-3 border"
@@ -391,24 +536,53 @@ export default function ProfileDetailPage() {
                           {i + 1}
                         </div>
                         <div>
-                          <div className="text-sm font-semibold" style={{ color: "var(--text-1)" }}>
-                            {song.name}
-                          </div>
-                          <div className="text-xs" style={{ color: "var(--text-2)" }}>
-                            {song.artist}
-                          </div>
+                          {hasText(song.name) && (
+                            <div
+                              className="text-sm font-semibold"
+                              style={{ color: "var(--text-1)" }}
+                            >
+                              {song.name}
+                            </div>
+                          )}
+                          {hasText(song.artist) && (
+                            <div className="text-xs" style={{ color: "var(--text-2)" }}>
+                              {song.artist}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+              {movieGenres.length > 0 && (
+                <div>
+                  <div
+                    className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
+                    style={{ color: "var(--text-3)" }}
+                  >
+                    <Film className="h-3 w-3" /> Movie Genres
+                  </div>
+                  <PillList items={movieGenres} />
+                </div>
+              )}
+              {bookGenres.length > 0 && (
+                <div>
+                  <div
+                    className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
+                    style={{ color: "var(--text-3)" }}
+                  >
+                    <Book className="h-3 w-3" /> Book Genres
+                  </div>
+                  <PillList items={bookGenres} />
+                </div>
+              )}
             </DetailSection>
-          </div>
+          )}
 
-          <div>
+          {hasLifestyle && (
             <DetailSection id="lifestyle" title="Lifestyle" icon={Coffee} index={2}>
-              {profile.hangout_places.length > 0 && (
+              {hangoutPlaces.length > 0 && (
                 <div>
                   <div
                     className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
@@ -416,10 +590,10 @@ export default function ProfileDetailPage() {
                   >
                     <MapPin className="h-3 w-3" /> Hangout Places
                   </div>
-                  <PillList items={profile.hangout_places.map((p) => p.place)} />
+                  <PillList items={hangoutPlaces} />
                 </div>
               )}
-              {profile.food_restrictions.length > 0 && (
+              {foodRestrictions.length > 0 && (
                 <div>
                   <div
                     className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
@@ -427,13 +601,24 @@ export default function ProfileDetailPage() {
                   >
                     <AlertCircle className="h-3 w-3" /> Food Restrictions
                   </div>
-                  <PillList items={profile.food_restrictions.map((r) => r.restriction)} />
+                  <PillList items={foodRestrictions} />
+                </div>
+              )}
+              {politicalViews.length > 0 && (
+                <div>
+                  <div
+                    className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em]"
+                    style={{ color: "var(--text-3)" }}
+                  >
+                    <User className="h-3 w-3" /> Political Views
+                  </div>
+                  <PillList items={politicalViews} />
                 </div>
               )}
             </DetailSection>
-          </div>
+          )}
 
-          <div>
+          {hasDeep && (
             <DetailSection id="deep" title="Deep Dive" icon={MessageSquare} index={3}>
               {profile.long_term_goals && (
                 <div>
@@ -469,7 +654,7 @@ export default function ProfileDetailPage() {
                 </div>
               )}
 
-              {profile.quotes && profile.quotes.length > 0 && (
+              {quotes.length > 0 && (
                 <div>
                   <div
                     className="mb-3 text-[11px] uppercase tracking-[0.12em]"
@@ -478,7 +663,7 @@ export default function ProfileDetailPage() {
                     Their Quotes
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {profile.quotes.map((q) => (
+                    {quotes.map((q) => (
                       <button
                         key={q.id ?? q.quote}
                         onClick={() => setSelectedQuote(q.quote)}
@@ -496,9 +681,128 @@ export default function ProfileDetailPage() {
                 </div>
               )}
             </DetailSection>
-          </div>
+          )}
         </div>
       </div>
+
+      <article className="profile-print-root" aria-label={`${profile.full_name} printable profile`}>
+        <div className="profile-print-paper">
+          <div className="profile-print-washi" aria-hidden="true" />
+          <header className="profile-print-hero">
+            <div className="profile-print-avatar">
+              {profile.full_name?.charAt(0)?.toUpperCase() || "?"}
+            </div>
+            <div>
+              <div className="profile-print-kicker">Nexia profile</div>
+              <h1>{profile.full_name}</h1>
+              <div className="profile-print-meta">
+                <span>{profile.relationship_type}</span>
+                {birthdayShort && <span>{birthdayShort}</span>}
+                {profile.zodiac_sign && <span>{profile.zodiac_sign}</span>}
+              </div>
+            </div>
+          </header>
+
+          {hasText(profile.bio) && <p className="profile-print-bio">&ldquo;{profile.bio}&rdquo;</p>}
+
+          {hasOverview && (
+            <PrintSection title="Overview" accent="lavender">
+              <div className="profile-print-grid">
+                <PrintField label="Profession" value={profile.profession} />
+                <PrintField label="Birthday" value={birthdayFull} />
+                <PrintField label="Zodiac" value={profile.zodiac_sign} />
+              </div>
+              <PrintPills items={tags.map((tag) => `#${tag}`)} />
+            </PrintSection>
+          )}
+
+          {hasFavorites && (
+            <PrintSection title="Favorites & Interests" accent="peach">
+              <div className="profile-print-grid">
+                <PrintField label="Favorite Movie" value={profile.favorite_movie} />
+                <PrintField label="Favorite Book" value={profile.favorite_book} />
+                <PrintField label="Music Preference" value={profile.music_preference} />
+              </div>
+              {associatedSong && (
+                <div className="profile-print-song">
+                  <span>Associated Song</span>
+                  {hasText(associatedSong.name) && <strong>{associatedSong.name}</strong>}
+                  {hasText(associatedSong.artist) && <em>{associatedSong.artist}</em>}
+                </div>
+              )}
+              {topSongs.length > 0 && (
+                <div className="profile-print-list">
+                  <div className="profile-print-label">Top Songs</div>
+                  {topSongs.map((song, index) => (
+                    <div key={song.id ?? `${song.name}-${index}`} className="profile-print-row">
+                      <span>{index + 1}</span>
+                      <div>
+                        {hasText(song.name) && <strong>{song.name}</strong>}
+                        {hasText(song.artist) && <em>{song.artist}</em>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {movieGenres.length > 0 && (
+                <>
+                  <div className="profile-print-label">Movie Genres</div>
+                  <PrintPills items={movieGenres} />
+                </>
+              )}
+              {bookGenres.length > 0 && (
+                <>
+                  <div className="profile-print-label">Book Genres</div>
+                  <PrintPills items={bookGenres} />
+                </>
+              )}
+            </PrintSection>
+          )}
+
+          {hasLifestyle && (
+            <PrintSection title="Lifestyle" accent="blue">
+              {hangoutPlaces.length > 0 && (
+                <>
+                  <div className="profile-print-label">Hangout Places</div>
+                  <PrintPills items={hangoutPlaces} />
+                </>
+              )}
+              {foodRestrictions.length > 0 && (
+                <>
+                  <div className="profile-print-label">Food Restrictions</div>
+                  <PrintPills items={foodRestrictions} />
+                </>
+              )}
+              {politicalViews.length > 0 && (
+                <>
+                  <div className="profile-print-label">Political Views</div>
+                  <PrintPills items={politicalViews} />
+                </>
+              )}
+            </PrintSection>
+          )}
+
+          {hasDeep && (
+            <PrintSection title="Deep Dive" accent="lavender">
+              <PrintField label="Long-Term Goals" value={profile.long_term_goals} />
+              {hasText(profile.favorite_memory) && (
+                <div className="profile-print-memory">
+                  <span>Favorite Memory</span>
+                  <p>&ldquo;{profile.favorite_memory}&rdquo;</p>
+                </div>
+              )}
+              {quotes.length > 0 && (
+                <div className="profile-print-quotes">
+                  <div className="profile-print-label">Their Quotes</div>
+                  {quotes.map((quote) => (
+                    <p key={quote.id ?? quote.quote}>&ldquo;{quote.quote}&rdquo;</p>
+                  ))}
+                </div>
+              )}
+            </PrintSection>
+          )}
+        </div>
+      </article>
 
       {selectedQuote && <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />}
       <ConfirmDialog
