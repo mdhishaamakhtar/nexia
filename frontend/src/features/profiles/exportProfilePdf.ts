@@ -51,6 +51,20 @@ const sectionAccents: SectionAccent[] = [
   { tape: colors.lavender, ink: colors.lavenderInk, soft: colors.lavenderSoft },
 ];
 
+// Single source of truth for vertical rhythm. Every block ends at its visual
+// bottom (no trailing); gaps live BETWEEN blocks. Same model everywhere.
+const space = {
+  section: 48, // gap before any section heading (above the heading row)
+  postTitle: 20, // gap from the heading baseline to the first block
+  block: 24, // gap between sibling blocks within a section
+  labelToBody: 16, // inside a labeled block, between label and its body
+  fieldRow: 14, // between rows of the field grid
+  songRow: 8, // between numbered song rows
+  quoteItem: 12, // between consecutive quote bubbles
+  pillRow: 22, // between wrapped pill rows (pill rect is 17pt)
+  pillHeight: 17,
+};
+
 function compactStrings(values: Array<string | null | undefined>) {
   return values.map((value) => value?.trim()).filter((value): value is string => Boolean(value));
 }
@@ -161,14 +175,7 @@ function drawLabel(
   ctx.pdf.text(label.toUpperCase(), x, y);
 }
 
-// Subgroup heading inside a section: "Tags", "Top Songs", "Their Quotes", etc.
-// Carries its own top margin so it never crowds whatever came before.
-function drawGroupLabel(ctx: PdfContext, label: string) {
-  ensureSpace(ctx, 40);
-  ctx.y += 16;
-  drawLabel(ctx, label, ctx.marginX, ctx.y);
-  ctx.y += 16;
-}
+// === BLOCK: field grid =====================================================
 
 function measureField(ctx: PdfContext, field: FieldItem, width: number) {
   return 16 + splitText(ctx, field.value, width, 10).length * 13;
@@ -179,26 +186,26 @@ function drawFieldGrid(ctx: PdfContext, fields: FieldItem[]) {
   const gap = 26;
   const columnWidth = (ctx.pageWidth - ctx.marginX * 2 - gap) / 2;
 
-  for (let index = 0; index < fields.length; index += 2) {
-    const row = fields.slice(index, index + 2);
-    const rowHeight = Math.max(...row.map((field) => measureField(ctx, field, columnWidth)));
-    ensureSpace(ctx, rowHeight + 14);
-
-    row.forEach((field, rowIndex) => {
-      const x = ctx.marginX + rowIndex * (columnWidth + gap);
+  for (let i = 0; i < fields.length; i += 2) {
+    if (i > 0) ctx.y += space.fieldRow;
+    const row = fields.slice(i, i + 2);
+    const rowHeight = Math.max(...row.map((f) => measureField(ctx, f, columnWidth)));
+    ensureSpace(ctx, rowHeight);
+    row.forEach((field, ri) => {
+      const x = ctx.marginX + ri * (columnWidth + gap);
       drawLabel(ctx, field.label, x, ctx.y);
       const lines = splitText(ctx, field.value, columnWidth, 10);
       setText(ctx.pdf, colors.ink);
       setFont(ctx.pdf, 10, "bold");
       ctx.pdf.text(lines, x, ctx.y + 14);
     });
-
-    ctx.y += rowHeight + 14;
+    ctx.y += rowHeight;
   }
 }
 
-function measurePills(ctx: PdfContext, items: string[], width: number) {
-  const lineHeight = 22;
+// === BLOCK: pills (raw, full-width) ========================================
+
+function measurePillRows(ctx: PdfContext, items: string[], width: number) {
   let currentX = 0;
   let rows = 1;
   setFont(ctx.pdf, 9, "normal");
@@ -210,15 +217,16 @@ function measurePills(ctx: PdfContext, items: string[], width: number) {
     }
     currentX += pillWidth + 6;
   });
-  return rows * lineHeight;
+  return rows;
 }
 
 function drawPills(ctx: PdfContext, items: string[], variant: "neutral" | "tag" = "neutral") {
   if (items.length === 0) return;
   const xStart = ctx.marginX;
   const maxWidth = ctx.pageWidth - ctx.marginX * 2;
-  const height = measurePills(ctx, items, maxWidth);
-  ensureSpace(ctx, height + 4);
+  const rows = measurePillRows(ctx, items, maxWidth);
+  const totalHeight = (rows - 1) * space.pillRow + space.pillHeight;
+  ensureSpace(ctx, totalHeight);
 
   const palette =
     variant === "tag"
@@ -226,163 +234,43 @@ function drawPills(ctx: PdfContext, items: string[], variant: "neutral" | "tag" 
       : { bg: colors.paper, border: colors.border, ink: colors.text };
 
   let x = xStart;
-  let y = ctx.y + 4;
+  let y = ctx.y;
   setFont(ctx.pdf, 9, "normal");
 
   items.forEach((item) => {
     const width = Math.min(ctx.pdf.getTextWidth(item) + 22, maxWidth);
     if (x > xStart && x + width > xStart + maxWidth) {
       x = xStart;
-      y += 22;
+      y += space.pillRow;
     }
     setFill(ctx.pdf, palette.bg);
     setDraw(ctx.pdf, palette.border);
     ctx.pdf.setLineWidth(0.4);
-    ctx.pdf.roundedRect(x, y - 11, width, 17, 8.5, 8.5, "FD");
+    ctx.pdf.roundedRect(x, y, width, space.pillHeight, 8.5, 8.5, "FD");
     setText(ctx.pdf, palette.ink);
     setFont(ctx.pdf, 9, "normal");
-    ctx.pdf.text(item, x + 11, y);
+    ctx.pdf.text(item, x + 11, y + 12);
     x += width + 6;
   });
 
-  ctx.y += height + 10;
+  ctx.y = y + space.pillHeight;
 }
 
-function drawSectionTitle(
+// === BLOCK: labeled pill group =============================================
+
+function drawLabeledPillGroup(
   ctx: PdfContext,
-  title: string,
-  accent: SectionAccent,
-  minimumFollowingHeight = 80
+  label: string,
+  items: string[],
+  variant: "neutral" | "tag" = "neutral"
 ) {
-  ensureSpace(ctx, 72 + minimumFollowingHeight);
-  ctx.y += 48;
-  // Washi tape stripe at left of title
-  setFill(ctx.pdf, accent.tape);
-  ctx.pdf.roundedRect(ctx.marginX, ctx.y - 8, 26, 10, 3, 3, "F");
-  // Title
-  setText(ctx.pdf, colors.ink);
-  setFont(ctx.pdf, 14, "bold");
-  ctx.pdf.text(title, ctx.marginX + 34, ctx.y + 2);
-  const titleWidth = ctx.pdf.getTextWidth(title);
-  // Fine rule to the right margin
-  setDraw(ctx.pdf, colors.rule);
-  ctx.pdf.setLineWidth(0.6);
-  const ruleStart = ctx.marginX + 34 + titleWidth + 14;
-  const ruleEnd = ctx.pageWidth - ctx.marginX;
-  if (ruleEnd > ruleStart) ctx.pdf.line(ruleStart, ctx.y, ruleEnd, ctx.y);
-  ctx.y += 20;
-}
-
-function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | null) {
-  const { pdf } = ctx;
-  const avatarSize = 74;
-  const x = ctx.marginX;
-
-  // Avatar — soft lavender card with bold initial
-  setFill(pdf, colors.lavender);
-  pdf.roundedRect(x, ctx.y, avatarSize, avatarSize, 18, 18, "F");
-  setText(pdf, colors.lavenderInk);
-  setFont(pdf, 36, "bold");
-  const initial = profile.full_name?.charAt(0)?.toUpperCase() || "?";
-  const initialWidth = pdf.getTextWidth(initial);
-  pdf.text(initial, x + (avatarSize - initialWidth) / 2, ctx.y + 50);
-
-  // Text block to right of avatar
-  const contentX = x + avatarSize + 24;
-  const contentWidth = ctx.pageWidth - contentX - ctx.marginX;
-
-  drawLabel(ctx, "a nexia keepsake", contentX, ctx.y + 14);
-
-  setText(pdf, colors.ink);
-  setFont(pdf, 26, "bold");
-  const nameLines = splitText(ctx, profile.full_name || "Profile", contentWidth, 26);
-  pdf.text(nameLines, contentX, ctx.y + 40);
-
-  const textBottom = ctx.y + 40 + (nameLines.length - 1) * 28;
-  const heroBottom = Math.max(ctx.y + avatarSize, textBottom);
-  ctx.y = heroBottom + 16;
-
-  // Meta pills
-  const meta = compactStrings([profile.relationship_type, birthdayShort, profile.zodiac_sign]);
-  if (meta.length > 0) {
-    drawPills(ctx, meta);
-  }
-
-  // Bio as a quote block, no label
-  if (hasText(profile.bio)) {
-    ctx.y += 6;
-    drawQuoteBlock(ctx, profile.bio!.trim(), { tone: "soft" });
-  }
-
-  // Closing divider
-  ctx.y += 4;
-  setDraw(ctx.pdf, colors.rule);
-  ctx.pdf.setLineWidth(0.5);
-  ctx.pdf.line(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX, ctx.y);
-  ctx.y += 12;
-}
-
-function drawQuoteBlock(
-  ctx: PdfContext,
-  value: string,
-  options: { tone?: "soft" | "warm" | "cool"; label?: string } = {}
-) {
-  const tone = options.tone ?? "soft";
-  const palette =
-    tone === "warm"
-      ? { bg: colors.peachSoft, border: colors.peach, ink: colors.peachInk, glyph: colors.peach }
-      : tone === "cool"
-        ? { bg: colors.blueSoft, border: colors.blue, ink: colors.blueInk, glyph: colors.blue }
-        : { bg: colors.paper, border: colors.border, ink: colors.text, glyph: colors.lavender };
-
-  const innerX = ctx.marginX + 44;
-  const innerWidth = ctx.pageWidth - ctx.marginX * 2 - 62;
-  const lines = splitText(ctx, value, innerWidth, 11);
-
-  const padTop = 22;
-  const padBottom = 20;
-  const labelSpace = options.label ? 18 : 0;
-  const textHeight = lines.length * 14;
-  const height = padTop + labelSpace + textHeight + padBottom;
-
-  ensureSpace(ctx, height + 10);
-
-  // Card
-  setFill(ctx.pdf, palette.bg);
-  setDraw(ctx.pdf, palette.border);
-  ctx.pdf.setLineWidth(0.5);
-  ctx.pdf.roundedRect(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX * 2, height, 14, 14, "FD");
-
-  // Large opening curly quote glyph
-  setText(ctx.pdf, palette.glyph);
-  setFont(ctx.pdf, 36, "bold");
-  ctx.pdf.text("“", ctx.marginX + 14, ctx.y + 40);
-
-  let cursorY = ctx.y + padTop;
-  if (options.label) {
-    drawLabel(ctx, options.label, innerX, cursorY);
-    cursorY += labelSpace;
-  }
-
-  setText(ctx.pdf, palette.ink);
-  setFont(ctx.pdf, 11, "italic");
-  ctx.pdf.text(lines, innerX, cursorY + 10);
-
-  ctx.y += height + 14;
-}
-
-function drawParagraph(ctx: PdfContext, label: string, value: string) {
-  if (!hasText(value)) return;
-  const width = ctx.pageWidth - ctx.marginX * 2;
-  const lines = splitText(ctx, value.trim(), width, 10.5);
-  const height = 20 + lines.length * 14;
-  ensureSpace(ctx, height + 14);
+  if (items.length === 0) return;
   drawLabel(ctx, label, ctx.marginX, ctx.y);
-  setText(ctx.pdf, colors.text);
-  setFont(ctx.pdf, 10.5, "normal");
-  ctx.pdf.text(lines, ctx.marginX, ctx.y + 18);
-  ctx.y += height + 14;
+  ctx.y += space.labelToBody;
+  drawPills(ctx, items, variant);
 }
+
+// === BLOCK: associated song card ===========================================
 
 function drawSongCard(
   ctx: PdfContext,
@@ -395,16 +283,15 @@ function drawSongCard(
   const hasArtist = hasText(artist);
 
   const padLeft = 24;
-  const padBottom = 18;
-  const labelBaseline = 26;
-  const nameBaseline = hasName ? 48 : 0;
-  const artistBaseline = hasArtist ? (hasName ? 66 : 48) : 0;
+  const padBottom = 20;
+  const labelBaseline = 28;
+  const nameBaseline = hasName ? 50 : 0;
+  const artistBaseline = hasArtist ? (hasName ? 68 : 50) : 0;
   const lastBaseline = Math.max(labelBaseline, nameBaseline, artistBaseline);
   const height = lastBaseline + padBottom;
 
-  ensureSpace(ctx, height + 16);
+  ensureSpace(ctx, height);
 
-  // Card
   setFill(ctx.pdf, colors.paper);
   setDraw(ctx.pdf, colors.border);
   ctx.pdf.setLineWidth(0.5);
@@ -425,31 +312,35 @@ function drawSongCard(
     setFont(ctx.pdf, 10, "italic");
     ctx.pdf.text(artist!.trim(), ctx.marginX + padLeft, ctx.y + artistBaseline);
   }
-  ctx.y += height + 16;
+  ctx.y += height;
 }
+
+// === BLOCK: numbered songs =================================================
 
 function drawNumberedSongs(
   ctx: PdfContext,
   songs: Array<{ name?: string | null; artist?: string | null }>
 ) {
   if (songs.length === 0) return;
-  drawGroupLabel(ctx, "Top Songs");
+  drawLabel(ctx, "Top Songs", ctx.marginX, ctx.y);
+  ctx.y += space.labelToBody;
 
   const badgeSize = 26;
   const textX = ctx.marginX + badgeSize + 14;
   const textWidth = ctx.pageWidth - textX - ctx.marginX;
 
   songs.forEach((song, index) => {
+    if (index > 0) ctx.y += space.songRow;
+
     const nameLines = hasText(song.name) ? splitText(ctx, song.name!.trim(), textWidth, 10) : [];
     const artistLines = hasText(song.artist)
       ? splitText(ctx, song.artist!.trim(), textWidth, 9)
       : [];
     const contentHeight = nameLines.length * 13 + artistLines.length * 11;
-    const rowHeight = Math.max(badgeSize + 4, contentHeight + 6);
-    ensureSpace(ctx, rowHeight + 6);
+    const rowHeight = Math.max(badgeSize + 4, contentHeight + 8);
+    ensureSpace(ctx, rowHeight);
 
     const accent = sectionAccents[index % sectionAccents.length];
-    // Badge — tinted rounded square per rank
     setFill(ctx.pdf, accent.soft);
     setDraw(ctx.pdf, accent.tape);
     ctx.pdf.setLineWidth(0.4);
@@ -472,23 +363,178 @@ function drawNumberedSongs(
       setFont(ctx.pdf, 9, "italic");
       ctx.pdf.text(artistLines, textX, cursorY);
     }
-    ctx.y += rowHeight + 8;
+    ctx.y += rowHeight;
   });
-
-  ctx.y += 10;
 }
 
-function drawLabeledPillGroup(ctx: PdfContext, label: string, items: string[]) {
-  if (items.length === 0) return;
-  drawGroupLabel(ctx, label);
-  drawPills(ctx, items);
+// === BLOCK: quote bubble (used standalone and inside a quote list) =========
+
+function drawQuoteBlock(
+  ctx: PdfContext,
+  value: string,
+  options: { tone?: "soft" | "warm" | "cool"; label?: string } = {}
+) {
+  const tone = options.tone ?? "soft";
+  const palette =
+    tone === "warm"
+      ? { bg: colors.peachSoft, border: colors.peach, ink: colors.peachInk, glyph: colors.peach }
+      : tone === "cool"
+        ? { bg: colors.blueSoft, border: colors.blue, ink: colors.blueInk, glyph: colors.blue }
+        : { bg: colors.paper, border: colors.border, ink: colors.text, glyph: colors.lavender };
+
+  const innerX = ctx.marginX + 44;
+  const innerWidth = ctx.pageWidth - ctx.marginX * 2 - 62;
+  const lines = splitText(ctx, value, innerWidth, 11);
+
+  const padTop = 22;
+  const padBottom = 22;
+  const labelSpace = options.label ? 20 : 0;
+  const textHeight = lines.length * 14;
+  const height = padTop + labelSpace + textHeight + padBottom;
+
+  ensureSpace(ctx, height);
+
+  setFill(ctx.pdf, palette.bg);
+  setDraw(ctx.pdf, palette.border);
+  ctx.pdf.setLineWidth(0.5);
+  ctx.pdf.roundedRect(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX * 2, height, 14, 14, "FD");
+
+  setText(ctx.pdf, palette.glyph);
+  setFont(ctx.pdf, 36, "bold");
+  ctx.pdf.text("“", ctx.marginX + 14, ctx.y + 40);
+
+  let cursorY = ctx.y + padTop;
+  if (options.label) {
+    drawLabel(ctx, options.label, innerX, cursorY);
+    cursorY += labelSpace;
+  }
+
+  setText(ctx.pdf, palette.ink);
+  setFont(ctx.pdf, 11, "italic");
+  ctx.pdf.text(lines, innerX, cursorY + 10);
+
+  ctx.y += height;
 }
+
+// === BLOCK: labeled list of quote bubbles ==================================
+
+function drawQuoteList(ctx: PdfContext, label: string, quotes: Array<{ quote: string }>) {
+  if (quotes.length === 0) return;
+  drawLabel(ctx, label, ctx.marginX, ctx.y);
+  ctx.y += space.labelToBody;
+  quotes.forEach((q, i) => {
+    if (i > 0) ctx.y += space.quoteItem;
+    drawQuoteBlock(ctx, q.quote.trim(), { tone: "soft" });
+  });
+}
+
+// === BLOCK: labeled paragraph ==============================================
+
+function drawParagraph(ctx: PdfContext, label: string, value: string) {
+  if (!hasText(value)) return;
+  const width = ctx.pageWidth - ctx.marginX * 2;
+  const lines = splitText(ctx, value.trim(), width, 10.5);
+  const height = space.labelToBody + lines.length * 14;
+  ensureSpace(ctx, height);
+  drawLabel(ctx, label, ctx.marginX, ctx.y);
+  setText(ctx.pdf, colors.text);
+  setFont(ctx.pdf, 10.5, "normal");
+  ctx.pdf.text(lines, ctx.marginX, ctx.y + space.labelToBody);
+  ctx.y += height;
+}
+
+// === Section heading + section orchestrator ================================
+
+function drawSectionHeading(ctx: PdfContext, title: string, accent: SectionAccent) {
+  setFill(ctx.pdf, accent.tape);
+  ctx.pdf.roundedRect(ctx.marginX, ctx.y - 8, 26, 10, 3, 3, "F");
+  setText(ctx.pdf, colors.ink);
+  setFont(ctx.pdf, 14, "bold");
+  ctx.pdf.text(title, ctx.marginX + 34, ctx.y + 2);
+  const titleWidth = ctx.pdf.getTextWidth(title);
+  setDraw(ctx.pdf, colors.rule);
+  ctx.pdf.setLineWidth(0.6);
+  const ruleStart = ctx.marginX + 34 + titleWidth + 14;
+  const ruleEnd = ctx.pageWidth - ctx.marginX;
+  if (ruleEnd > ruleStart) ctx.pdf.line(ruleStart, ctx.y, ruleEnd, ctx.y);
+}
+
+function renderSection(
+  ctx: PdfContext,
+  title: string,
+  accent: SectionAccent,
+  blocks: Array<(() => void) | null>,
+  minimumFollowingHeight = 80
+) {
+  const present = blocks.filter((b): b is () => void => b !== null);
+  if (present.length === 0) return;
+
+  ensureSpace(ctx, 24 + space.postTitle + minimumFollowingHeight);
+  if (ctx.y > ctx.topY) ctx.y += space.section;
+
+  drawSectionHeading(ctx, title, accent);
+  ctx.y += space.postTitle;
+
+  present.forEach((block, i) => {
+    if (i > 0) ctx.y += space.block;
+    block();
+  });
+}
+
+// === Hero block ============================================================
+
+function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | null) {
+  const { pdf } = ctx;
+  const avatarSize = 74;
+  const x = ctx.marginX;
+
+  setFill(pdf, colors.lavender);
+  pdf.roundedRect(x, ctx.y, avatarSize, avatarSize, 18, 18, "F");
+  setText(pdf, colors.lavenderInk);
+  setFont(pdf, 36, "bold");
+  const initial = profile.full_name?.charAt(0)?.toUpperCase() || "?";
+  const initialWidth = pdf.getTextWidth(initial);
+  pdf.text(initial, x + (avatarSize - initialWidth) / 2, ctx.y + 50);
+
+  const contentX = x + avatarSize + 24;
+  const contentWidth = ctx.pageWidth - contentX - ctx.marginX;
+  drawLabel(ctx, "a nexia keepsake", contentX, ctx.y + 14);
+  setText(pdf, colors.ink);
+  setFont(pdf, 26, "bold");
+  const nameLines = splitText(ctx, profile.full_name || "Profile", contentWidth, 26);
+  pdf.text(nameLines, contentX, ctx.y + 40);
+
+  const textBottom = ctx.y + 40 + (nameLines.length - 1) * 28;
+  const heroBottom = Math.max(ctx.y + avatarSize, textBottom);
+  ctx.y = heroBottom + 22;
+
+  const meta = compactStrings([profile.relationship_type, birthdayShort, profile.zodiac_sign]);
+  if (meta.length > 0) {
+    drawPills(ctx, meta);
+  }
+
+  if (hasText(profile.bio)) {
+    if (meta.length > 0) ctx.y += 14;
+    drawQuoteBlock(ctx, profile.bio!.trim(), { tone: "soft" });
+  }
+
+  // Closing rule. ctx.y ends AT the rule; renderSection will add space.section
+  // above the first section heading, giving a clean break.
+  ctx.y += 18;
+  setDraw(ctx.pdf, colors.rule);
+  ctx.pdf.setLineWidth(0.5);
+  ctx.pdf.line(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX, ctx.y);
+}
+
+// === Helpers ===============================================================
 
 function buildFields(items: Array<[string, string | null | undefined]>): FieldItem[] {
   return items
     .map(([label, value]) => ({ label, value: value?.trim() ?? "" }))
     .filter((field) => field.value.length > 0);
 }
+
+// === Entry point ===========================================================
 
 export async function exportProfilePdf(profile: Profile) {
   const { jsPDF } = await import("jspdf");
@@ -522,6 +568,7 @@ export async function exportProfilePdf(profile: Profile) {
     (song) => hasText(song.name) || hasText(song.artist)
   );
   const associatedSong = profile.associated_song;
+  const hasAssociatedSong = hasText(associatedSong?.name) || hasText(associatedSong?.artist);
 
   drawHero(ctx, profile, birthdayShort);
 
@@ -531,18 +578,18 @@ export async function exportProfilePdf(profile: Profile) {
     ["Zodiac", profile.zodiac_sign],
   ]);
 
-  if (overviewFields.length > 0 || tags.length > 0) {
-    drawSectionTitle(ctx, "Overview", sectionAccents[0]);
-    drawFieldGrid(ctx, overviewFields);
-    if (tags.length > 0) {
-      drawGroupLabel(ctx, "Tags");
-      drawPills(
-        ctx,
-        tags.map((tag) => `#${tag}`),
-        "tag"
-      );
-    }
-  }
+  renderSection(ctx, "Overview", sectionAccents[0], [
+    overviewFields.length > 0 ? () => drawFieldGrid(ctx, overviewFields) : null,
+    tags.length > 0
+      ? () =>
+          drawLabeledPillGroup(
+            ctx,
+            "Tags",
+            tags.map((tag) => `#${tag}`),
+            "tag"
+          )
+      : null,
+  ]);
 
   const favoriteFields = buildFields([
     ["Favorite Movie", profile.favorite_movie],
@@ -550,45 +597,41 @@ export async function exportProfilePdf(profile: Profile) {
     ["Music Preference", profile.music_preference],
   ]);
 
-  if (
-    favoriteFields.length > 0 ||
-    hasText(associatedSong?.name) ||
-    hasText(associatedSong?.artist) ||
-    topSongs.length > 0 ||
-    movieGenres.length > 0 ||
-    bookGenres.length > 0
-  ) {
-    drawSectionTitle(ctx, "Favorites & Interests", sectionAccents[1]);
-    drawFieldGrid(ctx, favoriteFields);
-    drawSongCard(ctx, "Associated Song", associatedSong?.name, associatedSong?.artist);
-    drawNumberedSongs(ctx, topSongs);
-    drawLabeledPillGroup(ctx, "Movie Genres", movieGenres);
-    drawLabeledPillGroup(ctx, "Book Genres", bookGenres);
-  }
+  renderSection(ctx, "Favorites & Interests", sectionAccents[1], [
+    favoriteFields.length > 0 ? () => drawFieldGrid(ctx, favoriteFields) : null,
+    hasAssociatedSong
+      ? () => drawSongCard(ctx, "Associated Song", associatedSong?.name, associatedSong?.artist)
+      : null,
+    topSongs.length > 0 ? () => drawNumberedSongs(ctx, topSongs) : null,
+    movieGenres.length > 0 ? () => drawLabeledPillGroup(ctx, "Movie Genres", movieGenres) : null,
+    bookGenres.length > 0 ? () => drawLabeledPillGroup(ctx, "Book Genres", bookGenres) : null,
+  ]);
 
-  if (hangoutPlaces.length > 0 || foodRestrictions.length > 0 || politicalViews.length > 0) {
-    drawSectionTitle(ctx, "Lifestyle", sectionAccents[2]);
-    drawLabeledPillGroup(ctx, "Hangout Places", hangoutPlaces);
-    drawLabeledPillGroup(ctx, "Food Restrictions", foodRestrictions);
-    drawLabeledPillGroup(ctx, "Political Views", politicalViews);
-  }
+  renderSection(ctx, "Lifestyle", sectionAccents[2], [
+    hangoutPlaces.length > 0
+      ? () => drawLabeledPillGroup(ctx, "Hangout Places", hangoutPlaces)
+      : null,
+    foodRestrictions.length > 0
+      ? () => drawLabeledPillGroup(ctx, "Food Restrictions", foodRestrictions)
+      : null,
+    politicalViews.length > 0
+      ? () => drawLabeledPillGroup(ctx, "Political Views", politicalViews)
+      : null,
+  ]);
 
-  if (hasText(profile.long_term_goals) || hasText(profile.favorite_memory) || quotes.length > 0) {
-    drawSectionTitle(ctx, "Deep Dive", sectionAccents[3]);
-    drawParagraph(ctx, "Long-term Goals", profile.long_term_goals ?? "");
-    if (hasText(profile.favorite_memory)) {
-      drawQuoteBlock(ctx, profile.favorite_memory!.trim(), {
-        tone: "warm",
-        label: "Favorite Memory",
-      });
-    }
-    if (quotes.length > 0) {
-      drawGroupLabel(ctx, "Their Quotes");
-      quotes.forEach((quote) => {
-        drawQuoteBlock(ctx, quote.quote.trim(), { tone: "soft" });
-      });
-    }
-  }
+  renderSection(ctx, "Deep Dive", sectionAccents[3], [
+    hasText(profile.long_term_goals)
+      ? () => drawParagraph(ctx, "Long-term Goals", profile.long_term_goals!)
+      : null,
+    hasText(profile.favorite_memory)
+      ? () =>
+          drawQuoteBlock(ctx, profile.favorite_memory!.trim(), {
+            tone: "warm",
+            label: "Favorite Memory",
+          })
+      : null,
+    quotes.length > 0 ? () => drawQuoteList(ctx, "Their Quotes", quotes) : null,
+  ]);
 
   pdf.save(`${safeFilename(profile.full_name)}-nexia-profile.pdf`);
 }
