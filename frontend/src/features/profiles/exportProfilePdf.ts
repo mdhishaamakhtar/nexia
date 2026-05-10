@@ -19,22 +19,37 @@ interface FieldItem {
   value: string;
 }
 
+interface SectionAccent {
+  tape: Rgb;
+  ink: Rgb;
+  soft: Rgb;
+}
+
 const colors = {
   page: [255, 247, 237] as Rgb,
-  paper: [255, 252, 247] as Rgb,
-  fill: [255, 241, 224] as Rgb,
-  fillSoft: [255, 250, 244] as Rgb,
+  paper: [255, 253, 248] as Rgb,
+  rule: [232, 217, 196] as Rgb,
+  border: [214, 198, 173] as Rgb,
   ink: [31, 41, 55] as Rgb,
   text: [55, 65, 81] as Rgb,
-  muted: [107, 114, 128] as Rgb,
-  line: [236, 221, 203] as Rgb,
+  muted: [120, 113, 108] as Rgb,
   peach: [253, 186, 116] as Rgb,
+  peachInk: [124, 45, 18] as Rgb,
+  peachSoft: [255, 237, 213] as Rgb,
   lavender: [196, 181, 253] as Rgb,
+  lavenderInk: [76, 29, 149] as Rgb,
+  lavenderSoft: [237, 233, 254] as Rgb,
   blue: [147, 197, 253] as Rgb,
-  purple: [91, 33, 182] as Rgb,
+  blueInk: [30, 64, 175] as Rgb,
+  blueSoft: [219, 234, 254] as Rgb,
 };
 
-const sectionAccents: Rgb[] = [colors.lavender, colors.peach, colors.blue, colors.lavender];
+const sectionAccents: SectionAccent[] = [
+  { tape: colors.lavender, ink: colors.lavenderInk, soft: colors.lavenderSoft },
+  { tape: colors.peach, ink: colors.peachInk, soft: colors.peachSoft },
+  { tape: colors.blue, ink: colors.blueInk, soft: colors.blueSoft },
+  { tape: colors.lavender, ink: colors.lavenderInk, soft: colors.lavenderSoft },
+];
 
 function compactStrings(values: Array<string | null | undefined>) {
   return values.map((value) => value?.trim()).filter((value): value is string => Boolean(value));
@@ -57,7 +72,6 @@ function safeFilename(value: string) {
     .replace(/[^a-z0-9]+/gi, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
-
   return normalized || "profile";
 }
 
@@ -83,190 +97,286 @@ function splitText(ctx: PdfContext, text: string, width: number, size: number) {
   return ctx.pdf.splitTextToSize(text, width) as string[];
 }
 
+function drawCornerTape(ctx: PdfContext) {
+  const { pdf, pageWidth } = ctx;
+  setFill(pdf, colors.peach);
+  pdf.roundedRect(pageWidth - 104, 28, 46, 11, 3, 3, "F");
+  setFill(pdf, colors.lavender);
+  pdf.roundedRect(pageWidth - 70, 24, 32, 11, 3, 3, "F");
+}
+
 function drawPageBackground(ctx: PdfContext) {
   const { pdf, pageWidth, pageHeight } = ctx;
-
   setFill(pdf, colors.page);
   pdf.rect(0, 0, pageWidth, pageHeight, "F");
-
-  setDraw(pdf, colors.line);
-  pdf.setLineWidth(0.25);
-
-  for (let x = 0; x <= pageWidth; x += 18) {
-    pdf.line(x, 0, x, pageHeight);
-  }
-
-  for (let y = 0; y <= pageHeight; y += 18) {
-    pdf.line(0, y, pageWidth, y);
-  }
+  drawCornerTape(ctx);
 }
 
 function ensureSpace(ctx: PdfContext, neededHeight: number) {
   if (ctx.y + neededHeight <= ctx.bottomY) return;
-
   ctx.pdf.addPage();
   drawPageBackground(ctx);
   ctx.y = ctx.topY;
 }
 
-function drawWashi(ctx: PdfContext, x: number, y: number, width: number, color: Rgb) {
-  const { pdf } = ctx;
-  setFill(pdf, color);
-  pdf.roundedRect(x, y, width, 12, 4, 4, "F");
-}
-
-function drawLabel(ctx: PdfContext, label: string, x: number, y: number) {
-  const { pdf } = ctx;
-  setText(pdf, colors.muted);
-  setFont(pdf, 7, "bold");
-  pdf.text(label.toUpperCase(), x, y);
-}
-
-function drawValue(ctx: PdfContext, value: string, x: number, y: number, width: number) {
-  const { pdf } = ctx;
-  const lines = splitText(ctx, value, width, 9.5);
-  setText(pdf, colors.ink);
-  setFont(pdf, 9.5, "bold");
-  pdf.text(lines, x, y);
-  return lines.length * 12;
+function drawLabel(
+  ctx: PdfContext,
+  label: string,
+  x: number,
+  y: number,
+  color: Rgb = colors.muted
+) {
+  setText(ctx.pdf, color);
+  setFont(ctx.pdf, 7.5, "bold");
+  ctx.pdf.text(label.toUpperCase(), x, y);
 }
 
 function measureField(ctx: PdfContext, field: FieldItem, width: number) {
-  return 14 + splitText(ctx, field.value, width, 9.5).length * 12;
+  return 16 + splitText(ctx, field.value, width, 10).length * 13;
 }
 
 function drawFieldGrid(ctx: PdfContext, fields: FieldItem[]) {
   if (fields.length === 0) return;
-
-  const gap = 20;
+  const gap = 26;
   const columnWidth = (ctx.pageWidth - ctx.marginX * 2 - gap) / 2;
 
   for (let index = 0; index < fields.length; index += 2) {
     const row = fields.slice(index, index + 2);
     const rowHeight = Math.max(...row.map((field) => measureField(ctx, field, columnWidth)));
-    ensureSpace(ctx, rowHeight + 10);
+    ensureSpace(ctx, rowHeight + 14);
 
     row.forEach((field, rowIndex) => {
       const x = ctx.marginX + rowIndex * (columnWidth + gap);
       drawLabel(ctx, field.label, x, ctx.y);
-      drawValue(ctx, field.value, x, ctx.y + 13, columnWidth);
+      const lines = splitText(ctx, field.value, columnWidth, 10);
+      setText(ctx.pdf, colors.ink);
+      setFont(ctx.pdf, 10, "bold");
+      ctx.pdf.text(lines, x, ctx.y + 14);
     });
 
-    ctx.y += rowHeight + 10;
+    ctx.y += rowHeight + 14;
   }
 }
 
 function measurePills(ctx: PdfContext, items: string[], width: number) {
-  const lineHeight = 18;
+  const lineHeight = 22;
   let currentX = 0;
   let rows = 1;
-
-  setFont(ctx.pdf, 8.5, "bold");
-
+  setFont(ctx.pdf, 9, "normal");
   items.forEach((item) => {
-    const pillWidth = Math.min(ctx.pdf.getTextWidth(item) + 18, width);
+    const pillWidth = Math.min(ctx.pdf.getTextWidth(item) + 22, width);
     if (currentX > 0 && currentX + pillWidth > width) {
       rows += 1;
       currentX = 0;
     }
     currentX += pillWidth + 6;
   });
-
   return rows * lineHeight;
 }
 
-function drawPills(ctx: PdfContext, items: string[]) {
+function drawPills(ctx: PdfContext, items: string[], variant: "neutral" | "tag" = "neutral") {
   if (items.length === 0) return;
-
   const xStart = ctx.marginX;
   const maxWidth = ctx.pageWidth - ctx.marginX * 2;
   const height = measurePills(ctx, items, maxWidth);
-  ensureSpace(ctx, height + 8);
+  ensureSpace(ctx, height + 4);
+
+  const palette =
+    variant === "tag"
+      ? { bg: colors.lavenderSoft, border: colors.lavender, ink: colors.lavenderInk }
+      : { bg: colors.paper, border: colors.border, ink: colors.text };
 
   let x = xStart;
-  let y = ctx.y;
-
-  setFont(ctx.pdf, 8.5, "bold");
+  let y = ctx.y + 4;
+  setFont(ctx.pdf, 9, "normal");
 
   items.forEach((item) => {
-    const width = Math.min(ctx.pdf.getTextWidth(item) + 18, maxWidth);
+    const width = Math.min(ctx.pdf.getTextWidth(item) + 22, maxWidth);
     if (x > xStart && x + width > xStart + maxWidth) {
       x = xStart;
-      y += 18;
+      y += 22;
     }
-
-    setFill(ctx.pdf, colors.fillSoft);
-    ctx.pdf.roundedRect(x, y - 10, width, 14, 7, 7, "F");
-    setText(ctx.pdf, colors.muted);
-    setFont(ctx.pdf, 8.5, "bold");
-    ctx.pdf.text(item, x + 9, y);
+    setFill(ctx.pdf, palette.bg);
+    setDraw(ctx.pdf, palette.border);
+    ctx.pdf.setLineWidth(0.4);
+    ctx.pdf.roundedRect(x, y - 11, width, 17, 8.5, 8.5, "FD");
+    setText(ctx.pdf, palette.ink);
+    setFont(ctx.pdf, 9, "normal");
+    ctx.pdf.text(item, x + 11, y);
     x += width + 6;
   });
 
-  ctx.y += height + 8;
+  ctx.y += height + 4;
 }
 
 function drawSectionTitle(
   ctx: PdfContext,
   title: string,
-  accent: Rgb,
-  minimumFollowingHeight = 64
+  accent: SectionAccent,
+  minimumFollowingHeight = 80
 ) {
-  ensureSpace(ctx, 34 + minimumFollowingHeight);
-  drawWashi(ctx, ctx.marginX + 18, ctx.y - 9, 52, accent);
-  drawLabel(ctx, title, ctx.marginX, ctx.y + 18);
-  ctx.y += 34;
+  ensureSpace(ctx, 46 + minimumFollowingHeight);
+  ctx.y += 18;
+  // Washi tape stripe at left of title
+  setFill(ctx.pdf, accent.tape);
+  ctx.pdf.roundedRect(ctx.marginX, ctx.y - 8, 26, 10, 3, 3, "F");
+  // Title
+  setText(ctx.pdf, colors.ink);
+  setFont(ctx.pdf, 14, "bold");
+  ctx.pdf.text(title, ctx.marginX + 34, ctx.y + 2);
+  const titleWidth = ctx.pdf.getTextWidth(title);
+  // Fine rule to the right margin
+  setDraw(ctx.pdf, colors.rule);
+  ctx.pdf.setLineWidth(0.6);
+  const ruleStart = ctx.marginX + 34 + titleWidth + 14;
+  const ruleEnd = ctx.pageWidth - ctx.marginX;
+  if (ruleEnd > ruleStart) ctx.pdf.line(ruleStart, ctx.y, ruleEnd, ctx.y);
+  ctx.y += 24;
 }
 
-function drawSoftBox(ctx: PdfContext, height: number, accent?: Rgb) {
+function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | null) {
+  const { pdf } = ctx;
+  const avatarSize = 74;
+  const x = ctx.marginX;
+
+  // Avatar — soft lavender card with bold initial
+  setFill(pdf, colors.lavender);
+  pdf.roundedRect(x, ctx.y, avatarSize, avatarSize, 18, 18, "F");
+  setText(pdf, colors.lavenderInk);
+  setFont(pdf, 36, "bold");
+  const initial = profile.full_name?.charAt(0)?.toUpperCase() || "?";
+  const initialWidth = pdf.getTextWidth(initial);
+  pdf.text(initial, x + (avatarSize - initialWidth) / 2, ctx.y + 50);
+
+  // Text block to right of avatar
+  const contentX = x + avatarSize + 24;
+  const contentWidth = ctx.pageWidth - contentX - ctx.marginX;
+
+  drawLabel(ctx, "a nexia keepsake", contentX, ctx.y + 14);
+
+  setText(pdf, colors.ink);
+  setFont(pdf, 26, "bold");
+  const nameLines = splitText(ctx, profile.full_name || "Profile", contentWidth, 26);
+  pdf.text(nameLines, contentX, ctx.y + 40);
+
+  const textBottom = ctx.y + 40 + (nameLines.length - 1) * 28;
+  const heroBottom = Math.max(ctx.y + avatarSize, textBottom);
+  ctx.y = heroBottom + 16;
+
+  // Meta pills
+  const meta = compactStrings([profile.relationship_type, birthdayShort, profile.zodiac_sign]);
+  if (meta.length > 0) {
+    drawPills(ctx, meta);
+  }
+
+  // Bio as a quote block, no label
+  if (hasText(profile.bio)) {
+    ctx.y += 6;
+    drawQuoteBlock(ctx, profile.bio!.trim(), { tone: "soft" });
+  }
+
+  // Closing divider
+  ctx.y += 4;
+  setDraw(ctx.pdf, colors.rule);
+  ctx.pdf.setLineWidth(0.5);
+  ctx.pdf.line(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX, ctx.y);
+  ctx.y += 6;
+}
+
+function drawQuoteBlock(
+  ctx: PdfContext,
+  value: string,
+  options: { tone?: "soft" | "warm" | "cool"; label?: string } = {}
+) {
+  const tone = options.tone ?? "soft";
+  const palette =
+    tone === "warm"
+      ? { bg: colors.peachSoft, border: colors.peach, ink: colors.peachInk, glyph: colors.peach }
+      : tone === "cool"
+        ? { bg: colors.blueSoft, border: colors.blue, ink: colors.blueInk, glyph: colors.blue }
+        : { bg: colors.paper, border: colors.border, ink: colors.text, glyph: colors.lavender };
+
+  const innerX = ctx.marginX + 44;
+  const innerWidth = ctx.pageWidth - ctx.marginX * 2 - 62;
+  const lines = splitText(ctx, value, innerWidth, 11);
+
+  const padTop = 22;
+  const padBottom = 20;
+  const labelSpace = options.label ? 18 : 0;
+  const textHeight = lines.length * 14;
+  const height = padTop + labelSpace + textHeight + padBottom;
+
+  ensureSpace(ctx, height + 10);
+
+  // Card
+  setFill(ctx.pdf, palette.bg);
+  setDraw(ctx.pdf, palette.border);
+  ctx.pdf.setLineWidth(0.5);
+  ctx.pdf.roundedRect(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX * 2, height, 14, 14, "FD");
+
+  // Large opening curly quote glyph
+  setText(ctx.pdf, palette.glyph);
+  setFont(ctx.pdf, 36, "bold");
+  ctx.pdf.text("“", ctx.marginX + 14, ctx.y + 40);
+
+  let cursorY = ctx.y + padTop;
+  if (options.label) {
+    drawLabel(ctx, options.label, innerX, cursorY);
+    cursorY += labelSpace;
+  }
+
+  setText(ctx.pdf, palette.ink);
+  setFont(ctx.pdf, 11, "italic");
+  ctx.pdf.text(lines, innerX, cursorY + 10);
+
+  ctx.y += height + 10;
+}
+
+function drawParagraph(ctx: PdfContext, label: string, value: string) {
+  if (!hasText(value)) return;
   const width = ctx.pageWidth - ctx.marginX * 2;
-  ensureSpace(ctx, height);
-
-  setFill(ctx.pdf, accent ?? colors.paper);
-  ctx.pdf.roundedRect(ctx.marginX, ctx.y, width, height - 8, 14, 14, "F");
-  return { x: ctx.marginX + 16, y: ctx.y + 20, width: width - 32 };
+  const lines = splitText(ctx, value.trim(), width, 10.5);
+  const height = 20 + lines.length * 14;
+  ensureSpace(ctx, height + 6);
+  drawLabel(ctx, label, ctx.marginX, ctx.y);
+  setText(ctx.pdf, colors.text);
+  setFont(ctx.pdf, 10.5, "normal");
+  ctx.pdf.text(lines, ctx.marginX, ctx.y + 18);
+  ctx.y += height + 6;
 }
 
-function drawParagraphBox(
+function drawSongCard(
   ctx: PdfContext,
   label: string,
-  value: string,
-  options: { italic?: boolean; accent?: Rgb } = {}
+  name?: string | null,
+  artist?: string | null
 ) {
-  if (!hasText(value)) return;
-
-  const width = ctx.pageWidth - ctx.marginX * 2 - 32;
-  const lines = splitText(ctx, value.trim(), width, 10.5);
-  const height = 44 + lines.length * 14;
-  const box = drawSoftBox(ctx, height, options.accent);
-
-  drawLabel(ctx, label, box.x, box.y - 3);
-  setText(ctx.pdf, colors.ink);
-  setFont(ctx.pdf, 10.5, options.italic ? "italic" : "normal");
-  ctx.pdf.text(lines, box.x, box.y + 15);
-  ctx.y += height + 6;
-}
-
-function drawSongBox(ctx: PdfContext, label: string, name?: string | null, artist?: string | null) {
   if (!hasText(name) && !hasText(artist)) return;
+  const height = 66;
+  ensureSpace(ctx, height + 10);
 
-  const lines = compactStrings([name, artist]);
-  const height = 42 + lines.length * 13;
-  const box = drawSoftBox(ctx, height);
+  // Card
+  setFill(ctx.pdf, colors.paper);
+  setDraw(ctx.pdf, colors.border);
+  ctx.pdf.setLineWidth(0.5);
+  ctx.pdf.roundedRect(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX * 2, height, 14, 14, "FD");
 
-  drawLabel(ctx, label, box.x, box.y - 3);
+  // Peach washi tape pasted on top edge of the card
+  setFill(ctx.pdf, colors.peach);
+  ctx.pdf.roundedRect(ctx.marginX + 18, ctx.y - 5, 40, 10, 3, 3, "F");
+
+  drawLabel(ctx, label, ctx.marginX + 22, ctx.y + 26);
   if (hasText(name)) {
     setText(ctx.pdf, colors.ink);
-    setFont(ctx.pdf, 10, "bold");
-    ctx.pdf.text(name!.trim(), box.x, box.y + 15);
+    setFont(ctx.pdf, 12, "bold");
+    ctx.pdf.text(name!.trim(), ctx.marginX + 22, ctx.y + 44);
   }
   if (hasText(artist)) {
-    setText(ctx.pdf, colors.text);
-    setFont(ctx.pdf, 9, "normal");
-    ctx.pdf.text(artist!.trim(), box.x, box.y + (hasText(name) ? 29 : 15));
+    setText(ctx.pdf, colors.muted);
+    setFont(ctx.pdf, 10, "italic");
+    ctx.pdf.text(artist!.trim(), ctx.marginX + 22, ctx.y + 58);
   }
-
-  ctx.y += height + 6;
+  ctx.y += height + 10;
 }
 
 function drawNumberedSongs(
@@ -274,83 +384,58 @@ function drawNumberedSongs(
   songs: Array<{ name?: string | null; artist?: string | null }>
 ) {
   if (songs.length === 0) return;
-
   drawLabel(ctx, "Top Songs", ctx.marginX, ctx.y);
   ctx.y += 14;
 
+  const badgeSize = 26;
+  const textX = ctx.marginX + badgeSize + 14;
+  const textWidth = ctx.pageWidth - textX - ctx.marginX;
+
   songs.forEach((song, index) => {
-    const nameLines = hasText(song.name) ? splitText(ctx, song.name!.trim(), 390, 9.5) : [];
-    const artistLines = hasText(song.artist) ? splitText(ctx, song.artist!.trim(), 390, 8.5) : [];
-    const rowHeight = Math.max(34, 16 + nameLines.length * 12 + artistLines.length * 10);
-    ensureSpace(ctx, rowHeight + 8);
+    const nameLines = hasText(song.name) ? splitText(ctx, song.name!.trim(), textWidth, 10) : [];
+    const artistLines = hasText(song.artist)
+      ? splitText(ctx, song.artist!.trim(), textWidth, 9)
+      : [];
+    const contentHeight = nameLines.length * 13 + artistLines.length * 11;
+    const rowHeight = Math.max(badgeSize + 4, contentHeight + 6);
+    ensureSpace(ctx, rowHeight + 6);
 
-    setFill(ctx.pdf, colors.paper);
-    ctx.pdf.roundedRect(
-      ctx.marginX,
-      ctx.y,
-      ctx.pageWidth - ctx.marginX * 2,
-      rowHeight,
-      12,
-      12,
-      "F"
-    );
+    const accent = sectionAccents[index % sectionAccents.length];
+    // Badge — tinted rounded square per rank
+    setFill(ctx.pdf, accent.soft);
+    setDraw(ctx.pdf, accent.tape);
+    ctx.pdf.setLineWidth(0.4);
+    ctx.pdf.roundedRect(ctx.marginX, ctx.y, badgeSize, badgeSize, 8, 8, "FD");
+    setText(ctx.pdf, accent.ink);
+    setFont(ctx.pdf, 11, "bold");
+    const num = String(index + 1);
+    const nw = ctx.pdf.getTextWidth(num);
+    ctx.pdf.text(num, ctx.marginX + badgeSize / 2 - nw / 2, ctx.y + 18);
 
-    setFill(ctx.pdf, colors.fill);
-    ctx.pdf.circle(ctx.marginX + 18, ctx.y + 17, 10, "F");
-    setText(ctx.pdf, colors.muted);
-    setFont(ctx.pdf, 8, "bold");
-    ctx.pdf.text(String(index + 1), ctx.marginX + 15, ctx.y + 20);
-
-    const textX = ctx.marginX + 38;
+    let cursorY = ctx.y + 14;
     if (nameLines.length > 0) {
       setText(ctx.pdf, colors.ink);
-      setFont(ctx.pdf, 9.5, "bold");
-      ctx.pdf.text(nameLines, textX, ctx.y + 15);
+      setFont(ctx.pdf, 10, "bold");
+      ctx.pdf.text(nameLines, textX, cursorY);
+      cursorY += nameLines.length * 13;
     }
     if (artistLines.length > 0) {
-      setText(ctx.pdf, colors.text);
-      setFont(ctx.pdf, 8.5, "normal");
-      ctx.pdf.text(artistLines, textX, ctx.y + 15 + Math.max(1, nameLines.length) * 12);
+      setText(ctx.pdf, colors.muted);
+      setFont(ctx.pdf, 9, "italic");
+      ctx.pdf.text(artistLines, textX, cursorY);
     }
-
-    ctx.y += rowHeight + 8;
+    ctx.y += rowHeight + 6;
   });
+
+  ctx.y += 2;
 }
 
-function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | null) {
-  const { pdf } = ctx;
-  const avatarSize = 62;
-  const x = ctx.marginX;
-
-  drawWashi(ctx, x + 210, ctx.y - 14, 64, colors.lavender);
-
-  setFill(pdf, colors.lavender);
-  pdf.roundedRect(x, ctx.y, avatarSize, avatarSize, 16, 16, "F");
-  setText(pdf, colors.ink);
-  setFont(pdf, 30, "bold");
-  pdf.text(profile.full_name?.charAt(0)?.toUpperCase() || "?", x + 22, ctx.y + 42);
-
-  const contentX = x + avatarSize + 20;
-  drawLabel(ctx, "Nexia profile", contentX, ctx.y + 8);
-
-  setText(pdf, colors.ink);
-  setFont(pdf, 25, "bold");
-  const nameLines = splitText(
-    ctx,
-    profile.full_name || "Profile",
-    ctx.pageWidth - contentX - ctx.marginX,
-    25
-  );
-  pdf.text(nameLines, contentX, ctx.y + 34);
-
-  ctx.y += Math.max(avatarSize, 34 + nameLines.length * 26) + 16;
-
-  const meta = compactStrings([profile.relationship_type, birthdayShort, profile.zodiac_sign]);
-  drawPills(ctx, meta);
-
-  if (hasText(profile.bio)) {
-    drawParagraphBox(ctx, "Bio", `"${profile.bio.trim()}"`, { italic: true, accent: colors.paper });
-  }
+function drawLabeledPillGroup(ctx: PdfContext, label: string, items: string[]) {
+  if (items.length === 0) return;
+  ensureSpace(ctx, 26);
+  drawLabel(ctx, label, ctx.marginX, ctx.y);
+  ctx.y += 12;
+  drawPills(ctx, items);
 }
 
 function buildFields(items: Array<[string, string | null | undefined]>): FieldItem[] {
@@ -367,10 +452,10 @@ export async function exportProfilePdf(profile: Profile) {
     pdf,
     pageWidth: pdf.internal.pageSize.getWidth(),
     pageHeight: pdf.internal.pageSize.getHeight(),
-    marginX: 42,
-    topY: 48,
+    marginX: 48,
+    topY: 60,
     bottomY: pdf.internal.pageSize.getHeight() - 48,
-    y: 48,
+    y: 60,
   };
 
   drawPageBackground(ctx);
@@ -402,10 +487,15 @@ export async function exportProfilePdf(profile: Profile) {
   if (overviewFields.length > 0 || tags.length > 0) {
     drawSectionTitle(ctx, "Overview", sectionAccents[0]);
     drawFieldGrid(ctx, overviewFields);
-    drawPills(
-      ctx,
-      tags.map((tag) => `#${tag}`)
-    );
+    if (tags.length > 0) {
+      drawLabel(ctx, "Tags", ctx.marginX, ctx.y);
+      ctx.y += 12;
+      drawPills(
+        ctx,
+        tags.map((tag) => `#${tag}`),
+        "tag"
+      );
+    }
   }
 
   const favoriteFields = buildFields([
@@ -424,65 +514,33 @@ export async function exportProfilePdf(profile: Profile) {
   ) {
     drawSectionTitle(ctx, "Favorites & Interests", sectionAccents[1]);
     drawFieldGrid(ctx, favoriteFields);
-    drawSongBox(ctx, "Associated Song", associatedSong?.name, associatedSong?.artist);
+    drawSongCard(ctx, "Associated Song", associatedSong?.name, associatedSong?.artist);
     drawNumberedSongs(ctx, topSongs);
-
-    if (movieGenres.length > 0) {
-      drawLabel(ctx, "Movie Genres", ctx.marginX, ctx.y);
-      ctx.y += 14;
-      drawPills(ctx, movieGenres);
-    }
-
-    if (bookGenres.length > 0) {
-      drawLabel(ctx, "Book Genres", ctx.marginX, ctx.y);
-      ctx.y += 14;
-      drawPills(ctx, bookGenres);
-    }
+    drawLabeledPillGroup(ctx, "Movie Genres", movieGenres);
+    drawLabeledPillGroup(ctx, "Book Genres", bookGenres);
   }
 
   if (hangoutPlaces.length > 0 || foodRestrictions.length > 0 || politicalViews.length > 0) {
     drawSectionTitle(ctx, "Lifestyle", sectionAccents[2]);
-
-    if (hangoutPlaces.length > 0) {
-      drawLabel(ctx, "Hangout Places", ctx.marginX, ctx.y);
-      ctx.y += 14;
-      drawPills(ctx, hangoutPlaces);
-    }
-
-    if (foodRestrictions.length > 0) {
-      drawLabel(ctx, "Food Restrictions", ctx.marginX, ctx.y);
-      ctx.y += 14;
-      drawPills(ctx, foodRestrictions);
-    }
-
-    if (politicalViews.length > 0) {
-      drawLabel(ctx, "Political Views", ctx.marginX, ctx.y);
-      ctx.y += 14;
-      drawPills(ctx, politicalViews);
-    }
+    drawLabeledPillGroup(ctx, "Hangout Places", hangoutPlaces);
+    drawLabeledPillGroup(ctx, "Food Restrictions", foodRestrictions);
+    drawLabeledPillGroup(ctx, "Political Views", politicalViews);
   }
 
   if (hasText(profile.long_term_goals) || hasText(profile.favorite_memory) || quotes.length > 0) {
     drawSectionTitle(ctx, "Deep Dive", sectionAccents[3]);
-    drawParagraphBox(ctx, "Long-Term Goals", profile.long_term_goals);
-    drawParagraphBox(
-      ctx,
-      "Favorite Memory",
-      profile.favorite_memory ? `"${profile.favorite_memory.trim()}"` : "",
-      {
-        italic: true,
-        accent: colors.paper,
-      }
-    );
-
+    drawParagraph(ctx, "Long-term Goals", profile.long_term_goals ?? "");
+    if (hasText(profile.favorite_memory)) {
+      drawQuoteBlock(ctx, profile.favorite_memory!.trim(), {
+        tone: "warm",
+        label: "Favorite Memory",
+      });
+    }
     if (quotes.length > 0) {
       drawLabel(ctx, "Their Quotes", ctx.marginX, ctx.y);
-      ctx.y += 14;
+      ctx.y += 12;
       quotes.forEach((quote) => {
-        drawParagraphBox(ctx, "Quote", `"${quote.quote.trim()}"`, {
-          italic: true,
-          accent: colors.paper,
-        });
+        drawQuoteBlock(ctx, quote.quote.trim(), { tone: "soft" });
       });
     }
   }

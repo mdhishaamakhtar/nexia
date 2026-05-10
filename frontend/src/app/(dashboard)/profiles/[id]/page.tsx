@@ -11,10 +11,10 @@ import {
   Coffee,
   Download,
   Edit,
-  FileText,
   Film,
   Heart,
   ListMusic,
+  Loader2,
   MapPin,
   MessageSquare,
   Music,
@@ -264,12 +264,26 @@ export default function ProfileDetailPage() {
             back
           </Link>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Link href={`/profiles/${id}/edit`} prefetch>
               <Button variant="secondary" className="text-xs px-3 py-2">
                 <Edit className="mr-1.5 h-3.5 w-3.5" /> Edit
               </Button>
             </Link>
+            <Button
+              onClick={handleExportPdf}
+              variant="secondary"
+              className="px-3 py-2"
+              aria-label="Export profile as PDF"
+              title="Export PDF"
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+            </Button>
             <Button
               onClick={() => setIsDeleteDialogOpen(true)}
               variant="destructive"
@@ -351,46 +365,6 @@ export default function ProfileDetailPage() {
             </div>
           )}
         </motion.div>
-
-        <motion.section
-          initial={{ opacity: 0, y: 12, rotate: 0.4 }}
-          animate={{ opacity: 1, y: 0, rotate: 0.25 }}
-          transition={{ type: "spring", stiffness: 140, damping: 22, delay: 0.08 }}
-          className="glass-panel mb-8 rounded-2xl p-5 sm:p-6 relative scrapbook-card"
-        >
-          <div
-            className="washi-tape-accent w-24 opacity-50"
-            style={{ background: "var(--blue)", top: "-10px" }}
-            aria-hidden="true"
-          />
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className="rounded-2xl p-3 shrink-0"
-                style={{ background: "var(--fill)", color: "var(--text-2)" }}
-              >
-                <FileText className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
-                  Export profile
-                </h2>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-3)" }}>
-                  PDF keepsake
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={handleExportPdf}
-              variant="primary"
-              className="w-full sm:w-auto"
-              isLoading={isExporting}
-            >
-              <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-              Export PDF
-            </Button>
-          </div>
-        </motion.section>
 
         {/* Sections */}
         <div className="space-y-4">
