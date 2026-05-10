@@ -88,8 +88,38 @@ function setText(pdf: Pdf, color: Rgb) {
 }
 
 function setFont(pdf: Pdf, size: number, style: "normal" | "bold" | "italic" = "normal") {
-  pdf.setFont("helvetica", style);
+  pdf.setFont("Nunito", style);
   pdf.setFontSize(size);
+}
+
+async function fetchFontBase64(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Failed to load font: ${url}`);
+  const blob = await response.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const comma = dataUrl.indexOf(",");
+      resolve(comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Font read failed"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function registerNunito(pdf: Pdf) {
+  const [regular, bold, italic] = await Promise.all([
+    fetchFontBase64("/fonts/Nunito-Regular.ttf"),
+    fetchFontBase64("/fonts/Nunito-Bold.ttf"),
+    fetchFontBase64("/fonts/Nunito-Italic.ttf"),
+  ]);
+  pdf.addFileToVFS("Nunito-Regular.ttf", regular);
+  pdf.addFont("Nunito-Regular.ttf", "Nunito", "normal");
+  pdf.addFileToVFS("Nunito-Bold.ttf", bold);
+  pdf.addFont("Nunito-Bold.ttf", "Nunito", "bold");
+  pdf.addFileToVFS("Nunito-Italic.ttf", italic);
+  pdf.addFont("Nunito-Italic.ttf", "Nunito", "italic");
 }
 
 function splitText(ctx: PdfContext, text: string, width: number, size: number) {
@@ -129,6 +159,15 @@ function drawLabel(
   setText(ctx.pdf, color);
   setFont(ctx.pdf, 7.5, "bold");
   ctx.pdf.text(label.toUpperCase(), x, y);
+}
+
+// Subgroup heading inside a section: "Tags", "Top Songs", "Their Quotes", etc.
+// Carries its own top margin so it never crowds whatever came before.
+function drawGroupLabel(ctx: PdfContext, label: string) {
+  ensureSpace(ctx, 40);
+  ctx.y += 16;
+  drawLabel(ctx, label, ctx.marginX, ctx.y);
+  ctx.y += 16;
 }
 
 function measureField(ctx: PdfContext, field: FieldItem, width: number) {
@@ -394,8 +433,7 @@ function drawNumberedSongs(
   songs: Array<{ name?: string | null; artist?: string | null }>
 ) {
   if (songs.length === 0) return;
-  drawLabel(ctx, "Top Songs", ctx.marginX, ctx.y);
-  ctx.y += 18;
+  drawGroupLabel(ctx, "Top Songs");
 
   const badgeSize = 26;
   const textX = ctx.marginX + badgeSize + 14;
@@ -442,9 +480,7 @@ function drawNumberedSongs(
 
 function drawLabeledPillGroup(ctx: PdfContext, label: string, items: string[]) {
   if (items.length === 0) return;
-  ensureSpace(ctx, 32);
-  drawLabel(ctx, label, ctx.marginX, ctx.y);
-  ctx.y += 16;
+  drawGroupLabel(ctx, label);
   drawPills(ctx, items);
 }
 
@@ -457,6 +493,7 @@ function buildFields(items: Array<[string, string | null | undefined]>): FieldIt
 export async function exportProfilePdf(profile: Profile) {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4", compress: true });
+  await registerNunito(pdf);
 
   const ctx: PdfContext = {
     pdf,
@@ -498,8 +535,7 @@ export async function exportProfilePdf(profile: Profile) {
     drawSectionTitle(ctx, "Overview", sectionAccents[0]);
     drawFieldGrid(ctx, overviewFields);
     if (tags.length > 0) {
-      drawLabel(ctx, "Tags", ctx.marginX, ctx.y);
-      ctx.y += 16;
+      drawGroupLabel(ctx, "Tags");
       drawPills(
         ctx,
         tags.map((tag) => `#${tag}`),
@@ -547,8 +583,7 @@ export async function exportProfilePdf(profile: Profile) {
       });
     }
     if (quotes.length > 0) {
-      drawLabel(ctx, "Their Quotes", ctx.marginX, ctx.y);
-      ctx.y += 16;
+      drawGroupLabel(ctx, "Their Quotes");
       quotes.forEach((quote) => {
         drawQuoteBlock(ctx, quote.quote.trim(), { tone: "soft" });
       });
