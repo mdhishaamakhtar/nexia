@@ -206,7 +206,7 @@ function drawPills(ctx: PdfContext, items: string[], variant: "neutral" | "tag" 
     x += width + 6;
   });
 
-  ctx.y += height + 4;
+  ctx.y += height + 10;
 }
 
 function drawSectionTitle(
@@ -215,8 +215,8 @@ function drawSectionTitle(
   accent: SectionAccent,
   minimumFollowingHeight = 80
 ) {
-  ensureSpace(ctx, 46 + minimumFollowingHeight);
-  ctx.y += 18;
+  ensureSpace(ctx, 60 + minimumFollowingHeight);
+  ctx.y += 32;
   // Washi tape stripe at left of title
   setFill(ctx.pdf, accent.tape);
   ctx.pdf.roundedRect(ctx.marginX, ctx.y - 8, 26, 10, 3, 3, "F");
@@ -280,7 +280,7 @@ function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | nul
   setDraw(ctx.pdf, colors.rule);
   ctx.pdf.setLineWidth(0.5);
   ctx.pdf.line(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX, ctx.y);
-  ctx.y += 6;
+  ctx.y += 12;
 }
 
 function drawQuoteBlock(
@@ -329,7 +329,7 @@ function drawQuoteBlock(
   setFont(ctx.pdf, 11, "italic");
   ctx.pdf.text(lines, innerX, cursorY + 10);
 
-  ctx.y += height + 10;
+  ctx.y += height + 14;
 }
 
 function drawParagraph(ctx: PdfContext, label: string, value: string) {
@@ -337,12 +337,12 @@ function drawParagraph(ctx: PdfContext, label: string, value: string) {
   const width = ctx.pageWidth - ctx.marginX * 2;
   const lines = splitText(ctx, value.trim(), width, 10.5);
   const height = 20 + lines.length * 14;
-  ensureSpace(ctx, height + 6);
+  ensureSpace(ctx, height + 14);
   drawLabel(ctx, label, ctx.marginX, ctx.y);
   setText(ctx.pdf, colors.text);
   setFont(ctx.pdf, 10.5, "normal");
   ctx.pdf.text(lines, ctx.marginX, ctx.y + 18);
-  ctx.y += height + 6;
+  ctx.y += height + 14;
 }
 
 function drawSongCard(
@@ -376,7 +376,7 @@ function drawSongCard(
     setFont(ctx.pdf, 10, "italic");
     ctx.pdf.text(artist!.trim(), ctx.marginX + 22, ctx.y + 58);
   }
-  ctx.y += height + 10;
+  ctx.y += height + 16;
 }
 
 function drawNumberedSongs(
@@ -385,7 +385,7 @@ function drawNumberedSongs(
 ) {
   if (songs.length === 0) return;
   drawLabel(ctx, "Top Songs", ctx.marginX, ctx.y);
-  ctx.y += 14;
+  ctx.y += 18;
 
   const badgeSize = 26;
   const textX = ctx.marginX + badgeSize + 14;
@@ -424,17 +424,17 @@ function drawNumberedSongs(
       setFont(ctx.pdf, 9, "italic");
       ctx.pdf.text(artistLines, textX, cursorY);
     }
-    ctx.y += rowHeight + 6;
+    ctx.y += rowHeight + 8;
   });
 
-  ctx.y += 2;
+  ctx.y += 10;
 }
 
 function drawLabeledPillGroup(ctx: PdfContext, label: string, items: string[]) {
   if (items.length === 0) return;
-  ensureSpace(ctx, 26);
+  ensureSpace(ctx, 32);
   drawLabel(ctx, label, ctx.marginX, ctx.y);
-  ctx.y += 12;
+  ctx.y += 16;
   drawPills(ctx, items);
 }
 
@@ -489,7 +489,7 @@ export async function exportProfilePdf(profile: Profile) {
     drawFieldGrid(ctx, overviewFields);
     if (tags.length > 0) {
       drawLabel(ctx, "Tags", ctx.marginX, ctx.y);
-      ctx.y += 12;
+      ctx.y += 16;
       drawPills(
         ctx,
         tags.map((tag) => `#${tag}`),
@@ -538,7 +538,7 @@ export async function exportProfilePdf(profile: Profile) {
     }
     if (quotes.length > 0) {
       drawLabel(ctx, "Their Quotes", ctx.marginX, ctx.y);
-      ctx.y += 12;
+      ctx.y += 16;
       quotes.forEach((quote) => {
         drawQuoteBlock(ctx, quote.quote.trim(), { tone: "soft" });
       });
