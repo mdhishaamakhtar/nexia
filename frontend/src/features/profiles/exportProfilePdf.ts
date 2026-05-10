@@ -215,8 +215,8 @@ function drawSectionTitle(
   accent: SectionAccent,
   minimumFollowingHeight = 80
 ) {
-  ensureSpace(ctx, 60 + minimumFollowingHeight);
-  ctx.y += 32;
+  ensureSpace(ctx, 72 + minimumFollowingHeight);
+  ctx.y += 48;
   // Washi tape stripe at left of title
   setFill(ctx.pdf, accent.tape);
   ctx.pdf.roundedRect(ctx.marginX, ctx.y - 8, 26, 10, 3, 3, "F");
@@ -231,7 +231,7 @@ function drawSectionTitle(
   const ruleStart = ctx.marginX + 34 + titleWidth + 14;
   const ruleEnd = ctx.pageWidth - ctx.marginX;
   if (ruleEnd > ruleStart) ctx.pdf.line(ruleStart, ctx.y, ruleEnd, ctx.y);
-  ctx.y += 24;
+  ctx.y += 20;
 }
 
 function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | null) {
@@ -352,8 +352,18 @@ function drawSongCard(
   artist?: string | null
 ) {
   if (!hasText(name) && !hasText(artist)) return;
-  const height = 66;
-  ensureSpace(ctx, height + 10);
+  const hasName = hasText(name);
+  const hasArtist = hasText(artist);
+
+  const padLeft = 24;
+  const padBottom = 18;
+  const labelBaseline = 26;
+  const nameBaseline = hasName ? 48 : 0;
+  const artistBaseline = hasArtist ? (hasName ? 66 : 48) : 0;
+  const lastBaseline = Math.max(labelBaseline, nameBaseline, artistBaseline);
+  const height = lastBaseline + padBottom;
+
+  ensureSpace(ctx, height + 16);
 
   // Card
   setFill(ctx.pdf, colors.paper);
@@ -363,18 +373,18 @@ function drawSongCard(
 
   // Peach washi tape pasted on top edge of the card
   setFill(ctx.pdf, colors.peach);
-  ctx.pdf.roundedRect(ctx.marginX + 18, ctx.y - 5, 40, 10, 3, 3, "F");
+  ctx.pdf.roundedRect(ctx.marginX + padLeft, ctx.y - 5, 60, 11, 3, 3, "F");
 
-  drawLabel(ctx, label, ctx.marginX + 22, ctx.y + 26);
-  if (hasText(name)) {
+  drawLabel(ctx, label, ctx.marginX + padLeft, ctx.y + labelBaseline);
+  if (hasName) {
     setText(ctx.pdf, colors.ink);
-    setFont(ctx.pdf, 12, "bold");
-    ctx.pdf.text(name!.trim(), ctx.marginX + 22, ctx.y + 44);
+    setFont(ctx.pdf, 13, "bold");
+    ctx.pdf.text(name!.trim(), ctx.marginX + padLeft, ctx.y + nameBaseline);
   }
-  if (hasText(artist)) {
+  if (hasArtist) {
     setText(ctx.pdf, colors.muted);
     setFont(ctx.pdf, 10, "italic");
-    ctx.pdf.text(artist!.trim(), ctx.marginX + 22, ctx.y + 58);
+    ctx.pdf.text(artist!.trim(), ctx.marginX + padLeft, ctx.y + artistBaseline);
   }
   ctx.y += height + 16;
 }
