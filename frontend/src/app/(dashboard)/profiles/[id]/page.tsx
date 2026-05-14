@@ -230,7 +230,10 @@ export default function ProfileDetailPage() {
   const hasLifestyle =
     hangoutPlaces.length > 0 || foodRestrictions.length > 0 || politicalViews.length > 0;
   const hasDeep =
-    hasText(profile.long_term_goals) || hasText(profile.favorite_memory) || quotes.length > 0;
+    hasText(profile.long_term_goals) ||
+    hasText(profile.favorite_memory) ||
+    hasText(profile.notes) ||
+    quotes.length > 0;
 
   const handleExportPdf = async () => {
     if (isExporting) return;
@@ -590,6 +593,20 @@ export default function ProfileDetailPage() {
                   </div>
                   <p className="text-sm italic leading-relaxed" style={{ color: "var(--text-1)" }}>
                     &ldquo;{profile.favorite_memory}&rdquo;
+                  </p>
+                </div>
+              )}
+
+              {profile.notes && (
+                <div>
+                  <div
+                    className="mb-1.5 text-[11px] uppercase tracking-[0.12em]"
+                    style={{ color: "var(--text-3)" }}
+                  >
+                    Additional Notes
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
+                    {profile.notes}
                   </p>
                 </div>
               )}

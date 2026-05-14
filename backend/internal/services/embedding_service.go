@@ -97,6 +97,7 @@ func buildEmbeddingText(profile *models.Profile) string {
 	fmt.Fprintf(&sb, "Favorite Movie: %s\n", profile.FavoriteMovie)
 	fmt.Fprintf(&sb, "Favorite Book: %s\n", profile.FavoriteBook)
 	fmt.Fprintf(&sb, "Favorite Memory: %s\n", profile.FavoriteMemory)
+	fmt.Fprintf(&sb, "Notes: %s\n", profile.Notes)
 
 	if len(profile.Tags) > 0 {
 		sb.WriteString("Interests/Tags: ")

@@ -76,6 +76,7 @@ export function toProfileFormValues(profile?: Profile): ProfileFormValues {
     favorite_movie: profile?.favorite_movie ?? "",
     favorite_book: profile?.favorite_book ?? "",
     favorite_memory: profile?.favorite_memory ?? "",
+    notes: profile?.notes ?? "",
     tags: profile?.tags ?? [],
     top_songs: profile?.top_songs ?? [],
     quotes: profile?.quotes ?? [],

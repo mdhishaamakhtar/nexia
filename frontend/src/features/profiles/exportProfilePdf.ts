@@ -630,6 +630,7 @@ export async function exportProfilePdf(profile: Profile) {
             label: "Favorite Memory",
           })
       : null,
+    hasText(profile.notes) ? () => drawParagraph(ctx, "Additional Notes", profile.notes!) : null,
     quotes.length > 0 ? () => drawQuoteList(ctx, "Their Quotes", quotes) : null,
   ]);
 

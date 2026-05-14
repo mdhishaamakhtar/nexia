@@ -31,7 +31,9 @@ func TestProfileCRUDFlowIntegration(t *testing.T) {
 	t.Run("get profile", func(t *testing.T) {
 		w := doRequest(t, kit, http.MethodGet, fmt.Sprintf("/api/v1/profiles/%d", profileID), nil, token)
 		requireStatus(t, w, http.StatusOK)
-		require.Equal(t, "Alice Example", decodeJSONMap(t, w)["full_name"])
+		body := decodeJSONMap(t, w)
+		require.Equal(t, "Alice Example", body["full_name"])
+		require.Equal(t, "Met in college, very reliable", body["notes"])
 	})
 
 	t.Run("invalid id format returns bad request", func(t *testing.T) {
@@ -114,5 +116,6 @@ func newProfilePayload() map[string]any {
 		"food_restrictions": []map[string]string{{"restriction": "None"}},
 		"political_views":   []map[string]string{{"view": "Moderate"}},
 		"associated_song":   map[string]string{"name": "Song A", "artist": "Artist A"},
+		"notes":             "Met in college, very reliable",
 	}
 }
