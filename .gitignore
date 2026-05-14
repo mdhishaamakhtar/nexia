@@ -38,3 +38,6 @@ qdrant_storage/
 
 # Git worktrees
 .worktrees/
+
+# Claude Code local settings (personal permissions, not shared)
+.claude/settings.local.json
