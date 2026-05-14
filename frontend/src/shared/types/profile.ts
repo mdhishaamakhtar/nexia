@@ -77,6 +77,7 @@ export interface Profile {
   favorite_movie: string;
   favorite_book: string;
   favorite_memory: string;
+  notes: string;
   created_at?: string;
   updated_at?: string;
   tags: Tag[];
@@ -108,6 +109,7 @@ export interface ProfileFormValues {
   favorite_movie: string;
   favorite_book: string;
   favorite_memory: string;
+  notes: string;
   tags: Tag[];
   top_songs: TopSong[];
   quotes: Quote[];

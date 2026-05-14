@@ -52,6 +52,7 @@ type Profile struct {
 	FavoriteMovie    string           `gorm:"type:varchar(200)" json:"favorite_movie"`
 	FavoriteBook     string           `gorm:"type:varchar(200)" json:"favorite_book"`
 	FavoriteMemory   string           `gorm:"type:text" json:"favorite_memory"`
+	Notes            string           `gorm:"type:text" json:"notes"`
 	CreatedAt        time.Time        `gorm:"not null;default:now()" json:"created_at"`
 	UpdatedAt        time.Time        `gorm:"not null;default:now()" json:"updated_at"`
 

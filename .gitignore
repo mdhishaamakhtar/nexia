@@ -35,3 +35,6 @@ go.work.sum
 qdrant_storage/
 
 .DS_Store
+
+# Git worktrees
+.worktrees/

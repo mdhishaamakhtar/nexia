@@ -57,6 +57,7 @@ func TestEmbedProfileSuccess(t *testing.T) {
 		FavoriteMovie:    "Inception",
 		FavoriteBook:     "Dune",
 		FavoriteMemory:   "Road trip",
+		Notes:            "Met at a hackathon",
 		Tags:             []models.Tag{{Tag: "travel"}},
 		PoliticalViews:   []models.PoliticalView{{View: "Moderate"}},
 		FoodRestrictions: []models.FoodRestriction{{Restriction: "None"}},
@@ -91,6 +92,7 @@ func TestEmbedProfileSuccess(t *testing.T) {
 		"Associated Song: Song B by Artist B",
 		"Top Songs: Song A by Artist A",
 		`"Keep going"`,
+		"Notes: Met at a hackathon",
 	} {
 		require.True(t, strings.Contains(generatedText, want))
 	}

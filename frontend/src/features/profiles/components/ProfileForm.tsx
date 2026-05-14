@@ -42,6 +42,7 @@ const schema = z.object({
   favorite_movie: z.string(),
   favorite_book: z.string(),
   favorite_memory: z.string(),
+  notes: z.string(),
   // id and profile_id must be included so Zod (strip mode) doesn't discard them on submit.
   // GORM uses id for ON CONFLICT upserts — losing it causes duplicate rows on every update.
   tags: z.array(
@@ -377,6 +378,20 @@ export default function ProfileForm({
             </label>
             <textarea
               {...register("favorite_memory")}
+              className="glass-input h-32 w-full resize-none rounded-xl p-4 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label
+              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: "var(--text-3)" }}
+            >
+              Additional Notes
+            </label>
+            <textarea
+              {...register("notes")}
+              placeholder="Anything else worth remembering..."
               className="glass-input h-32 w-full resize-none rounded-xl p-4 focus:outline-none"
             />
           </div>

@@ -23,6 +23,7 @@ const initialValues: ProfileFormValues = {
   favorite_movie: "",
   favorite_book: "",
   favorite_memory: "",
+  notes: "",
   tags: [],
   top_songs: [],
   quotes: [],
