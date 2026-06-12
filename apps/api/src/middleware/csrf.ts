@@ -1,20 +1,20 @@
-import type { MiddlewareHandler } from "hono";
+import { createMiddleware } from "hono/factory";
 import { getCookie } from "hono/cookie";
 import { timingSafeEqual } from "node:crypto";
-import { AUTH_METHOD_KEY } from "./auth";
+import type { AppEnv } from "./auth";
 
-const CSRF_COOKIE_NAME = "nexia_csrf";
-const CSRF_HEADER_NAME = "X-CSRF-Token";
+export const CSRF_COOKIE_NAME = "nexia_csrf";
+export const CSRF_HEADER_NAME = "X-CSRF-Token";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
-export function csrfMiddleware(): MiddlewareHandler {
-  return async (c, next) => {
+export function csrfMiddleware() {
+  return createMiddleware<AppEnv>(async (c, next) => {
     if (SAFE_METHODS.has(c.req.method)) {
       return next();
     }
 
-    const authMethod = c.get(AUTH_METHOD_KEY);
+    const authMethod = c.get("authMethod");
     if (authMethod !== "cookie") {
       return next();
     }
@@ -46,7 +46,5 @@ export function csrfMiddleware(): MiddlewareHandler {
     }
 
     return next();
-  };
+  });
 }
-
-export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME };

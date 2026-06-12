@@ -1,4 +1,5 @@
-import { streamText, type LanguageModelV2 } from "ai";
+import { streamText, stepCountIs } from "ai";
+import type { LanguageModel } from "ai";
 import type { ProfileService } from "../services/profile-service";
 import type { EmbeddingRepository } from "../repositories/embedding";
 import type { EmbeddingGenerator } from "./embeddings";
@@ -8,7 +9,7 @@ import { errAIUnavailable } from "../services/errors";
 
 export class ChatAgent {
   constructor(
-    private model: LanguageModelV2 | null,
+    private model: LanguageModel | null,
     private profileService: ProfileService,
     private embeddingRepo: EmbeddingRepository | null,
     private embeddingGenerator: EmbeddingGenerator | null,
@@ -37,12 +38,7 @@ export class ChatAgent {
         content: m.content,
       })),
       tools,
-      stopWhen: {
-        type: "stepCount",
-        count: 10,
-        // AI SDK v4+ uses stopWhen config
-      } as unknown as undefined,
-      maxSteps: 10,
+      stopWhen: stepCountIs(10),
     });
 
     return result;

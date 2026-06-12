@@ -1,17 +1,24 @@
-import type { Context, MiddlewareHandler } from "hono";
+import { createMiddleware } from "hono/factory";
 import { getCookie } from "hono/cookie";
 import type { Config } from "../config/config";
 import { validateToken } from "../utils/jwt";
 
-export const AUTH_METHOD_KEY = "authMethod";
-export const USER_ID_KEY = "userId";
+// Context variable type declarations
+export interface AppVariables {
+  userId: number;
+  authMethod: "bearer" | "cookie";
+}
+
+export type AppEnv = {
+  Variables: AppVariables;
+};
 
 export type UserLookup = {
   findById(id: number): Promise<{ id: number } | null>;
 };
 
-export function authMiddleware(cfg: Config, userLookup: UserLookup): MiddlewareHandler {
-  return async (c, next) => {
+export function authMiddleware(cfg: Config, userLookup: UserLookup) {
+  return createMiddleware<AppEnv>(async (c, next) => {
     const authHeader = c.req.header("Authorization");
     let tokenString: string;
 
@@ -24,7 +31,7 @@ export function authMiddleware(cfg: Config, userLookup: UserLookup): MiddlewareH
         );
       }
       tokenString = parts[1]!;
-      c.set(AUTH_METHOD_KEY, "bearer");
+      c.set("authMethod", "bearer");
     } else {
       const cookieToken = getCookie(c, "nexia_token");
       if (!cookieToken) {
@@ -34,7 +41,7 @@ export function authMiddleware(cfg: Config, userLookup: UserLookup): MiddlewareH
         );
       }
       tokenString = cookieToken;
-      c.set(AUTH_METHOD_KEY, "cookie");
+      c.set("authMethod", "cookie");
     }
 
     let claims;
@@ -63,11 +70,12 @@ export function authMiddleware(cfg: Config, userLookup: UserLookup): MiddlewareH
       );
     }
 
-    c.set(USER_ID_KEY, claims.user_id);
+    c.set("userId", claims.user_id);
     await next();
-  };
+  });
 }
 
-export function getUserId(c: Context): number | undefined {
-  return c.get(USER_ID_KEY) as number | undefined;
+export function getUserId(c: { get: (key: string) => unknown }): number | undefined {
+  const v = c.get("userId");
+  return typeof v === "number" ? v : undefined;
 }

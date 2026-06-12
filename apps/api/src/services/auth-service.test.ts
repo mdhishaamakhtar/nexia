@@ -3,7 +3,7 @@ import { AuthService, type UserRepo, type PasswordResetRepo, type EmailVerificat
 import { ServiceError, ErrorKind } from "../services/errors";
 import pino from "pino";
 
-const logger = pino({ level: "silent" });
+const logger = pino.pino({ level: "silent" });
 
 const config = {
   server: {
@@ -229,7 +229,7 @@ describe("AuthService", () => {
   test("verify email expired", async () => {
     const verifyRepo = new FakeVerifyRepo();
     verifyRepo.stored.push({
-      id: 1, token: "expiredtoken",
+      id: 1, userId: 5, token: "expiredtoken",
       expiresAt: new Date(Date.now() - 3600000), used: false,
     });
     const svc = newSvc(new FakeUserRepo(), new FakeResetRepo(), verifyRepo);
@@ -245,7 +245,7 @@ describe("AuthService", () => {
   test("verify email already used", async () => {
     const verifyRepo = new FakeVerifyRepo();
     verifyRepo.stored.push({
-      id: 1, token: "usedtoken",
+      id: 1, userId: 5, token: "usedtoken",
       expiresAt: new Date(Date.now() + 3600000), used: true,
     });
     const svc = newSvc(new FakeUserRepo(), new FakeResetRepo(), verifyRepo);
@@ -330,7 +330,7 @@ describe("AuthService", () => {
   test("reset password token already used", async () => {
     const resetRepo = new FakeResetRepo();
     resetRepo.stored.push({
-      id: 2, token: "usedtoken",
+      id: 2, userId: 5, token: "usedtoken",
       expiresAt: new Date(Date.now() + 10 * 60000), used: true,
     });
     const svc = newSvc(new FakeUserRepo(), resetRepo);
@@ -345,7 +345,7 @@ describe("AuthService", () => {
   test("reset password token expired", async () => {
     const resetRepo = new FakeResetRepo();
     resetRepo.stored.push({
-      id: 3, token: "expiredtoken",
+      id: 3, userId: 5, token: "expiredtoken",
       expiresAt: new Date(Date.now() - 60000), used: false,
     });
     const svc = newSvc(new FakeUserRepo(), resetRepo);

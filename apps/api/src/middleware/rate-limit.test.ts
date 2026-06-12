@@ -6,7 +6,7 @@ import { createAuthRateLimiter } from "../middleware/auth-rate-limit";
 import { createChatRateLimiter } from "../middleware/chat-rate-limit";
 import type { Config } from "../config/config";
 
-const nopLogger = pino({ level: "silent" });
+const nopLogger = pino.pino({ level: "silent" });
 
 const testCfg: Config = {
   server: {

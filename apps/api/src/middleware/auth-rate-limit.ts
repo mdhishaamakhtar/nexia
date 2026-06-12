@@ -1,7 +1,7 @@
 import type { Config } from "../config/config";
-import type { Logger } from "pino";
 import type { MiddlewareHandler } from "hono";
 import { createRateLimiter, rateLimitConfigFromValues, type RateLimitConfig } from "./rate-limit";
+import type { Logger } from "../logging/logger";
 
 const DEFAULT_AUTH_REQUESTS = 10;
 const DEFAULT_AUTH_BURST = 10;

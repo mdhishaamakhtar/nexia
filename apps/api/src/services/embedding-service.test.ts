@@ -3,7 +3,7 @@ import { EmbeddingService, type EmbeddingGenerator, type EmbeddingStorage } from
 import { ServiceError, ErrorKind } from "../services/errors";
 import pino from "pino";
 
-const logger = pino({ level: "silent" });
+const logger = pino.pino({ level: "silent" });
 
 class FakeEmbeddingGenerator implements EmbeddingGenerator {
   generatedText = "";
@@ -11,7 +11,7 @@ class FakeEmbeddingGenerator implements EmbeddingGenerator {
   async generateEmbedding(text: string) {
     if (this.err) throw this.err;
     this.generatedText = text;
-    return new Array(3072).fill(0.001);
+    return new Array<number>(3072).fill(0.001) as number[];
   }
 }
 
@@ -31,43 +31,48 @@ class FakeEmbeddingStorage implements EmbeddingStorage {
   }
 }
 
-class FakeProfileRepoForEmbedding {
-  data: Record<string, unknown> | null = {
-    id: 7,
-    userId: 42,
-    fullName: "Alice",
-    bio: "A great friend",
-    profession: "Engineer",
-    relationshipType: "Friend",
-    zodiacSign: "Aries",
-    birthday: "2001-03-22",
-    longTermGoals: "Travel",
-    musicPreference: "Pop",
-    favoriteMovie: "Inception",
-    favoriteBook: "Dune",
-    favoriteMemory: "Road trip",
-    notes: "Awesome",
-    tags: [{ tag: "kind" }, { tag: "funny" }],
-    politicalViews: [{ view: "moderate" }],
-    foodRestrictions: [{ restriction: "vegetarian" }],
-    movieGenres: [{ genre: "sci-fi" }],
-    bookGenres: [{ genre: "fiction" }],
-    hangoutPlaces: [{ place: "coffee shop" }],
-    quotes: [{ quote: "Be yourself" }],
-    topSongs: [{ name: "Song 1", artist: "Artist 1" }],
-    associatedSong: { name: "Anthem", artist: "Band" },
-  };
-  err: Error | null = null;
-
-  async loadForEmbedding(_profileId: number) {
-    if (this.err) throw this.err;
-    return this.data;
-  }
-}
-
 describe("EmbeddingService", () => {
+  function fullProfileRepo() {
+    return {
+      async create() { return { id: 1, userId: 1 }; },
+      async findById() { return null as unknown as Record<string, unknown>; },
+      async findAll() { return { profiles: [], total: 0 }; },
+      async update() { return {}; },
+      async loadForEmbedding(_profileId: number) {
+        return {
+          id: 7, userId: 42, fullName: "Alice", bio: "A great friend",
+          profession: "Engineer", relationshipType: "Friend", zodiacSign: "Aries",
+          birthday: "2001-03-22", longTermGoals: "Travel", musicPreference: "Pop",
+          favoriteMovie: "Inception", favoriteBook: "Dune", favoriteMemory: "Road trip",
+          notes: "Awesome",
+          tags: [{ tag: "kind" }, { tag: "funny" }],
+          politicalViews: [{ view: "moderate" }],
+          foodRestrictions: [{ restriction: "vegetarian" }],
+          movieGenres: [{ genre: "sci-fi" }],
+          bookGenres: [{ genre: "fiction" }],
+          hangoutPlaces: [{ place: "coffee shop" }],
+          quotes: [{ quote: "Be yourself" }],
+          topSongs: [{ name: "Song 1", artist: "Artist 1" }],
+          associatedSong: { name: "Anthem", artist: "Band" },
+        } as Record<string, unknown>;
+      },
+      async delete() {},
+    };
+  }
+
+  function emptyProfileRepo() {
+    return {
+      async create() { return { id: 1, userId: 1 }; },
+      async findById() { return null as unknown as Record<string, unknown>; },
+      async findAll() { return { profiles: [], total: 0 }; },
+      async update() { return {}; },
+      async loadForEmbedding(_profileId: number) { return null; },
+      async delete() {},
+    };
+  }
+
   test("embed profile success", async () => {
-    const profiles = new FakeProfileRepoForEmbedding();
+    const profiles = fullProfileRepo();
     const generator = new FakeEmbeddingGenerator();
     const repo = new FakeEmbeddingStorage();
     const svc = new EmbeddingService(profiles, generator, repo, logger);
@@ -82,8 +87,7 @@ describe("EmbeddingService", () => {
   });
 
   test("embed profile not found", async () => {
-    const profiles = new FakeProfileRepoForEmbedding();
-    profiles.data = null;
+    const profiles = emptyProfileRepo();
     const svc = new EmbeddingService(profiles, new FakeEmbeddingGenerator(), new FakeEmbeddingStorage(), logger);
 
     try {
@@ -96,7 +100,7 @@ describe("EmbeddingService", () => {
   });
 
   test("embed profile generation error", async () => {
-    const profiles = new FakeProfileRepoForEmbedding();
+    const profiles = fullProfileRepo();
     const generator = new FakeEmbeddingGenerator();
     generator.err = new Error("api error");
     const svc = new EmbeddingService(profiles, generator, new FakeEmbeddingStorage(), logger);
@@ -110,7 +114,7 @@ describe("EmbeddingService", () => {
   });
 
   test("embed profile upsert error", async () => {
-    const profiles = new FakeProfileRepoForEmbedding();
+    const profiles = fullProfileRepo();
     const repo = new FakeEmbeddingStorage();
     repo.upsertErr = new Error("db error");
     const svc = new EmbeddingService(profiles, new FakeEmbeddingGenerator(), repo, logger);
@@ -125,7 +129,7 @@ describe("EmbeddingService", () => {
 
   test("delete embedding success", async () => {
     const repo = new FakeEmbeddingStorage();
-    const svc = new EmbeddingService(new FakeProfileRepoForEmbedding(), new FakeEmbeddingGenerator(), repo, logger);
+    const svc = new EmbeddingService(fullProfileRepo(), new FakeEmbeddingGenerator(), repo, logger);
 
     await svc.deleteEmbedding(7);
     expect(repo.deletedProfiles).toEqual([7]);
@@ -134,7 +138,7 @@ describe("EmbeddingService", () => {
   test("delete embedding error", async () => {
     const repo = new FakeEmbeddingStorage();
     repo.deleteErr = new Error("db error");
-    const svc = new EmbeddingService(new FakeProfileRepoForEmbedding(), new FakeEmbeddingGenerator(), repo, logger);
+    const svc = new EmbeddingService(fullProfileRepo(), new FakeEmbeddingGenerator(), repo, logger);
 
     try {
       await svc.deleteEmbedding(7);

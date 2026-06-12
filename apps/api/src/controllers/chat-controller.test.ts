@@ -2,14 +2,14 @@ import { describe, test, expect } from "bun:test";
 import { Hono } from "hono";
 import { createChatController } from "../controllers/chat-controller";
 import { ChatAgent } from "../ai/agent";
-import { ServiceError, ErrorKind } from "../services/errors";
+import type { AppEnv } from "../middleware/auth";
 
 describe("chat controller", () => {
   test("returns 503 when AI unavailable", async () => {
     const agent = new ChatAgent(null, null as never, null, null);
     const controller = createChatController(agent);
 
-    const app = new Hono();
+    const app = new Hono<AppEnv>();
     app.use("*", (c, next) => {
       c.set("userId", 1);
       return next();
@@ -30,7 +30,7 @@ describe("chat controller", () => {
     const agent = new ChatAgent(null, null as never, null, null);
     const controller = createChatController(agent);
 
-    const app = new Hono();
+    const app = new Hono<AppEnv>();
     app.use("*", (c, next) => {
       c.set("userId", 1);
       return next();

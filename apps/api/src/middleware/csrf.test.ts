@@ -1,18 +1,17 @@
 import { describe, test, expect } from "bun:test";
 import { Hono } from "hono";
 import { csrfMiddleware, CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from "../middleware/csrf";
-import { AUTH_METHOD_KEY } from "../middleware/auth";
+import type { AppEnv } from "../middleware/auth";
 
 describe("csrfMiddleware", () => {
   function makeApp() {
-    const app = new Hono();
-    // Simulate auth middleware setting auth method
+    const app = new Hono<AppEnv>();
     app.use("*", (c, next) => {
       const authHeader = c.req.header("Authorization");
       if (authHeader) {
-        c.set(AUTH_METHOD_KEY, "bearer");
+        c.set("authMethod", "bearer");
       } else if (c.req.header("Cookie")?.includes("nexia_token")) {
-        c.set(AUTH_METHOD_KEY, "cookie");
+        c.set("authMethod", "cookie");
       }
       return next();
     });
@@ -24,27 +23,19 @@ describe("csrfMiddleware", () => {
 
   test("safe method bypasses CSRF", async () => {
     const app = makeApp();
-    const res = await app.request("/protected", {
-      headers: { Cookie: "nexia_token=abc" },
-    });
+    const res = await app.request("/protected", { headers: { Cookie: "nexia_token=abc" } });
     expect(res.status).toBe(200);
   });
 
   test("bearer auth bypasses CSRF on POST", async () => {
     const app = makeApp();
-    const res = await app.request("/protected", {
-      method: "POST",
-      headers: { Authorization: "Bearer token" },
-    });
+    const res = await app.request("/protected", { method: "POST", headers: { Authorization: "Bearer token" } });
     expect(res.status).toBe(200);
   });
 
   test("missing CSRF cookie returns 403", async () => {
     const app = makeApp();
-    const res = await app.request("/protected", {
-      method: "POST",
-      headers: { Cookie: "nexia_token=abc" },
-    });
+    const res = await app.request("/protected", { method: "POST", headers: { Cookie: "nexia_token=abc" } });
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.error.code).toBe("CSRF_TOKEN_MISSING");

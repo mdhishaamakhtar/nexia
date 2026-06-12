@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import type { ChatAgent } from "../ai/agent";
 import { respondWithServiceError } from "../services/errors";
+import { getUserId } from "../middleware/auth";
 
 export function createChatController(agent: ChatAgent) {
   const app = new Hono();
 
   app.post("/", async (c) => {
-    const userId = c.get("userId") as number | undefined;
+    const userId = getUserId(c);
     if (!userId) {
       return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
     }

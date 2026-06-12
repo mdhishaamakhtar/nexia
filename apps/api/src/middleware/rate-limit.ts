@@ -1,6 +1,10 @@
 import type { MiddlewareHandler } from "hono";
-import type { Logger } from "pino";
 import { getConnInfo } from "hono/bun";
+
+interface RateLimitLogger {
+  warn(data: Record<string, unknown>, msg: string): void;
+  info(data: Record<string, unknown>, msg: string): void;
+}
 
 export interface RateLimitConfig {
   requests: number;
@@ -32,7 +36,7 @@ export function rateLimitConfigFromValues(
 }
 
 export function createRateLimiter(
-  logger: Logger,
+  logger: RateLimitLogger,
   name: string,
   message: string,
   cfg: RateLimitConfig,

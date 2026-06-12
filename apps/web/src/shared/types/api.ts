@@ -1,4 +1,10 @@
-import type { ErrorResponse, ErrorCode, AuthSession, LoginResponse, MessageResponse } from "@nexia/shared";
+import type {
+  ErrorResponse,
+  ErrorCode,
+  AuthSession,
+  LoginResponse,
+  MessageResponse,
+} from "@nexia/shared";
 
 export { errorResponseSchema } from "@nexia/shared";
 export type { ErrorResponse, ErrorCode, AuthSession, LoginResponse, MessageResponse };

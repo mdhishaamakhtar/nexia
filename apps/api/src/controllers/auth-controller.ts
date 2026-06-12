@@ -5,7 +5,7 @@ import type { Config } from "../config/config";
 import { generateCsrfToken } from "../utils/csrf";
 import { respondWithServiceError } from "../services/errors";
 import { CSRF_COOKIE_NAME } from "../middleware/csrf";
-import { USER_ID_KEY } from "../middleware/auth";
+import { getUserId, type UserLookup } from "../middleware/auth";
 
 export function createAuthController(authService: AuthService, config: Config) {
   const app = new Hono();
@@ -39,7 +39,7 @@ export function createAuthController(authService: AuthService, config: Config) {
       setCookie(c, "nexia_token", token, {
         httpOnly: true,
         secure: true,
-        sameSite: "None",
+        sameSite: "None" as const,
         path: "/",
         domain,
         maxAge,
@@ -48,7 +48,7 @@ export function createAuthController(authService: AuthService, config: Config) {
       const csrfToken = generateCsrfToken();
       setCookie(c, CSRF_COOKIE_NAME, csrfToken, {
         secure: true,
-        sameSite: "None",
+        sameSite: "None" as const,
         path: "/",
         domain,
         maxAge,
@@ -74,9 +74,9 @@ export function createAuthController(authService: AuthService, config: Config) {
   });
 
   app.get("/me", (c) => {
-    const userId = c.get(USER_ID_KEY) as number | undefined;
+    const userId = getUserId(c);
     if (!userId) {
-      return c.json({ authenticated: false, user_id: null }, 200);
+      return c.json({ authenticated: false, user_id: null as never }, 200);
     }
     return c.json({ authenticated: true, user_id: userId });
   });

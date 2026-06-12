@@ -1,13 +1,13 @@
 import { Hono } from "hono";
 import type { ProfileService } from "../services/profile-service";
 import { respondWithServiceError } from "../services/errors";
-import { USER_ID_KEY } from "../middleware/auth";
+import { getUserId } from "../middleware/auth";
 
 export function createProfileController(profileService: ProfileService) {
   const app = new Hono();
 
   app.post("/", async (c) => {
-    const userId = c.get(USER_ID_KEY) as number | undefined;
+    const userId = getUserId(c);
     if (!userId) {
       return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
     }
@@ -21,7 +21,7 @@ export function createProfileController(profileService: ProfileService) {
   });
 
   app.get("/", async (c) => {
-    const userId = c.get(USER_ID_KEY) as number | undefined;
+    const userId = getUserId(c);
     if (!userId) {
       return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
     }
@@ -46,7 +46,7 @@ export function createProfileController(profileService: ProfileService) {
   });
 
   app.get("/:id", async (c) => {
-    const userId = c.get(USER_ID_KEY) as number | undefined;
+    const userId = getUserId(c);
     if (!userId) {
       return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
     }
@@ -66,7 +66,7 @@ export function createProfileController(profileService: ProfileService) {
   });
 
   app.put("/:id", async (c) => {
-    const userId = c.get(USER_ID_KEY) as number | undefined;
+    const userId = getUserId(c);
     if (!userId) {
       return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
     }
@@ -84,7 +84,7 @@ export function createProfileController(profileService: ProfileService) {
   });
 
   app.delete("/:id", async (c) => {
-    const userId = c.get(USER_ID_KEY) as number | undefined;
+    const userId = getUserId(c);
     if (!userId) {
       return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
     }

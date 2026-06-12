@@ -18,7 +18,7 @@ export function deriveZodiac(month: number, day: number): ZodiacSign {
   }
 }
 
-export function applyDerivedZodiac(profile: { birthday?: string | null; zodiac_sign?: string | null }): void {
+export function applyDerivedZodiac(profile: { birthday?: string | null | undefined; zodiac_sign?: string | null | undefined }): void {
   if (!profile.birthday) {
     profile.zodiac_sign = null;
     return;

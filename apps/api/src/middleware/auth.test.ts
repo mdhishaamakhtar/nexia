@@ -1,27 +1,17 @@
 import { describe, test, expect } from "bun:test";
 import { Hono } from "hono";
 import { generateToken } from "../utils/jwt";
-import { authMiddleware, AUTH_METHOD_KEY, USER_ID_KEY, getUserId } from "../middleware/auth";
+import { authMiddleware, getUserId, type AppEnv } from "../middleware/auth";
 import type { Config } from "../config/config";
 
 const testCfg: Config = {
   server: {
-    port: 8080,
-    mode: "test",
-    jwt_secret: "test-secret",
-    jwt_expiry_minutes: 30,
-    cors_origins: [],
-    cookie_domain: "",
-    auth_rate_limit_requests: 10,
-    auth_rate_limit_window_seconds: 10,
-    auth_rate_limit_burst: 10,
-    chat_rate_limit_requests: 10,
-    chat_rate_limit_window_seconds: 60,
-    chat_rate_limit_burst: 3,
+    port: 8080, mode: "test", jwt_secret: "test-secret", jwt_expiry_minutes: 30,
+    cors_origins: [], cookie_domain: "",
+    auth_rate_limit_requests: 10, auth_rate_limit_window_seconds: 10, auth_rate_limit_burst: 10,
+    chat_rate_limit_requests: 10, chat_rate_limit_window_seconds: 60, chat_rate_limit_burst: 3,
   },
-  db: {} as Config["db"],
-  ai: {} as Config["ai"],
-  email: {} as Config["email"],
+  db: {} as Config["db"], ai: {} as Config["ai"], email: {} as Config["email"],
 };
 
 function makeUserLookup(user: { id: number } | null, err?: Error) {
@@ -38,11 +28,10 @@ describe("authMiddleware", () => {
   const existingUser = makeUserLookup({ id: 101 });
 
   function makeApp(userLookup = existingUser) {
-    const app = new Hono();
+    const app = new Hono<AppEnv>();
     app.use("*", authMiddleware(testCfg, userLookup));
     app.get("/protected", (c) => {
-      const userId = c.get(USER_ID_KEY);
-      return c.json({ user_id: userId });
+      return c.json({ user_id: c.get("userId") });
     });
     return app;
   }
@@ -55,9 +44,7 @@ describe("authMiddleware", () => {
 
   test("invalid header format returns 401", async () => {
     const app = makeApp();
-    const res = await app.request("/protected", {
-      headers: { Authorization: "Token xyz" },
-    });
+    const res = await app.request("/protected", { headers: { Authorization: "Token xyz" } });
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error.code).toBe("UNAUTHORIZED");
@@ -66,9 +53,7 @@ describe("authMiddleware", () => {
   test("valid Bearer token + user exists returns 200", async () => {
     const token = await generateToken(101, testCfg);
     const app = makeApp();
-    const res = await app.request("/protected", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await app.request("/protected", { headers: { Authorization: `Bearer ${token}` } });
     expect(res.status).toBe(200);
     const body = await res.json() as { user_id: number };
     expect(body.user_id).toBe(101);
@@ -77,17 +62,13 @@ describe("authMiddleware", () => {
   test("valid cookie token + user exists returns 200", async () => {
     const token = await generateToken(101, testCfg);
     const app = makeApp();
-    const res = await app.request("/protected", {
-      headers: { Cookie: `nexia_token=${token}` },
-    });
+    const res = await app.request("/protected", { headers: { Cookie: `nexia_token=${token}` } });
     expect(res.status).toBe(200);
   });
 
   test("invalid JWT returns 401", async () => {
     const app = makeApp();
-    const res = await app.request("/protected", {
-      headers: { Authorization: "Bearer bad-token" },
-    });
+    const res = await app.request("/protected", { headers: { Authorization: "Bearer bad-token" } });
     expect(res.status).toBe(401);
   });
 
@@ -95,9 +76,7 @@ describe("authMiddleware", () => {
     const token = await generateToken(101, testCfg);
     const noUser = makeUserLookup(null);
     const app = makeApp(noUser);
-    const res = await app.request("/protected", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await app.request("/protected", { headers: { Authorization: `Bearer ${token}` } });
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error.message).toBe("User not found");
@@ -107,9 +86,7 @@ describe("authMiddleware", () => {
     const token = await generateToken(101, testCfg);
     const errLookup = makeUserLookup(null, new Error("db down"));
     const app = makeApp(errLookup);
-    const res = await app.request("/protected", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await app.request("/protected", { headers: { Authorization: `Bearer ${token}` } });
     expect(res.status).toBe(401);
   });
 });

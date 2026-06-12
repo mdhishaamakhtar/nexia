@@ -1,12 +1,35 @@
 import type { Logger } from "../logging/logger";
+import type { ProfileInput } from "@nexia/shared";
 import { errValidation } from "./errors";
 import { applyDerivedZodiac } from "./zodiac";
 
 export interface ProfileRepo {
-  create(input: { profile: Record<string, unknown>; tags?: Array<Record<string, unknown>>; politicalViews?: Array<Record<string, unknown>>; foodRestrictions?: Array<Record<string, unknown>>; movieGenres?: Array<Record<string, unknown>>; bookGenres?: Array<Record<string, unknown>>; hangoutPlaces?: Array<Record<string, unknown>>; quotes?: Array<Record<string, unknown>>; topSongs?: Array<Record<string, unknown>>; associatedSong?: Record<string, unknown> | null }): Promise<{ id: number; userId: number }>;
+  create(input: {
+    profile: Record<string, unknown>;
+    tags?: Array<{ tag: string }>;
+    politicalViews?: Array<{ view: string }>;
+    foodRestrictions?: Array<{ restriction: string }>;
+    movieGenres?: Array<{ genre: string }>;
+    bookGenres?: Array<{ genre: string }>;
+    hangoutPlaces?: Array<{ place: string }>;
+    quotes?: Array<{ quote: string }>;
+    topSongs?: Array<{ name: string; artist: string }>;
+    associatedSong?: { name: string; artist: string } | null;
+  }): Promise<{ id: number; userId: number }>;
   findById(id: number, userId: number): Promise<Record<string, unknown> | null>;
   findAll(params: { page: number; limit: number; search?: string; relationshipType?: string; userId: number }): Promise<{ profiles: Record<string, unknown>[]; total: number }>;
-  update(profileId: number, userId: number, input: { profile: Partial<Record<string, unknown>>; tags?: Array<Record<string, unknown>>; politicalViews?: Array<Record<string, unknown>>; foodRestrictions?: Array<Record<string, unknown>>; movieGenres?: Array<Record<string, unknown>>; bookGenres?: Array<Record<string, unknown>>; hangoutPlaces?: Array<Record<string, unknown>>; quotes?: Array<Record<string, unknown>>; topSongs?: Array<Record<string, unknown>>; associatedSong?: Record<string, unknown> | null }): Promise<Record<string, unknown>>;
+  update(profileId: number, userId: number, input: {
+    profile: Partial<Record<string, unknown>>;
+    tags?: Array<{ tag: string }>;
+    politicalViews?: Array<{ view: string }>;
+    foodRestrictions?: Array<{ restriction: string }>;
+    movieGenres?: Array<{ genre: string }>;
+    bookGenres?: Array<{ genre: string }>;
+    hangoutPlaces?: Array<{ place: string }>;
+    quotes?: Array<{ quote: string }>;
+    topSongs?: Array<{ name: string; artist: string }>;
+    associatedSong?: { name: string; artist: string } | null;
+  }): Promise<Record<string, unknown>>;
   loadForEmbedding(profileId: number): Promise<Record<string, unknown> | null>;
   delete(id: number, userId: number): Promise<void>;
 }
@@ -16,6 +39,8 @@ export interface EmbeddingQueue {
   enqueueDeletionTask(profileId: number): Promise<void>;
 }
 
+type TopSongInput = { name: string; artist: string };
+
 export class ProfileService {
   constructor(
     private repo: ProfileRepo,
@@ -23,13 +48,13 @@ export class ProfileService {
     private logger: Logger,
   ) {}
 
-  async createProfile(profile: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
-    const topSongs = (profile.top_songs as Array<Record<string, unknown>>) ?? [];
+  async createProfile(profile: ProfileInput, userId: number): Promise<Record<string, unknown>> {
+    const topSongs = profile.top_songs ?? [];
     if (topSongs.length > 3) {
       throw errValidation("cannot have more than 3 top songs");
     }
 
-    applyDerivedZodiac(profile as { birthday?: string | null; zodiac_sign?: string | null });
+    applyDerivedZodiac(profile);
 
     const created = await this.repo.create(mapProfileToRepoInput(profile, userId));
     const result = await this.repo.findById(created.id, userId);
@@ -56,13 +81,13 @@ export class ProfileService {
     return this.repo.findAll({ page, limit, search, relationshipType, userId });
   }
 
-  async updateProfile(id: number, profile: Record<string, unknown>, userId: number): Promise<Record<string, unknown>> {
-    const topSongs = (profile.top_songs as Array<Record<string, unknown>>) ?? [];
+  async updateProfile(id: number, profile: Partial<ProfileInput>, userId: number): Promise<Record<string, unknown>> {
+    const topSongs = profile.top_songs ?? [];
     if (topSongs.length > 3) {
       throw errValidation("cannot have more than 3 top songs");
     }
 
-    applyDerivedZodiac(profile as { birthday?: string | null; zodiac_sign?: string | null });
+    applyDerivedZodiac(profile);
 
     const result = await this.repo.update(id, userId, mapProfileToRepoUpdate(profile));
 
@@ -90,63 +115,63 @@ export class ProfileService {
   }
 }
 
-function mapProfileToRepoInput(profile: Record<string, unknown>, userId: number) {
+function mapProfileToRepoInput(p: ProfileInput, userId: number) {
   return {
     profile: {
       userId,
-      fullName: profile.full_name,
-      relationshipType: profile.relationship_type,
-      bio: profile.bio,
-      profession: profile.profession,
-      longTermGoals: profile.long_term_goals,
-      birthday: profile.birthday ?? null,
-      zodiacSign: profile.zodiac_sign ?? null,
-      musicPreference: profile.music_preference,
-      favoriteMovie: profile.favorite_movie,
-      favoriteBook: profile.favorite_book,
-      favoriteMemory: profile.favorite_memory,
-      notes: profile.notes ?? "",
+      fullName: p.full_name,
+      relationshipType: p.relationship_type,
+      bio: p.bio ?? "",
+      profession: p.profession ?? "",
+      longTermGoals: p.long_term_goals ?? "",
+      birthday: p.birthday ?? null,
+      zodiacSign: p.zodiac_sign ?? null,
+      musicPreference: p.music_preference ?? "",
+      favoriteMovie: p.favorite_movie ?? "",
+      favoriteBook: p.favorite_book ?? "",
+      favoriteMemory: p.favorite_memory ?? "",
+      notes: p.notes ?? "",
     },
-    tags: (profile.tags as Array<Record<string, unknown>>)?.map((t) => ({ tag: t.tag })),
-    politicalViews: (profile.political_views as Array<Record<string, unknown>>)?.map((v) => ({ view: v.view })),
-    foodRestrictions: (profile.food_restrictions as Array<Record<string, unknown>>)?.map((r) => ({ restriction: r.restriction })),
-    movieGenres: (profile.movie_genres as Array<Record<string, unknown>>)?.map((g) => ({ genre: g.genre })),
-    bookGenres: (profile.book_genres as Array<Record<string, unknown>>)?.map((g) => ({ genre: g.genre })),
-    hangoutPlaces: (profile.hangout_places as Array<Record<string, unknown>>)?.map((p) => ({ place: p.place })),
-    quotes: (profile.quotes as Array<Record<string, unknown>>)?.map((q) => ({ quote: q.quote })),
-    topSongs: (profile.top_songs as Array<Record<string, unknown>>)?.map((s) => ({ name: s.name, artist: s.artist })),
-    associatedSong: profile.associated_song
-      ? { name: (profile.associated_song as Record<string, unknown>).name, artist: (profile.associated_song as Record<string, unknown>).artist }
+    tags: p.tags?.map((t) => ({ tag: t.tag })),
+    politicalViews: p.political_views?.map((v) => ({ view: v.view })),
+    foodRestrictions: p.food_restrictions?.map((r) => ({ restriction: r.restriction })),
+    movieGenres: p.movie_genres?.map((g) => ({ genre: g.genre })),
+    bookGenres: p.book_genres?.map((g) => ({ genre: g.genre })),
+    hangoutPlaces: p.hangout_places?.map((hp) => ({ place: hp.place })),
+    quotes: p.quotes?.map((q) => ({ quote: q.quote })),
+    topSongs: (p.top_songs as TopSongInput[] | undefined)?.map((s) => ({ name: s.name, artist: s.artist })),
+    associatedSong: p.associated_song
+      ? { name: p.associated_song.name, artist: p.associated_song.artist }
       : null,
   };
 }
 
-function mapProfileToRepoUpdate(profile: Record<string, unknown>) {
+function mapProfileToRepoUpdate(p: Partial<ProfileInput>) {
   return {
     profile: {
-      fullName: profile.full_name,
-      relationshipType: profile.relationship_type,
-      bio: profile.bio,
-      profession: profile.profession,
-      longTermGoals: profile.long_term_goals,
-      birthday: profile.birthday ?? null,
-      zodiacSign: profile.zodiac_sign ?? null,
-      musicPreference: profile.music_preference,
-      favoriteMovie: profile.favorite_movie,
-      favoriteBook: profile.favorite_book,
-      favoriteMemory: profile.favorite_memory,
-      notes: profile.notes,
+      fullName: p.full_name,
+      relationshipType: p.relationship_type,
+      bio: p.bio,
+      profession: p.profession,
+      longTermGoals: p.long_term_goals,
+      birthday: p.birthday ?? null,
+      zodiacSign: p.zodiac_sign ?? null,
+      musicPreference: p.music_preference,
+      favoriteMovie: p.favorite_movie,
+      favoriteBook: p.favorite_book,
+      favoriteMemory: p.favorite_memory,
+      notes: p.notes,
     },
-    tags: (profile.tags as Array<Record<string, unknown>>)?.map((t) => ({ tag: t.tag })),
-    politicalViews: (profile.political_views as Array<Record<string, unknown>>)?.map((v) => ({ view: v.view })),
-    foodRestrictions: (profile.food_restrictions as Array<Record<string, unknown>>)?.map((r) => ({ restriction: r.restriction })),
-    movieGenres: (profile.movie_genres as Array<Record<string, unknown>>)?.map((g) => ({ genre: g.genre })),
-    bookGenres: (profile.book_genres as Array<Record<string, unknown>>)?.map((g) => ({ genre: g.genre })),
-    hangoutPlaces: (profile.hangout_places as Array<Record<string, unknown>>)?.map((p) => ({ place: p.place })),
-    quotes: (profile.quotes as Array<Record<string, unknown>>)?.map((q) => ({ quote: q.quote })),
-    topSongs: (profile.top_songs as Array<Record<string, unknown>>)?.map((s) => ({ name: s.name, artist: s.artist })),
-    associatedSong: profile.associated_song
-      ? { name: (profile.associated_song as Record<string, unknown>).name, artist: (profile.associated_song as Record<string, unknown>).artist }
+    tags: p.tags?.map((t) => ({ tag: t.tag })),
+    politicalViews: p.political_views?.map((v) => ({ view: v.view })),
+    foodRestrictions: p.food_restrictions?.map((r) => ({ restriction: r.restriction })),
+    movieGenres: p.movie_genres?.map((g) => ({ genre: g.genre })),
+    bookGenres: p.book_genres?.map((g) => ({ genre: g.genre })),
+    hangoutPlaces: p.hangout_places?.map((hp) => ({ place: hp.place })),
+    quotes: p.quotes?.map((q) => ({ quote: q.quote })),
+    topSongs: (p.top_songs as TopSongInput[] | undefined)?.map((s) => ({ name: s.name, artist: s.artist })),
+    associatedSong: p.associated_song
+      ? { name: p.associated_song.name, artist: p.associated_song.artist }
       : null,
   };
 }
