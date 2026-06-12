@@ -74,10 +74,13 @@ export function respondWithServiceError(
 }
 
 export function respondError(
-  c: Context,
+  _c: Context,
   status: number,
   code: string,
   message: string,
 ): Response {
-  return c.json({ error: { code, message } }, status);
+  return new Response(JSON.stringify({ error: { code, message } }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }

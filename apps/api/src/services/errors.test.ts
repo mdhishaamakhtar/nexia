@@ -1,5 +1,4 @@
 import { describe, test, expect } from "bun:test";
-import { Hono } from "hono";
 import {
   ServiceError,
   ErrorKind,
@@ -57,92 +56,43 @@ describe("service errors", () => {
   });
 });
 
-describe("respondWithServiceError", () => {
-  function makeContext() {
-    let _body: unknown;
-    let _status: number;
-    const c = {
-      json: (data: unknown, status?: number) => {
-        _body = data;
-        _status = status ?? 200;
-        return new Response(JSON.stringify(data), { status: status ?? 200 });
-      },
-    };
-    return { 
-      c, 
-      getBody: () => _body, 
-      getStatus: () => _status,
-    };
-  }
+// respondWithServiceError/respondError now use new Response() directly
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const c = undefined as any;
 
+async function readBody(resp: Response): Promise<{ error: { code: string; message: string } }> {
+  return resp.json() as Promise<{ error: { code: string; message: string } }>;
+}
+
+describe("respondWithServiceError", () => {
   const cases = [
-    {
-      err: errAccountNotFound(),
-      expectedStatus: 401,
-      expectedCode: "ACCOUNT_NOT_FOUND",
-    },
-    {
-      err: errUnauthorized(),
-      expectedStatus: 401,
-      expectedCode: "UNAUTHORIZED",
-    },
-    {
-      err: errValidation("bad request"),
-      expectedStatus: 400,
-      expectedCode: "VALIDATION_ERROR",
-    },
-    {
-      err: errNotFound(),
-      expectedStatus: 404,
-      expectedCode: "NOT_FOUND",
-    },
-    {
-      err: errAIUnavailable(),
-      expectedStatus: 503,
-      expectedCode: "AI_UNAVAILABLE",
-    },
-    {
-      err: errEmailNotVerified(),
-      expectedStatus: 403,
-      expectedCode: "EMAIL_NOT_VERIFIED",
-    },
-    {
-      err: errEmailConflict(),
-      expectedStatus: 409,
-      expectedCode: "EMAIL_CONFLICT",
-    },
-    {
-      err: new Error("something broke"),
-      expectedStatus: 500,
-      expectedCode: "SERVER_ERROR",
-    },
+    { err: errAccountNotFound(), status: 401, code: "ACCOUNT_NOT_FOUND" },
+    { err: errUnauthorized(), status: 401, code: "UNAUTHORIZED" },
+    { err: errValidation("bad request"), status: 400, code: "VALIDATION_ERROR" },
+    { err: errNotFound(), status: 404, code: "NOT_FOUND" },
+    { err: errAIUnavailable(), status: 503, code: "AI_UNAVAILABLE" },
+    { err: errEmailNotVerified(), status: 403, code: "EMAIL_NOT_VERIFIED" },
+    { err: errEmailConflict(), status: 409, code: "EMAIL_CONFLICT" },
+    { err: new Error("something broke"), status: 500, code: "SERVER_ERROR" },
   ];
 
   for (const tc of cases) {
-    test(`${tc.expectedCode} → ${tc.expectedStatus}`, () => {
-      const { c, getBody, getStatus } = makeContext();
-      const resp = respondWithServiceError(c as Parameters<typeof respondWithServiceError>[0], tc.err);
-      expect(resp.status).toBe(tc.expectedStatus);
-      const body = getBody() as { error: { code: string; message: string } };
-      expect(body.error.code).toBe(tc.expectedCode);
+    test(`${tc.code} → ${tc.status}`, async () => {
+      const resp = respondWithServiceError(c, tc.err);
+      expect(resp.status).toBe(tc.status);
+      const body = await readBody(resp);
+      expect(body.error.code).toBe(tc.code);
       expect(typeof body.error.message).toBe("string");
     });
   }
 });
 
 describe("respondError", () => {
-  test("writes structured error response", () => {
-    let _body: unknown;
-    const c = {
-      json: (d: unknown, s?: number) => {
-        _body = d;
-        return new Response(JSON.stringify(d), { status: s ?? 200 });
-      },
-    };
-    const resp = respondError(c as Parameters<typeof respondError>[0], 400, "BAD_REQUEST", "Something wrong") as Response;
+  test("writes structured error response", async () => {
+    const resp = respondError(c, 400, "BAD_REQUEST", "Something wrong");
     expect(resp.status).toBe(400);
-    const b = _body as { error: { code: string; message: string } };
-    expect(b.error.code).toBe("BAD_REQUEST");
-    expect(b.error.message).toBe("Something wrong");
+    const body = await readBody(resp);
+    expect(body.error.code).toBe("BAD_REQUEST");
+    expect(body.error.message).toBe("Something wrong");
   });
 });
