@@ -35,11 +35,12 @@ export function createAuthController(authService: AuthService, config: Config) {
 
       const maxAge = config.server.jwt_expiry_minutes * 60;
       const domain = config.server.cookie_domain || undefined;
+      const isSecure = config.server.mode === "release";
 
       setCookie(c, "nexia_token", token, {
         httpOnly: true,
-        secure: true,
-        sameSite: "None" as const,
+        secure: isSecure,
+        sameSite: isSecure ? ("None" as const) : ("Lax" as const),
         path: "/",
         domain,
         maxAge,
@@ -47,8 +48,8 @@ export function createAuthController(authService: AuthService, config: Config) {
 
       const csrfToken = generateCsrfToken();
       setCookie(c, CSRF_COOKIE_NAME, csrfToken, {
-        secure: true,
-        sameSite: "None" as const,
+        secure: isSecure,
+        sameSite: isSecure ? ("None" as const) : ("Lax" as const),
         path: "/",
         domain,
         maxAge,
