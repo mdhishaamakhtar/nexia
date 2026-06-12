@@ -2,8 +2,7 @@ import { describe, test, expect } from "bun:test";
 import { EmbeddingService, type EmbeddingGenerator, type EmbeddingStorage } from "../services/embedding-service";
 import { ServiceError, ErrorKind } from "../services/errors";
 import pino from "pino";
-
-const logger = pino.pino({ level: "silent" });
+const logger = pino({ level: "silent" });
 
 class FakeEmbeddingGenerator implements EmbeddingGenerator {
   generatedText = "";

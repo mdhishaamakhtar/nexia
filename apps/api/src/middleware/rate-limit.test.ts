@@ -5,8 +5,9 @@ import { createRateLimiter, rateLimitConfigFromValues } from "../middleware/rate
 import { createAuthRateLimiter } from "../middleware/auth-rate-limit";
 import { createChatRateLimiter } from "../middleware/chat-rate-limit";
 import type { Config } from "../config/config";
+import type { Logger } from "../logging/logger";
 
-const nopLogger = pino.pino({ level: "silent" });
+const nopLogger = pino({ level: "silent" });
 
 const testCfg: Config = {
   server: {
@@ -112,7 +113,7 @@ describe("chatRateLimiter", () => {
 describe("rate limiter panics on nil logger", () => {
   test("throws on nil logger", () => {
     expect(() =>
-      createRateLimiter(null as unknown as ReturnType<typeof pino>, "auth", "msg", {
+      createRateLimiter(null as unknown as Logger, "auth", "msg", {
         requests: 1,
         burst: 1,
         windowSeconds: 60,

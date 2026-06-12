@@ -2,8 +2,7 @@ import { describe, test, expect } from "bun:test";
 import { AuthService, type UserRepo, type PasswordResetRepo, type EmailVerificationRepo, type EmailSender } from "../services/auth-service";
 import { ServiceError, ErrorKind } from "../services/errors";
 import pino from "pino";
-
-const logger = pino.pino({ level: "silent" });
+const logger = pino({ level: "silent" });
 
 const config = {
   server: {

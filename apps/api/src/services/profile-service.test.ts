@@ -3,7 +3,7 @@ import { ProfileService, type ProfileRepo, type EmbeddingQueue } from "../servic
 import { ServiceError, ErrorKind } from "../services/errors";
 import pino from "pino";
 
-const logger = pino.pino({ level: "silent" });
+const logger = pino({ level: "silent" });
 
 class FakeProfileRepo implements ProfileRepo {
   created: Array<{ id: number; userId: number }> = [];

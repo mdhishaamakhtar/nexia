@@ -1,5 +1,5 @@
 import type { Context, MiddlewareHandler } from "hono";
-import type { Logger } from "pino";
+import type { Logger } from "../logging/logger";
 
 export function requestContext(logger: Logger): MiddlewareHandler {
   return async (c, next) => {
