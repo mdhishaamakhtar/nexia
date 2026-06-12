@@ -89,6 +89,7 @@ export async function createApp(configDir = "config") {
     config,
     logger,
     db,
+    userLookup: userRepo,
     authService,
     profileService,
     chatAgent,

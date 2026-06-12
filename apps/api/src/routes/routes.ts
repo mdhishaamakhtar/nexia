@@ -6,8 +6,9 @@ import type { ProfileService } from "../services/profile-service";
 import type { ChatAgent } from "../ai/agent";
 import type { Logger } from "../logging/logger";
 import type { DB } from "../db/client";
+import type { UserLookup } from "../middleware/auth";
 import { requestContext, recovery } from "../middleware/request-context";
-import { authMiddleware, type UserLookup } from "../middleware/auth";
+import { authMiddleware } from "../middleware/auth";
 import { csrfMiddleware } from "../middleware/csrf";
 import { createAuthRateLimiter } from "../middleware/auth-rate-limit";
 import { createChatRateLimiter } from "../middleware/chat-rate-limit";
@@ -19,15 +20,15 @@ export function buildApp(deps: {
   config: Config;
   logger: Logger;
   db: DB;
+  userLookup: UserLookup;
   authService: AuthService;
   profileService: ProfileService;
   chatAgent: ChatAgent;
 }) {
-  const { config, logger, db, authService, profileService, chatAgent } = deps;
+  const { config, logger, db, userLookup, authService, profileService, chatAgent } = deps;
 
   const app = new Hono();
 
-  // Global middleware
   app.use("*", cors({
     origin: config.server.cors_origins,
     credentials: true,
@@ -37,36 +38,21 @@ export function buildApp(deps: {
   app.use("*", requestContext(logger));
   app.use("*", recovery(logger));
 
-  // Health
   app.get("/api/v1/healthz", (c) => c.json({ status: "ok" }));
   app.get("/api/v1/readyz", async (c) => {
     try {
-      await db.execute({ sql: "SELECT 1", params: [] } as Parameters<typeof db.execute>[0]);
+      await db.execute("SELECT 1");
       return c.json({ status: "ok" });
     } catch {
       return c.json({ status: "unavailable" }, 503);
     }
   });
 
-  // Auth routes (public + rate-limited)
-  const authApp = createAuthController(authService, config);
-
-  // Apply auth rate limit only to specific routes
-  // Wire everything under /api/v1/auth
-  app.route("/api/v1/auth", authApp);
+  // Public auth routes
+  app.route("/api/v1/auth", createAuthController(authService, config));
 
   // Protected routes
   const protectedApp = new Hono();
-
-  const userLookup: UserLookup = {
-    findById: async (id: number) => {
-      const result = await db.execute({ sql: "SELECT id FROM users WHERE id = $1", params: [id] } as Parameters<typeof db.execute>[0]);
-      const rows = result as unknown as Array<{ id: number }>;
-      if (rows.length === 0) return null;
-      return { id: rows[0]!.id };
-    },
-  };
-
   protectedApp.use("*", authMiddleware(config, userLookup));
   protectedApp.use("*", csrfMiddleware());
 
@@ -79,10 +65,11 @@ export function buildApp(deps: {
   // Profiles
   protectedApp.route("/profiles", createProfileController(profileService));
 
-  // Mount auth/me within protected routes
+  // Auth session (me/logout) under protected
   protectedApp.route("/auth", createAuthController(authService, config));
 
   app.route("/api/v1", protectedApp);
 
   return app;
 }
+

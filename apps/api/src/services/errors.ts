@@ -46,43 +46,38 @@ export function isServiceError(err: unknown): err is ServiceError {
   return err instanceof ServiceError;
 }
 
+import type { Context } from "hono";
+
 export function respondWithServiceError(
-  c: { json: (data: unknown, status?: number) => void },
+  c: Context,
   err: unknown,
-): void {
+): Response {
   if (isServiceError(err)) {
     switch (err.kind) {
       case ErrorKind.AccountNotFound:
-        respondError(c, 401, "ACCOUNT_NOT_FOUND", "No account found with that email");
-        return;
+        return respondError(c, 401, "ACCOUNT_NOT_FOUND", "No account found with that email");
       case ErrorKind.Unauthorized:
-        respondError(c, 401, "UNAUTHORIZED", "Invalid credentials");
-        return;
+        return respondError(c, 401, "UNAUTHORIZED", "Invalid credentials");
       case ErrorKind.Validation:
-        respondError(c, 400, "VALIDATION_ERROR", err.message);
-        return;
+        return respondError(c, 400, "VALIDATION_ERROR", err.message);
       case ErrorKind.NotFound:
-        respondError(c, 404, "NOT_FOUND", "Resource not found");
-        return;
+        return respondError(c, 404, "NOT_FOUND", "Resource not found");
       case ErrorKind.AIUnavailable:
-        respondError(c, 503, "AI_UNAVAILABLE", "AI service unavailable");
-        return;
+        return respondError(c, 503, "AI_UNAVAILABLE", "AI service unavailable");
       case ErrorKind.EmailNotVerified:
-        respondError(c, 403, "EMAIL_NOT_VERIFIED", "Please verify your email before signing in");
-        return;
+        return respondError(c, 403, "EMAIL_NOT_VERIFIED", "Please verify your email before signing in");
       case ErrorKind.EmailConflict:
-        respondError(c, 409, "EMAIL_CONFLICT", "An account with that email already exists");
-        return;
+        return respondError(c, 409, "EMAIL_CONFLICT", "An account with that email already exists");
     }
   }
-  respondError(c, 500, "SERVER_ERROR", err instanceof Error ? err.message : "Internal server error");
+  return respondError(c, 500, "SERVER_ERROR", err instanceof Error ? err.message : "Internal server error");
 }
 
 export function respondError(
-  c: { json: (data: unknown, status?: number) => void },
+  c: Context,
   status: number,
   code: string,
   message: string,
-): void {
-  c.json({ error: { code, message } }, status);
+): Response {
+  return c.json({ error: { code, message } }, status);
 }

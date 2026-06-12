@@ -77,7 +77,11 @@ export default function ChatPage() {
     setInput("");
 
     try {
-      const response = await chatMutation.mutateAsync(userMessage.content);
+      const messagesPayload = [
+        ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
+        { role: "user" as const, content: userMessage.content },
+      ];
+      const response = await chatMutation.mutateAsync(messagesPayload);
       setMessages((prev) => [
         ...prev,
         {

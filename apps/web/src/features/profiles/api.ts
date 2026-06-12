@@ -1,5 +1,5 @@
 import { api } from "@/shared/api/client";
-import type { Profile, ProfileFormValues, ProfilesResponse } from "@/shared/types/profile";
+import type { Profile, ProfileFormValues, ProfileListResponse } from "@/shared/types/profile";
 
 export interface ListProfilesParams {
   page?: number;
@@ -15,7 +15,7 @@ export async function listProfiles(params: ListProfilesParams) {
   if (params.search) searchParams.set("search", params.search);
   if (params.relationship_type) searchParams.set("relationship_type", params.relationship_type);
 
-  return api.get("profiles", { searchParams }).json<ProfilesResponse>();
+  return api.get("profiles", { searchParams }).json<ProfileListResponse>();
 }
 
 export async function getProfile(id: string | number) {

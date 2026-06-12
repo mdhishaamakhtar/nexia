@@ -10,6 +10,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@nexia/shared": "workspace:*",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.90.21",

@@ -59,15 +59,20 @@ describe("service errors", () => {
 
 describe("respondWithServiceError", () => {
   function makeContext() {
-    let responseBody: unknown;
-    let responseStatus: number;
+    let _body: unknown;
+    let _status: number;
     const c = {
       json: (data: unknown, status?: number) => {
-        responseBody = data;
-        responseStatus = status ?? 200;
+        _body = data;
+        _status = status ?? 200;
+        return new Response(JSON.stringify(data), { status: status ?? 200 });
       },
     };
-    return { c, getBody: () => responseBody, getStatus: () => responseStatus };
+    return { 
+      c, 
+      getBody: () => _body, 
+      getStatus: () => _status,
+    };
   }
 
   const cases = [
@@ -106,7 +111,6 @@ describe("respondWithServiceError", () => {
       expectedStatus: 409,
       expectedCode: "EMAIL_CONFLICT",
     },
-    // Unknown error falls through to 500
     {
       err: new Error("something broke"),
       expectedStatus: 500,
@@ -117,8 +121,8 @@ describe("respondWithServiceError", () => {
   for (const tc of cases) {
     test(`${tc.expectedCode} → ${tc.expectedStatus}`, () => {
       const { c, getBody, getStatus } = makeContext();
-      respondWithServiceError(c as Parameters<typeof respondWithServiceError>[0], tc.err);
-      expect(getStatus()).toBe(tc.expectedStatus);
+      const resp = respondWithServiceError(c as Parameters<typeof respondWithServiceError>[0], tc.err);
+      expect(resp.status).toBe(tc.expectedStatus);
       const body = getBody() as { error: { code: string; message: string } };
       expect(body.error.code).toBe(tc.expectedCode);
       expect(typeof body.error.message).toBe("string");
@@ -128,17 +132,16 @@ describe("respondWithServiceError", () => {
 
 describe("respondError", () => {
   test("writes structured error response", () => {
-    let body: unknown;
-    let status: number;
+    let _body: unknown;
     const c = {
       json: (d: unknown, s?: number) => {
-        body = d;
-        status = s ?? 200;
+        _body = d;
+        return new Response(JSON.stringify(d), { status: s ?? 200 });
       },
     };
-    respondError(c, 400, "BAD_REQUEST", "Something wrong");
-    expect(status).toBe(400);
-    const b = body as { error: { code: string; message: string } };
+    const resp = respondError(c as Parameters<typeof respondError>[0], 400, "BAD_REQUEST", "Something wrong") as Response;
+    expect(resp.status).toBe(400);
+    const b = _body as { error: { code: string; message: string } };
     expect(b.error.code).toBe("BAD_REQUEST");
     expect(b.error.message).toBe("Something wrong");
   });
