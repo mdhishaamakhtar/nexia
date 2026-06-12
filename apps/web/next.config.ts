@@ -1,12 +1,14 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 
+const workspaceRoot = path.resolve(process.cwd(), "..", "..");
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   output: "standalone",
-  outputFileTracingRoot: process.cwd(),
+  outputFileTracingRoot: workspaceRoot,
   turbopack: {
-    root: path.resolve(process.cwd(), "..", ".."),
+    root: workspaceRoot,
   },
 };
 

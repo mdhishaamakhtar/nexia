@@ -3,7 +3,7 @@ WORKDIR /repo
 COPY package.json bun.lock ./
 COPY apps/api/package.json apps/api/
 COPY packages/shared/package.json packages/shared/
-RUN bun install --filter api --filter @nexia/shared
+RUN bun install
 
 FROM oven/bun:1
 WORKDIR /repo
