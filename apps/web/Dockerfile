@@ -9,7 +9,7 @@ ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 COPY package.json bun.lock ./
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy workspace source
 COPY packages/shared packages/shared
