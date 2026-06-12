@@ -59,6 +59,7 @@ export async function createApp(configDir = "config") {
 
     if (config.ai.redis_url) {
       try {
+        logger.info({ redis_url: config.ai.redis_url }, "connecting to redis");
         redis = createRedisConnection(config.ai.redis_url);
 
         if (redis) {
