@@ -41,3 +41,14 @@ qdrant_storage/
 
 # Claude Code local settings (personal permissions, not shared)
 .claude/settings.local.json
+
+# TypeScript / Node / Bun
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+.env*.local
+
+# Bun
+bun.lock
+bun.lockb
