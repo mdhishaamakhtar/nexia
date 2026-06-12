@@ -11,10 +11,7 @@ COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
 RUN bun install
 
-# Remove workspace node_modules symlink so COPY works cleanly
-RUN rm -rf apps/web/node_modules
-
-# Copy workspace source (excluding node_modules via .dockerignore)
+# Copy workspace source (node_modules excluded via .dockerignore)
 COPY packages/shared packages/shared
 COPY apps/web apps/web
 
