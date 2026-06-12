@@ -41,6 +41,7 @@ services:
       - NEXIA_AI_REDIS_URL=redis:6379
       - NEXIA_AI_GEMINI_API_KEY=${GEMINI_API_KEY}
       - NEXIA_AI_OPENCODE_API_KEY=${OPENCODE_API_KEY}
+      - NEXIA_SERVER_JWT_SECRET=${NEXIA_SERVER_JWT_SECRET}
       - NEXIA_SERVER_CORS_ORIGINS=http://localhost:3000
     depends_on:
       postgres:
