@@ -40,20 +40,21 @@ export class EmbeddingQueueProducer {
 }
 
 export function parseRedisURL(redisURL: string): { host: string; port: number; password?: string } {
-  try {
+  // Only treat as URL if it has a protocol prefix
+  if (redisURL.startsWith("redis://") || redisURL.startsWith("rediss://")) {
     const url = new URL(redisURL);
     return {
-      host: url.hostname,
+      host: url.hostname || "127.0.0.1",
       port: Number(url.port) || 6379,
       password: url.password || undefined,
     };
-  } catch {
-    const [host, portStr] = redisURL.split(":");
-    return {
-      host: host ?? "127.0.0.1",
-      port: Number(portStr) || 6379,
-    };
   }
+  // Bare host:port format
+  const [host, portStr] = redisURL.split(":");
+  return {
+    host: host || "127.0.0.1",
+    port: Number(portStr) || 6379,
+  };
 }
 
 export function createRedisConnection(redisURL: string): Redis {
