@@ -138,17 +138,11 @@ export default function ProfileForm({
   return (
     <motion.form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-10"
-      initial={{ opacity: 0, y: 12, rotate: -0.5 }}
-      animate={{ opacity: 1, y: 0, rotate: 0 }}
+      className="space-y-5"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 140, damping: 22 }}
     >
-      <div className="flex justify-end">
-        <Button type="submit" isLoading={isSubmitting} className="px-8!">
-          <Save className="mr-2 h-4 w-4" aria-hidden="true" /> {submitLabel}
-        </Button>
-      </div>
-
       <ProfileFormSection id="basic" title="Basic Information" icon={User} index={0}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Input label="Full Name" {...register("full_name")} error={errors.full_name?.message} />
@@ -403,6 +397,7 @@ export default function ProfileForm({
             items={quotesField.fields}
             append={quotesField.append}
             remove={quotesField.remove}
+            variant="block"
           />
           <FieldArrayInput
             label="Political Views"
@@ -414,6 +409,14 @@ export default function ProfileForm({
           />
         </div>
       </ProfileFormSection>
+
+      <div className="sticky bottom-4 z-20">
+        <div className="glass-panel flex items-center justify-end rounded-2xl p-2.5">
+          <Button type="submit" isLoading={isSubmitting} className="w-full px-8! sm:w-auto">
+            <Save className="mr-2 h-4 w-4" aria-hidden="true" /> {submitLabel}
+          </Button>
+        </div>
+      </div>
     </motion.form>
   );
 }

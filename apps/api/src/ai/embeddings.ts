@@ -20,9 +20,7 @@ export function createEmbeddingGenerator(apiKey: string): EmbeddingGenerator {
         },
       });
       if (!embedding || embedding.length !== 3072) {
-        throw errAIUnavailable(
-          `Expected 3072-dim embedding, got ${embedding?.length ?? 0}`
-        );
+        throw errAIUnavailable(`Expected 3072-dim embedding, got ${embedding?.length ?? 0}`);
       }
       return embedding;
     },

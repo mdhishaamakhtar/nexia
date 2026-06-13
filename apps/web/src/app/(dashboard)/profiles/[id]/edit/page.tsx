@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import BackButton from "@/components/atoms/BackButton";
 import ProfileForm from "@/features/profiles/components/ProfileForm";
 import { getProfile, toProfileFormValues, updateProfile } from "@/features/profiles/api";
 import { useToast } from "@/shared/ui/toast";
@@ -46,10 +45,10 @@ export default function EditProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 space-y-4">
-        <div className="h-44 rounded-2xl shimmer" />
-        <div className="h-28 rounded-2xl shimmer" />
-        <div className="h-28 rounded-2xl shimmer" />
+      <div className="mx-auto max-w-3xl space-y-4 px-4 py-10 sm:px-6 lg:px-8">
+        <div className="shimmer h-24 rounded-3xl" />
+        <div className="shimmer h-44 rounded-3xl" />
+        <div className="shimmer h-32 rounded-3xl" />
       </div>
     );
   }
@@ -58,25 +57,20 @@ export default function EditProfilePage() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <motion.header
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-10 flex items-center justify-between"
+          className="mb-8"
         >
-          <Link
-            href={`/profiles/${id}`}
-            prefetch
-            className="group flex items-center gap-2 transition-colors text-sm"
-            style={{ color: "var(--text-3)" }}
-          >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            back
-          </Link>
-          <h1 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
+          <BackButton href={`/profiles/${id}`} label="Back" className="mb-5" />
+          <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: "var(--text-1)" }}>
             Edit Profile
           </h1>
-        </motion.div>
+          <p className="mt-1.5 text-sm" style={{ color: "var(--text-3)" }}>
+            Updating {profile.full_name || "this profile"}.
+          </p>
+        </motion.header>
 
         <ProfileForm
           initialValues={initialValues}
