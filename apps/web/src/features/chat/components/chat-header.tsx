@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { NexiaAvatar } from "@/shared/ui/AIIcons";
+import BackButton from "@/components/atoms/BackButton";
 
 export function ChatHeader({ onClear, canClear }: { onClear: () => void; canClear: boolean }) {
   return (
@@ -13,15 +13,7 @@ export function ChatHeader({ onClear, canClear }: { onClear: () => void; canClea
       transition={{ type: "spring", stiffness: 280, damping: 28 }}
       className="flex shrink-0 items-center gap-3 pb-3"
     >
-      <Link
-        href="/profiles"
-        prefetch
-        aria-label="Back to profiles"
-        className="-ml-1.5 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-(--fill)"
-        style={{ color: "var(--text-3)" }}
-      >
-        <ArrowLeft size={16} />
-      </Link>
+      <BackButton href="/profiles" className="-ml-1" />
 
       <NexiaAvatar size={34} tilt={-3} />
 

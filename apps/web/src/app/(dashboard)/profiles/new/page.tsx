@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import BackButton from "@/components/atoms/BackButton";
 import ProfileForm from "@/features/profiles/components/ProfileForm";
 import { createProfile } from "@/features/profiles/api";
 import { useToast } from "@/shared/ui/toast";
@@ -58,25 +57,20 @@ export default function NewProfilePage() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <motion.header
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-10 flex items-center justify-between"
+          className="mb-8"
         >
-          <Link
-            href="/profiles"
-            prefetch
-            className="group flex items-center gap-2 transition-colors text-sm"
-            style={{ color: "var(--text-3)" }}
-          >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-            back
-          </Link>
-          <h1 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
+          <BackButton href="/profiles" label="Back" className="mb-5" />
+          <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: "var(--text-1)" }}>
             New Profile
           </h1>
-        </motion.div>
+          <p className="mt-1.5 text-sm" style={{ color: "var(--text-3)" }}>
+            Add someone new to your slambook.
+          </p>
+        </motion.header>
 
         <ProfileForm
           initialValues={initialValues}

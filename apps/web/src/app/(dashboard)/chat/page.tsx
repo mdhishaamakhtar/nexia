@@ -19,6 +19,7 @@ import { useNexiaChat } from "@/features/chat/hooks/use-nexia-chat";
 import { ChatHeader } from "@/features/chat/components/chat-header";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
 import { ChatMessage } from "@/features/chat/components/chat-message";
+import { NexiaAvatar } from "@/shared/ui/AIIcons";
 import { AlertCircle } from "lucide-react";
 
 function ThinkingIndicator() {
@@ -28,11 +29,18 @@ function ThinkingIndicator() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 28 }}
-      className="flex w-full items-center gap-1 pl-0.5"
+      className="flex w-full items-center gap-2 pl-0.5"
     >
-      <span className="streaming-dot" style={{ animationDelay: "0ms" }} />
-      <span className="streaming-dot" style={{ animationDelay: "150ms" }} />
-      <span className="streaming-dot" style={{ animationDelay: "300ms" }} />
+      <NexiaAvatar size={18} />
+      <span className="text-[13px] font-semibold" style={{ color: "var(--text-3)" }}>
+        Thinking
+      </span>
+      {/* The dots are the single, purposeful loading motion. */}
+      <span className="flex items-center gap-1">
+        <span className="streaming-dot" style={{ animationDelay: "0ms" }} />
+        <span className="streaming-dot" style={{ animationDelay: "150ms" }} />
+        <span className="streaming-dot" style={{ animationDelay: "300ms" }} />
+      </span>
     </motion.div>
   );
 }
@@ -42,10 +50,15 @@ export default function ChatPage() {
   const { messages, status, sendMessage, regenerate, stop, clear } = useNexiaChat();
 
   const isBusy = status === "submitted" || status === "streaming";
-  const lastRole = messages.at(-1)?.role;
-  // Only show the standalone "thinking" row before the assistant message exists,
-  // so it never duplicates the avatar of a message that's already streaming.
-  const showThinking = isBusy && lastRole !== "assistant";
+  const lastMessage = messages.at(-1);
+  const lastPart = lastMessage?.role === "assistant" ? lastMessage.parts.at(-1) : undefined;
+  // The assistant is "actively writing" only when its message currently ends in a
+  // non-empty text part. In every other busy state — before the first token, and
+  // crucially during the gaps between tool calls / steps mid-stream — show the
+  // thinking row so it never looks frozen. (No avatar duplication: the message's
+  // own signature avatar only renders once it has text, when this is hidden.)
+  const assistantWriting = lastPart?.type === "text" && !!lastPart.text;
+  const showThinking = isBusy && !assistantWriting;
 
   const submit = (text: string) => {
     const trimmed = text.trim();
@@ -121,7 +134,7 @@ export default function ChatPage() {
               placeholder="Ask about your people…"
               onChange={(e) => setInput(e.currentTarget.value)}
               disabled={isBusy}
-              className="min-h-[44px] bg-transparent text-[15px] text-(--text-1) placeholder:text-(--text-3)"
+              className="min-h-[44px] bg-transparent text-[16px] text-(--text-1) placeholder:text-(--text-3)"
             />
           </PromptInputBody>
           <PromptInputFooter>

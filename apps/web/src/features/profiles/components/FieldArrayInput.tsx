@@ -26,6 +26,7 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
   append,
   remove,
   badgeClassName,
+  variant = "chip",
 }: {
   label: string;
   placeholder: string;
@@ -34,8 +35,18 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
   append: UseFieldArrayAppend<ProfileFormValues, TFieldName>;
   remove: UseFieldArrayRemove;
   badgeClassName?: string; // optional; falls back to CSS-var-based styling
+  // "chip": short tokens rendered as inline pills (tags, genres, places…)
+  // "block": arbitrary-length content rendered as full-width wrapping rows (quotes)
+  variant?: "chip" | "block";
 }) {
   const [value, setValue] = useState("");
+
+  const addValue = () => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    append({ [fieldKey]: trimmed } as FieldArray<ProfileFormValues, TFieldName>);
+    setValue("");
+  };
 
   return (
     <div>
@@ -45,40 +56,82 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
       >
         {label}
       </label>
-      <div className="mb-2 flex flex-wrap gap-2">
-        <AnimatePresence mode="popLayout">
-          {items.map((item, index) => (
-            <motion.span
-              key={item._key}
-              layout
-              initial={{ scale: 0.7, opacity: 0, rotate: -10 }}
-              animate={{ scale: 1, opacity: 1, rotate: -2 }}
-              exit={{ scale: 0.7, opacity: 0, rotate: -10 }}
-              transition={{ type: "spring", stiffness: 380, damping: 22 }}
-              className={`sticker-chip flex items-center gap-2 rounded-full px-3 py-1 text-sm border ${badgeClassName ?? ""}`}
-              style={
-                !badgeClassName
-                  ? {
+
+      {items.length > 0 && (
+        <div
+          className={variant === "block" ? "mb-2 flex flex-col gap-2" : "mb-2 flex flex-wrap gap-2"}
+        >
+          <AnimatePresence mode="popLayout" initial={false}>
+            {items.map((item, index) => {
+              const text = String((item as Record<string, unknown>)[fieldKey] ?? "");
+
+              if (variant === "block") {
+                return (
+                  <motion.div
+                    key={item._key}
+                    layout
+                    initial={{ scale: 0.96, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.96, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    className="flex w-full items-start gap-3 rounded-xl border px-4 py-3"
+                    style={{
                       background: "var(--fill)",
                       borderColor: "var(--border)",
                       color: "var(--text-2)",
-                    }
-                  : undefined
+                    }}
+                  >
+                    <span className="min-w-0 flex-1 break-words text-sm leading-relaxed">
+                      {text}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      aria-label="Remove"
+                      className="mt-0.5 shrink-0 rounded-full p-1 transition-colors hover:bg-(--fill-hover)"
+                      style={{ color: "var(--text-3)" }}
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                    </button>
+                  </motion.div>
+                );
               }
-            >
-              {String((item as Record<string, unknown>)[fieldKey] ?? "")}
-              <button
-                type="button"
-                onClick={() => remove(index)}
-                aria-label="Remove"
-                className="hover:rotate-90 transition-transform"
-              >
-                <X className="h-3 w-3" aria-hidden="true" />
-              </button>
-            </motion.span>
-          ))}
-        </AnimatePresence>
-      </div>
+
+              return (
+                <motion.span
+                  key={item._key}
+                  layout
+                  initial={{ scale: 0.85, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.85, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                  className={`sticker-chip inline-flex max-w-full items-center gap-2 rounded-full px-3 py-1 text-sm border ${badgeClassName ?? ""}`}
+                  style={
+                    !badgeClassName
+                      ? {
+                          background: "var(--fill)",
+                          borderColor: "var(--border)",
+                          color: "var(--text-2)",
+                        }
+                      : undefined
+                  }
+                >
+                  <span className="min-w-0 break-words">{text}</span>
+                  <button
+                    type="button"
+                    onClick={() => remove(index)}
+                    aria-label="Remove"
+                    className="shrink-0 transition-transform hover:rotate-90"
+                  >
+                    <X className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                </motion.span>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      )}
+
       <div className="flex gap-2">
         <input
           value={value}
@@ -86,9 +139,7 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              if (!value.trim()) return;
-              append({ [fieldKey]: value.trim() } as FieldArray<ProfileFormValues, TFieldName>);
-              setValue("");
+              addValue();
             }
           }}
           placeholder={placeholder}
@@ -97,11 +148,7 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
         <button
           type="button"
           aria-label="Add"
-          onClick={() => {
-            if (!value.trim()) return;
-            append({ [fieldKey]: value.trim() } as FieldArray<ProfileFormValues, TFieldName>);
-            setValue("");
-          }}
+          onClick={addValue}
           className="rounded-xl px-3 border transition-colors hover:bg-(--fill-hover) active:scale-[0.97]"
           style={{
             background: "var(--fill)",
