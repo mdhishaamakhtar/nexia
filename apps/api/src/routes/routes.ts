@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { compress } from "hono/compress";
 import { cors } from "hono/cors";
 import type { Config } from "../config/config";
 import type { AuthService } from "../services/auth-service";
@@ -41,6 +42,7 @@ export function buildApp(deps: BuildDeps) {
       allowHeaders: ["Origin", "Content-Type", "Authorization", "X-CSRF-Token"],
     })
   );
+  app.use("*", compress());
   app.use("*", requestContext(logger));
   app.use("*", recovery(logger));
 
