@@ -24,3 +24,5 @@ coverage.*
 .claude
 .agents
 .vercel
+
+opencode.json

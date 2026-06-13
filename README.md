@@ -39,19 +39,22 @@ Think: "Who hates mushrooms?" or "What song reminds me of Sam?" and get answers 
 
 ```bash
 export GEMINI_API_KEY=your_key_here
-docker-compose up --build
+export OPENCODE_API_KEY=your_key_here
+# optional: export NEXIA_EMAIL_RESEND_API_KEY=your_key_here
+docker compose up --build
 ```
 
-Then open:
+Then open [http://localhost:3000](http://localhost:3000).
 
-- App: [http://localhost:3000](http://localhost:3000)
+Use `./nexia.sh ra` to rebuild/restart all services, `./nexia.sh start` to start without rebuilding, `./nexia.sh wipe` to reset infra volumes.
 
 ## Manual Dev Setup
 
 ### 1. Start infra
 
 ```bash
-docker-compose up -d postgres redis
+docker compose up -d postgres redis
+# or: ./nexia.sh infra
 ```
 
 ### 2. Install dependencies
@@ -60,26 +63,42 @@ docker-compose up -d postgres redis
 bun install
 ```
 
-### 3. Run backend
+### 3. Run backend (port 8080)
 
 ```bash
 bun --filter api dev
 ```
 
-### 4. Run frontend
+### 4. Run frontend (port 3000)
 
 ```bash
 bun --filter web dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
-
 ### 5. Optional: backfill embeddings
 
 ```bash
-cd apps/api
-bun run sync
+cd apps/api && bun run sync
 ```
+
+## Scripts
+
+| Command | Where | Purpose |
+|---|---|---|
+| `bun run typecheck` | root | Typecheck all packages |
+| `bun run lint` / `lint:fix` | root | ESLint + Prettier |
+| `bun run format` / `format:check` | root | Prettier write / check |
+| `bun test` | root | Run all tests |
+| `bun test src` | apps/api | Backend unit tests |
+| `bun run db:generate` | apps/api | Generate Drizzle migration |
+| `./nexia.sh` | root | Docker helper (see `./nexia.sh` for commands) |
+
+## Deployments
+
+| Service | Platform | URL |
+|---|---|---|
+| Frontend | Vercel | [nexia.hishaam.dev](https://nexia.hishaam.dev) |
+| Backend | Railway | [api.nexia.hishaam.dev](https://api.nexia.hishaam.dev) |
 
 ## Project Structure
 

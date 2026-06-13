@@ -18,9 +18,6 @@
     "format:check": "prettier --check .",
     "test": "bun test packages/shared apps/api/src"
   },
-  "overrides": {
-    "ioredis": "5.10.1"
-  },
   "devDependencies": {
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
@@ -29,9 +26,7 @@
     "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8"
-  },
-  "dependencies": {
+    "typescript-eslint": "^8",
     "vercel": "^54.13.0"
   }
 }
