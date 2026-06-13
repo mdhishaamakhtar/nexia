@@ -1,74 +1,80 @@
 import type { UIMessage } from "ai";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { MessageResponse } from "@/components/ai-elements/message";
 import { isToolPart } from "@/features/chat/lib/tool-meta";
 import { NexiaIcon } from "@/shared/ui/AIIcons";
 import { ToolActivity } from "./tool-activity";
 
 export function ChatMessage({ message }: { message: UIMessage }) {
-  const textParts = message.parts.filter((part) => part.type === "text");
-  const toolParts = message.parts.filter((part) => isToolPart(part));
-
-  const text = textParts
-    .map((part) => (part.type === "text" ? part.text : ""))
-    .filter(Boolean)
-    .join("\n\n");
-
-  const hasText = text.length > 0;
-  const hasTools = toolParts.length > 0;
-
   if (message.role === "assistant") {
-    return (
-      <div className="flex w-full items-start gap-3">
-        <div
-          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border"
-          style={{
-            background: "var(--blue)",
-            borderColor: "rgba(147,197,253,0.4)",
-            boxShadow: "0 2px 8px rgba(147,197,253,0.25)",
-          }}
-        >
-          <NexiaIcon size={18} className="text-white" />
-        </div>
-
-        <div className="flex min-w-0 max-w-[calc(100%-3rem)] flex-col gap-2">
-          <Message from="assistant">
-            {hasText && (
-              <MessageContent>
-                <MessageResponse>{text}</MessageResponse>
-              </MessageContent>
-            )}
-          </Message>
-
-          {hasTools && (
-            <div className="flex flex-wrap items-center gap-1.5 pl-1">
-              {toolParts.map((part, i) => (
-                <ToolActivity key={`${message.id}-tool-${i}`} part={part} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
+    return <AssistantMessage message={message} />;
   }
+  return <UserMessage message={message} />;
+}
+
+function AssistantMessage({ message }: { message: UIMessage }) {
+  const parts = message.parts;
+
+  return (
+    <div className="flex w-full items-start gap-3">
+      <div
+        className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
+        style={{
+          background: "var(--blue)",
+          boxShadow: "0 2px 6px rgba(147,197,253,0.25)",
+        }}
+      >
+        <NexiaIcon size={16} className="text-white" />
+      </div>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        {parts.map((part, i) => {
+          if (part.type === "text" && part.text) {
+            return (
+              <div
+                key={`${message.id}-text-${i}`}
+                className="chat-markdown text-[15px] leading-[1.65]"
+                style={{ color: "var(--text-1)" }}
+              >
+                <MessageResponse>{part.text}</MessageResponse>
+              </div>
+            );
+          }
+
+          if (isToolPart(part)) {
+            return (
+              <div key={`${message.id}-tool-${i}`} className="my-1">
+                <ToolActivity part={part} />
+              </div>
+            );
+          }
+
+          return null;
+        })}
+      </div>
+    </div>
+  );
+}
+
+function UserMessage({ message }: { message: UIMessage }) {
+  const textParts = message.parts.filter(
+    (part): part is Extract<typeof part, { type: "text" }> => part.type === "text" && !!part.text
+  );
+
+  const text = textParts.map((p) => p.text).join("\n\n");
+  if (!text) return null;
 
   return (
     <div className="flex w-full justify-end">
-      <div className="flex max-w-[85%] flex-col gap-2">
-        <Message from="user">
-          {hasText && (
-            <MessageContent>
-              <MessageResponse>{text}</MessageResponse>
-            </MessageContent>
-          )}
-        </Message>
-
-        {hasTools && (
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            {toolParts.map((part, i) => (
-              <ToolActivity key={`${message.id}-tool-${i}`} part={part} />
-            ))}
-          </div>
-        )}
+      <div
+        className="max-w-[70%] rounded-2xl rounded-tr-sm px-5 py-3"
+        style={{
+          background: "var(--peach)",
+          color: "var(--peach-text)",
+        }}
+      >
+        <div className="chat-markdown text-[15px] leading-[1.6]">
+          <MessageResponse>{text}</MessageResponse>
+        </div>
       </div>
     </div>
   );

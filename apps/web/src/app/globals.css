@@ -204,6 +204,28 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   animation: float 6s ease-in-out infinite;
 }
 
+@keyframes streaming-bounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.streaming-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+  animation: streaming-bounce 1.2s ease-in-out infinite;
+}
+
 /* ── Type Scale ──────────────────────────────────────────────
    label   : 0.6875rem (11px) · all-caps · semibold · 0.12em tracking
    caption : 0.75rem   (12px) · text-xs
