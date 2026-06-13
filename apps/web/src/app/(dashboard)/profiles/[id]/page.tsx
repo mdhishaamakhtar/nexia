@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -23,7 +23,7 @@ import {
   Vote,
   Utensils,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ConfirmDialog from "@/components/molecules/ConfirmDialog";
 import Button from "@/components/atoms/Button";
@@ -141,6 +141,46 @@ function ChipGroup({ items, prefix = "" }: { items: string[]; prefix?: string })
         </span>
       ))}
     </div>
+  );
+}
+
+function QuoteCard({ quote, onOpen }: { quote: string; onOpen: () => void }) {
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [isClamped, setIsClamped] = useState(false);
+
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+    const check = () => setIsClamped(el.scrollHeight - el.clientHeight > 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [quote]);
+
+  return (
+    <button
+      onClick={onOpen}
+      title="Read full quote"
+      className="flex h-full flex-col rounded-2xl border p-4 text-left text-sm leading-relaxed transition-all duration-200 hover:scale-[1.01]"
+      style={{
+        background: "var(--fill)",
+        borderColor: "var(--border)",
+        color: "var(--text-2)",
+      }}
+    >
+      <span ref={textRef} className="line-clamp-3 break-words">
+        {quote}
+      </span>
+      {isClamped && (
+        <span
+          className="mt-1.5 text-xs font-semibold underline underline-offset-2"
+          style={{ color: "var(--text-3)" }}
+        >
+          more
+        </span>
+      )}
+    </button>
   );
 }
 
@@ -568,21 +608,13 @@ export default function ProfileDetailPage() {
               {quotes.length > 0 && (
                 <div>
                   <SubLabel icon={Quote}>Their Quotes</SubLabel>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-start">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {quotes.map((q) => (
-                      <button
+                      <QuoteCard
                         key={q.id ?? q.quote}
-                        onClick={() => setSelectedQuote(q.quote)}
-                        title="Read full quote"
-                        className="rounded-2xl border p-4 text-left text-sm italic leading-relaxed transition-all duration-200 hover:scale-[1.01]"
-                        style={{
-                          background: "var(--fill)",
-                          borderColor: "var(--border)",
-                          color: "var(--text-2)",
-                        }}
-                      >
-                        <span className="line-clamp-5 break-words">&ldquo;{q.quote}&rdquo;</span>
-                      </button>
+                        quote={q.quote}
+                        onOpen={() => setSelectedQuote(q.quote)}
+                      />
                     ))}
                   </div>
                 </div>
@@ -592,7 +624,11 @@ export default function ProfileDetailPage() {
         </div>
       </div>
 
-      {selectedQuote && <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />}
+      <AnimatePresence>
+        {selectedQuote && (
+          <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />
+        )}
+      </AnimatePresence>
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
         title="Delete Profile?"
