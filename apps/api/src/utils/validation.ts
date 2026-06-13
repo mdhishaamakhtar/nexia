@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import type { ZodType } from "zod";
-import { respondError } from "../services/errors";
+import { respondError } from "./http";
 
 export type ParseResult<T> = { ok: true; data: T } | { ok: false; response: Response };
 

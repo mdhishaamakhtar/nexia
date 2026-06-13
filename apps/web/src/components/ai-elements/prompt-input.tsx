@@ -862,7 +862,7 @@ export const PromptInput = ({
         type="file"
       />
       <form className={cn("w-full", className)} onSubmit={handleSubmit} ref={formRef} {...props}>
-        <InputGroup className="overflow-hidden rounded-2xl border-(--border) bg-(--glass) shadow-sm backdrop-blur-md transition-colors focus-within:border-(--lavender)">
+        <InputGroup className="nexia-prompt overflow-hidden rounded-[22px] border border-(--border) bg-(--glass) backdrop-blur-md focus-within:border-(--lavender)">
           {children}
         </InputGroup>
       </form>

@@ -3,8 +3,6 @@ import {
   ServiceError,
   ErrorKind,
   isServiceError,
-  respondWithServiceError,
-  respondError,
   errValidation,
   errNotFound,
   errUnauthorized,
@@ -13,6 +11,7 @@ import {
   errEmailNotVerified,
   errEmailConflict,
 } from "../services/errors";
+import { respondWithServiceError, respondError } from "../utils/http";
 
 describe("service errors", () => {
   test("error kind constants", () => {

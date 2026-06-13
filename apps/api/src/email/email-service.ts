@@ -1,5 +1,6 @@
 import type { Config } from "../config/config";
 import type { Logger } from "../logging/logger";
+import { errEmailUnavailable } from "../services/errors";
 import { buildVerificationEmailHTML, buildPasswordResetEmailHTML } from "./templates";
 
 export class EmailService {
@@ -42,11 +43,11 @@ export class EmailService {
 
       if (!res.ok) {
         const body = await res.text();
-        throw new Error(`Resend API error: ${res.status} ${body}`);
+        throw errEmailUnavailable(`Resend API error: ${res.status} ${body}`);
       }
       this.logger.info({ toEmail }, "verification email sent");
     } catch (err) {
-      throw new Error(
+      throw errEmailUnavailable(
         `resend: send verification email: ${err instanceof Error ? err.message : String(err)}`
       );
     }
@@ -77,11 +78,11 @@ export class EmailService {
 
       if (!res.ok) {
         const body = await res.text();
-        throw new Error(`Resend API error: ${res.status} ${body}`);
+        throw errEmailUnavailable(`Resend API error: ${res.status} ${body}`);
       }
       this.logger.info({ toEmail }, "password reset email sent");
     } catch (err) {
-      throw new Error(
+      throw errEmailUnavailable(
         `resend: send password reset email: ${err instanceof Error ? err.message : String(err)}`
       );
     }

@@ -1,6 +1,6 @@
 import type { ProfileOutput } from "@nexia/shared";
 import type { Logger } from "../logging/logger";
-import { errNotFound } from "./errors";
+import { errNotFound, errAIUnavailable } from "./errors";
 
 export interface EmbeddingGenerator {
   generateEmbedding(text: string): Promise<number[]>;
@@ -41,7 +41,7 @@ export class EmbeddingService {
       embedding = await this.generator.generateEmbedding(text);
     } catch (err) {
       this.logger.error({ profileId, err: String(err) }, "embedding generation failed");
-      throw new Error(
+      throw errAIUnavailable(
         `gemini embedding failed: ${err instanceof Error ? err.message : String(err)}`
       );
     }
@@ -50,7 +50,7 @@ export class EmbeddingService {
       await this.repo.upsertProfile(profile.id, profile.user_id, embedding, profile);
     } catch (err) {
       this.logger.error({ profileId, err: String(err) }, "embedding upsert failed");
-      throw new Error(
+      throw errAIUnavailable(
         `pgvector upsert failed: ${err instanceof Error ? err.message : String(err)}`
       );
     }

@@ -221,8 +221,8 @@ describe("config loader", () => {
     try {
       const cfg = await loadConfig(join(tmp, "config"));
 
-      expect(cfg.ai.opencode_base_url).toBe("https://opencode.ai/zen/go/v1");
-      expect(cfg.ai.chat_model).toBe("deepseek-v4-pro");
+      expect(cfg.ai.opencode_base_url).toBe("https://opencode.ai/zen/v1");
+      expect(cfg.ai.chat_model).toBe("deepseek-v4-flash-free");
     } finally {
       process.chdir(cwd);
     }

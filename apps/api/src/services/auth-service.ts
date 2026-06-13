@@ -76,12 +76,7 @@ export class AuthService {
       throw errValidation("password too short");
     }
 
-    let existing;
-    try {
-      existing = await this.repo.findByEmail(email);
-    } catch (err) {
-      throw err;
-    }
+    const existing = await this.repo.findByEmail(email);
 
     if (existing) {
       throw errEmailConflict();
@@ -130,12 +125,7 @@ export class AuthService {
   }
 
   async verifyEmail(token: string): Promise<void> {
-    let record;
-    try {
-      record = await this.verifyRepo.findByToken(token);
-    } catch (err) {
-      throw err;
-    }
+    const record = await this.verifyRepo.findByToken(token);
 
     if (!record) {
       throw errNotFound();
@@ -150,12 +140,7 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<void> {
-    let user;
-    try {
-      user = await this.repo.findByEmail(email);
-    } catch (err) {
-      throw err;
-    }
+    const user = await this.repo.findByEmail(email);
 
     if (!user) {
       return;
@@ -183,12 +168,7 @@ export class AuthService {
       throw errValidation("password too short");
     }
 
-    let record;
-    try {
-      record = await this.resetRepo.findByToken(token);
-    } catch (err) {
-      throw err;
-    }
+    const record = await this.resetRepo.findByToken(token);
 
     if (!record) {
       throw errNotFound();

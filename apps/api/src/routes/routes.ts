@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { deleteCookie } from "hono/cookie";
 import type { Config } from "../config/config";
 import type { AuthService } from "../services/auth-service";
 import type { ProfileService } from "../services/profile-service";
@@ -10,10 +9,11 @@ import type { DB } from "../db/client";
 import type { UserLookup } from "../middleware/auth";
 import { requestContext, recovery } from "../middleware/request-context";
 import { authMiddleware, type AppEnv } from "../middleware/auth";
-import { csrfMiddleware, CSRF_COOKIE_NAME } from "../middleware/csrf";
+import { csrfMiddleware } from "../middleware/csrf";
 import { createAuthRateLimiter } from "../middleware/auth-rate-limit";
 import { createChatRateLimiter } from "../middleware/chat-rate-limit";
-import { createAuthController, AUTH_TOKEN_COOKIE } from "../controllers/auth-controller";
+import { createAuthController } from "../controllers/auth-controller";
+import { createSessionController } from "../controllers/auth-controller";
 import { createProfileController } from "../controllers/profile-controller";
 import { createChatController } from "../controllers/chat-controller";
 
@@ -66,18 +66,7 @@ export function buildApp(deps: BuildDeps) {
   protectedApp.use("*", authMiddleware(config, userLookup));
   protectedApp.use("*", csrfMiddleware());
 
-  protectedApp.get("/auth/me", (c) => c.json({ authenticated: true, user_id: c.get("userId") }));
-
-  protectedApp.post("/auth/logout", (c) => {
-    const opts = {
-      path: "/",
-      domain: config.server.cookie_domain || undefined,
-      secure: config.server.mode === "release",
-    };
-    deleteCookie(c, AUTH_TOKEN_COOKIE, opts);
-    deleteCookie(c, CSRF_COOKIE_NAME, opts);
-    return c.json({ message: "Logged out successfully" });
-  });
+  protectedApp.route("/auth", createSessionController(config));
 
   // Chat (auth + CSRF + chat rate limit)
   const chatGroup = new Hono();

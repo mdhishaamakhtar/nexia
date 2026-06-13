@@ -33,6 +33,9 @@
   --peach: #fdba74;
   --green: #22c55e;
 
+  /* Nexia Intel mark — a deeper, brand-derived blue so the white glyph stays crisp */
+  --nexia-mark: #5b8def;
+
   /* ── shadcn/ui theme (mapped to Nexia tokens) ── */
   --background: var(--bg);
   --foreground: var(--text-1);
@@ -336,6 +339,63 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-color: rgba(124, 45, 18, 0.25);
   color: var(--peach-text);
 }
+.chat-markdown ul {
+  list-style: disc;
+}
+.chat-markdown ol {
+  list-style: decimal;
+}
+.chat-markdown li::marker {
+  color: var(--text-3);
+}
+.chat-markdown hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0.9rem 0;
+}
+/* Refine Streamdown code fences inside chat */
+.chat-markdown pre {
+  margin: 0.55rem 0;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--fill-hover);
+  padding: 0.8rem 0.95rem;
+  overflow-x: auto;
+  font-size: 0.82em;
+  line-height: 1.55;
+}
+.chat-markdown pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ── Chat Prompt Input ── */
+/* Tidy paper input. On focus: a solid lavender border (matches the profile-page
+   inputs), with no outward glow/ring and no drop shadow. The !important strips
+   the shadcn InputGroup's built-in shadow-xs + focus-visible ring. */
+.nexia-prompt {
+  box-shadow: none !important;
+  transition: border-color 0.2s ease;
+}
+.nexia-prompt:focus-within {
+  border-color: var(--lavender);
+}
+
+/* Quiet pulse on the "Searching…" tool ellipsis */
+@keyframes tool-ellipsis {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.tool-ellipsis {
+  animation: tool-ellipsis 1.4s ease-in-out infinite;
+}
 
 /* ── Utilities ── */
 ::-webkit-scrollbar {
@@ -362,5 +422,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
   .scrapbook-card {
     transition: none;
+  }
+  .tool-ellipsis,
+  .streaming-dot {
+    animation: none;
+    opacity: 1;
   }
 }

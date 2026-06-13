@@ -14,6 +14,7 @@ import {
 } from "../db/schema";
 import type { DB } from "../db/client";
 import { toProfileOutput, emptyChildren, type ProfileChildren } from "./profile-mapper";
+import { errNotFound } from "../services/errors";
 
 export type ProfileRow = typeof profiles.$inferSelect;
 export type NewProfile = typeof profiles.$inferInsert;
@@ -45,7 +46,7 @@ export class ProfileRepository {
   async create(data: CreateProfileInput): Promise<ProfileOutput> {
     const id = await this.db.transaction(async (tx) => {
       const [profile] = await tx.insert(profiles).values(data.profile).returning();
-      if (!profile) throw new Error("Failed to create profile");
+      if (!profile) throw new Error("Failed to create profile — insert returned no row");
 
       const pid = profile.id;
       if (data.tags?.length) {
@@ -88,7 +89,7 @@ export class ProfileRepository {
     });
 
     const created = await this.findById(id, data.profile.userId);
-    if (!created) throw new Error("Failed to load created profile");
+    if (!created) throw errNotFound();
     return created;
   }
 
@@ -144,14 +145,14 @@ export class ProfileRepository {
         .from(profiles)
         .where(and(eq(profiles.id, profileId), eq(profiles.userId, userId)))
         .limit(1);
-      if (!existing) throw new Error("not found");
+      if (!existing) throw errNotFound();
 
       const [updated] = await tx
         .update(profiles)
         .set({ ...data.profile, updatedAt: new Date() })
         .where(eq(profiles.id, profileId))
         .returning({ id: profiles.id });
-      if (!updated) throw new Error("Failed to update profile");
+      if (!updated) throw errNotFound();
 
       // Full-overwrite semantics: when a child collection is provided, replace it.
       if (data.tags !== undefined) {
@@ -217,7 +218,7 @@ export class ProfileRepository {
     });
 
     const result = await this.findById(profileId, userId);
-    if (!result) throw new Error("Failed to load updated profile");
+    if (!result) throw errNotFound();
     return result;
   }
 

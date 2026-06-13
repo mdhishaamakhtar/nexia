@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { setCookie } from "hono/cookie";
+import { setCookie, deleteCookie } from "hono/cookie";
 import type { CookieOptions } from "hono/utils/cookie";
 import {
   signupRequestSchema,
@@ -10,13 +10,14 @@ import {
 import type { AuthService } from "../services/auth-service";
 import type { Config } from "../config/config";
 import { generateCsrfToken } from "../utils/csrf";
-import { respondWithServiceError, respondError } from "../services/errors";
+import { respondWithServiceError, respondError } from "../utils/http";
 import { CSRF_COOKIE_NAME } from "../middleware/csrf";
+import { type AppEnv } from "../middleware/auth";
 import { parseJsonBody } from "../utils/validation";
 
 export const AUTH_TOKEN_COOKIE = "nexia_token";
 
-/** Public authentication routes. Session routes (/me, /logout) live in routes.ts. */
+/** Public authentication routes. */
 export function createAuthController(authService: AuthService, config: Config) {
   const app = new Hono();
 
@@ -79,6 +80,26 @@ export function createAuthController(authService: AuthService, config: Config) {
     } catch (err) {
       return respondWithServiceError(c, err);
     }
+  });
+
+  return app;
+}
+
+/** Protected session routes — requires auth + CSRF middleware. */
+export function createSessionController(config: Config) {
+  const app = new Hono<AppEnv>();
+
+  app.get("/me", (c) => c.json({ authenticated: true, user_id: c.get("userId") }));
+
+  app.post("/logout", (c) => {
+    const opts = {
+      path: "/",
+      domain: config.server.cookie_domain || undefined,
+      secure: config.server.mode === "release",
+    };
+    deleteCookie(c, AUTH_TOKEN_COOKIE, opts);
+    deleteCookie(c, CSRF_COOKIE_NAME, opts);
+    return c.json({ message: "Logged out successfully" });
   });
 
   return app;

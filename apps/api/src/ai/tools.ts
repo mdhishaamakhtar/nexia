@@ -6,6 +6,12 @@ import {
   listProfilesInputSchema,
   createProfileToolInputSchema,
   updateProfileToolInputSchema,
+  type ProfileOutput,
+  type RagSearchOutput,
+  type ToolErrorOutput,
+  type ProfileListToolOutput,
+  type GetProfileToolOutput,
+  type WriteProfileToolOutput,
 } from "@nexia/shared";
 import type { ProfileService } from "../services/profile-service";
 import type { EmbeddingRepository } from "../repositories/embedding";
@@ -31,27 +37,32 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
     ragSearch: tool({
       description: "Semantically search the user's profiles using AI embeddings (RAG).",
       inputSchema: ragSearchInputSchema,
-      execute: async ({ query, limit }) => {
+      execute: async ({ query, limit }): Promise<RagSearchOutput | ToolErrorOutput> => {
         if (!embeddingGenerator || !embeddingRepo) {
           return { error: "Semantic search is unavailable. Use searchProfiles instead." };
         }
         const embedding = await embeddingGenerator.generateEmbedding(query);
         const results = await embeddingRepo.searchContext(userId, embedding, limit);
-        return results.map((r) => ({ profile_id: r.profileId, score: r.score, ...r.payload }));
+        // The stored payload is a full ProfileOutput snapshot (see EmbeddingService).
+        return results.map((r) => ({
+          profile_id: r.profileId,
+          score: r.score,
+          ...(r.payload as ProfileOutput),
+        }));
       },
     }),
 
     searchProfiles: tool({
       description: "Search the user's profiles by name substring and/or relationship type.",
       inputSchema: searchProfilesInputSchema,
-      execute: async ({ search, relationship_type, page, limit }) =>
+      execute: ({ search, relationship_type, page, limit }): Promise<ProfileListToolOutput> =>
         profileService.listProfiles(page, limit, search, relationship_type, userId),
     }),
 
     getProfile: tool({
       description: "Fetch a single profile (with all details) by its ID.",
       inputSchema: getProfileInputSchema,
-      execute: async ({ id }) => {
+      execute: async ({ id }): Promise<GetProfileToolOutput> => {
         const profile = await profileService.getProfile(id, userId);
         return profile ?? { error: "Profile not found." };
       },
@@ -60,7 +71,7 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
     listProfiles: tool({
       description: "List the user's profiles with pagination.",
       inputSchema: listProfilesInputSchema,
-      execute: async ({ page, limit }) =>
+      execute: ({ page, limit }): Promise<ProfileListToolOutput> =>
         profileService.listProfiles(page, limit, undefined, undefined, userId),
     }),
 
@@ -68,7 +79,7 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
       description:
         "Create a new profile. Only call after summarizing the details and getting the user's explicit confirmation.",
       inputSchema: createProfileToolInputSchema,
-      execute: async (input) => {
+      execute: async (input): Promise<WriteProfileToolOutput> => {
         const profile = await profileService.createProfile(input, userId);
         return { id: profile.id, full_name: profile.full_name, profile };
       },
@@ -78,7 +89,7 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
       description:
         "Update an existing profile by ID. Only call after summarizing the changes and getting the user's explicit confirmation.",
       inputSchema: updateProfileToolInputSchema,
-      execute: async ({ id, profile }) => {
+      execute: async ({ id, profile }): Promise<WriteProfileToolOutput> => {
         const updated = await profileService.updateProfile(id, profile, userId);
         return { id: updated.id, full_name: updated.full_name, profile: updated };
       },

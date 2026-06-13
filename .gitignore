@@ -20,9 +20,7 @@ coverage.*
 # Git
 .worktrees/
 
-# Claude Code local settings (personal permissions, not shared)
-.claude/settings.local.json
-
-# Bun
-bun.lock
-bun.lockb
+# agent settings
+.claude
+.agents
+.vercel

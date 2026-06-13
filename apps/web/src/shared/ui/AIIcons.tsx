@@ -1,40 +1,61 @@
+import { cn } from "@/lib/utils";
+
+/**
+ * Nexia's spark glyph — a clean, balanced four-point sparkle that reads as
+ * "insight / a little bit of magic". Inherits `currentColor`, so it sits on any
+ * surface. Used as the inner mark of {@link NexiaAvatar}.
+ */
 export function NexiaIcon({ className, size = 24 }: { className?: string; size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 40 40"
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      aria-hidden="true"
     >
-      {/* Hand-drawn circle/blob */}
       <path
-        d="M35 20C35 28.2843 28.2843 35 20 35C11.7157 35 5 28.2843 5 20C5 11.7157 11.7157 5 20 5C28.2843 5 35 11.7157 35 20Z"
+        d="M12 1.6c0 0 1.25 7.05 2.5 8.3c1.25 1.25 8.3 2.5 8.3 2.5s-7.05 1.25-8.3 2.5c-1.25 1.25-2.5 8.3-2.5 8.3s-1.25-7.05-2.5-8.3c-1.25-1.25-8.3-2.5-8.3-2.5s7.05-1.25 8.3-2.5c1.25-1.25 2.5-8.3 2.5-8.3Z"
         fill="currentColor"
-        stroke="var(--border-mid)"
-        strokeWidth="1.5"
-      />
-      {/* Doodle Face */}
-      <path
-        d="M13 18C13 18 14 16 16 16C18 16 19 18 19 18"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M21 18C21 18 22 16 24 16C26 16 27 18 27 18"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M15 25C15 25 17 28 20 28C23 28 25 25 25 25"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
       />
     </svg>
+  );
+}
+
+/**
+ * The Nexia Intel avatar — a flat "die-cut sticker" squircle holding the spark
+ * glyph. A thin white keyline gives it the cut-out-sticker feel that matches the
+ * scrapbook surface, with no inset shadow (kept deliberately flat). `tilt` adds a
+ * touch of hand-placed personality.
+ */
+export function NexiaAvatar({
+  size = 32,
+  tilt = 0,
+  className,
+}: {
+  size?: number;
+  tilt?: number;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center text-white",
+        className
+      )}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.32),
+        background: "var(--nexia-mark)",
+        boxShadow: "0 0 0 1.5px #ffffff",
+        transform: tilt ? `rotate(${tilt}deg)` : undefined,
+      }}
+    >
+      <NexiaIcon size={Math.round(size * 0.5)} />
+    </span>
   );
 }
 
@@ -47,6 +68,7 @@ export function StickerSparkle({ className, size = 24 }: { className?: string; s
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      aria-hidden="true"
     >
       <path
         d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"

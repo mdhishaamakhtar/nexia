@@ -1,5 +1,12 @@
 import { SignJWT, jwtVerify } from "jose";
+import { z } from "zod";
 import type { Config } from "../config/config";
+
+const jwtClaimsSchema = z.object({
+  user_id: z.number(),
+  iat: z.number(),
+  exp: z.number(),
+});
 
 export interface JWTClaims {
   user_id: number;
@@ -24,5 +31,5 @@ export async function generateToken(userId: number, cfg: Config): Promise<string
 
 export async function validateToken(token: string, cfg: Config): Promise<JWTClaims> {
   const { payload } = await jwtVerify(token, getSecret(cfg));
-  return payload as unknown as JWTClaims;
+  return jwtClaimsSchema.parse(payload);
 }

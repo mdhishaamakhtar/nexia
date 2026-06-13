@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { profileInputSchema, listProfilesQuerySchema } from "@nexia/shared";
 import type { ProfileService } from "../services/profile-service";
-import { respondWithServiceError, respondError } from "../services/errors";
+import { respondWithServiceError, respondError } from "../utils/http";
 import { getUserId } from "../middleware/auth";
 import { parseJsonBody } from "../utils/validation";
 

@@ -1,5 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { embed } from "ai";
+import { errAIUnavailable } from "../services/errors";
 
 export type EmbeddingGenerator = {
   generateEmbedding(text: string): Promise<number[]>;
@@ -19,7 +20,9 @@ export function createEmbeddingGenerator(apiKey: string): EmbeddingGenerator {
         },
       });
       if (!embedding || embedding.length !== 3072) {
-        throw new Error(`Expected 3072-dim embedding, got ${embedding?.length ?? 0}`);
+        throw errAIUnavailable(
+          `Expected 3072-dim embedding, got ${embedding?.length ?? 0}`
+        );
       }
       return embedding;
     },

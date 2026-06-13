@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { UIMessage } from "ai";
 import type { ChatAgent } from "../ai/agent";
-import { respondWithServiceError, respondError } from "../services/errors";
+import { respondWithServiceError, respondError } from "../utils/http";
 import { getUserId } from "../middleware/auth";
 
 export function createChatController(agent: ChatAgent) {

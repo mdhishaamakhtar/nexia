@@ -2,6 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Check, ChevronDown, Loader2, TriangleAlert } from "lucide-react";
+import type { ProfileOutput } from "@nexia/shared";
 import {
   extractProfilesFromOutput,
   extractToolError,
@@ -10,7 +11,7 @@ import {
   toolNameOf,
   type ToolPart,
 } from "@/features/chat/lib/tool-meta";
-import { ChatProfileList } from "./chat-profile-card";
+import { ChatProfileCard, ChatProfileList } from "./chat-profile-card";
 
 export function ToolActivity({ part }: { part: ToolPart }) {
   const name = toolNameOf(part);
@@ -19,28 +20,24 @@ export function ToolActivity({ part }: { part: ToolPart }) {
 
   if (part.state === "input-streaming" || part.state === "input-available") {
     return (
-      <div
-        className="inline-flex items-center gap-2 rounded-lg border px-3 py-2"
-        style={{
-          background: "rgba(147,197,253,0.06)",
-          borderColor: "rgba(147,197,253,0.18)",
-        }}
+      <span
+        className="inline-flex w-fit items-center gap-1.5 rounded-full py-1 pr-3 pl-2.5 text-[12.5px] font-medium"
+        style={{ background: "var(--fill)", color: "var(--text-3)" }}
       >
-        <Loader2 size={14} className="animate-spin" style={{ color: "var(--blue)" }} />
-        <span className="text-[13px] font-medium" style={{ color: "var(--text-2)" }}>
-          {meta.active}...
-        </span>
-      </div>
+        <Loader2 size={12} className="animate-spin" style={{ color: "var(--blue)" }} />
+        {meta.active}
+        <span className="tool-ellipsis">…</span>
+      </span>
     );
   }
 
   if (part.state === "output-error") {
-    return <ErrorCard text={part.errorText ?? "Something went wrong"} />;
+    return <ErrorLine text={part.errorText ?? "Something went wrong"} />;
   }
 
   if (part.state === "output-available") {
     const softError = extractToolError(part.output);
-    if (softError) return <ErrorCard text={softError} />;
+    if (softError) return <ErrorLine text={softError} />;
 
     if (meta.isWrite) {
       const write = extractWriteResult(part.output);
@@ -49,28 +46,27 @@ export function ToolActivity({ part }: { part: ToolPart }) {
           <Link
             href={`/profiles/${write.id}`}
             prefetch
-            className="group/write flex items-center gap-3 rounded-xl border px-4 py-3 transition-all hover:bg-(--fill-hover) active:scale-[0.99]"
-            style={{
-              background: "rgba(34,197,94,0.05)",
-              borderColor: "rgba(34,197,94,0.2)",
-            }}
+            className="group/write inline-flex w-fit max-w-full items-center gap-2.5 rounded-xl border px-3 py-2 transition-colors hover:bg-(--fill-hover)"
+            style={{ borderColor: "rgba(34,197,94,0.28)", background: "rgba(34,197,94,0.06)" }}
           >
-            <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-              style={{ background: "rgba(34,197,94,0.12)" }}
+            <span
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: "rgba(34,197,94,0.14)" }}
             >
-              <Check size={16} style={{ color: "var(--green)" }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-semibold" style={{ color: "var(--text-2)" }}>
-                {meta.done}
-              </p>
-              <p className="text-[14px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
-                {write.fullName}
-              </p>
-            </div>
+              <Check size={13} style={{ color: "var(--green)" }} />
+            </span>
+            <span
+              className="min-w-0 truncate text-[13.5px] font-semibold"
+              style={{ color: "var(--text-1)" }}
+            >
+              {meta.done}
+              <span className="font-medium" style={{ color: "var(--text-3)" }}>
+                {" · "}
+              </span>
+              {write.fullName}
+            </span>
             <ArrowUpRight
-              size={15}
+              size={14}
               className="shrink-0 opacity-40 transition-opacity group-hover/write:opacity-80"
               style={{ color: "var(--text-3)" }}
             />
@@ -80,81 +76,89 @@ export function ToolActivity({ part }: { part: ToolPart }) {
     }
 
     const profiles = extractProfilesFromOutput(name, part.output);
-    if (profiles.length > 0) {
+    const [first] = profiles;
+
+    // One hit → show the card directly (it's almost always the answer).
+    if (profiles.length === 1 && first) {
       return (
-        <ProfileToolCard
-          profiles={profiles}
-          icon={Icon}
-          label={meta.done}
-          count={profiles.length}
-        />
+        <div className="w-full max-w-md">
+          <ToolCaption icon={Icon} label={meta.done} />
+          <ChatProfileCard profile={first} />
+        </div>
       );
     }
 
+    // Several hits → collapse them so the thread stays calm.
+    if (profiles.length > 1) {
+      return <ProfileDisclosure profiles={profiles} label={meta.done} count={profiles.length} />;
+    }
+
+    // Quiet, log-like line for tool runs that produced no displayable data.
     return (
-      <div
-        className="inline-flex items-center gap-2 rounded-lg border px-3 py-2"
-        style={{
-          background: "var(--fill)",
-          borderColor: "var(--border)",
-        }}
+      <span
+        className="inline-flex w-fit items-center gap-1.5 text-[12px] font-medium"
+        style={{ color: "var(--text-3)" }}
       >
-        <Icon size={14} style={{ color: "var(--text-3)" }} />
-        <span className="text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
-          {meta.done}
-        </span>
-      </div>
+        <Icon size={12} />
+        {meta.done}
+      </span>
     );
   }
 
   return null;
 }
 
-function ProfileToolCard({
+function ToolCaption({ icon: Icon, label }: { icon: typeof Check; label: string }) {
+  return (
+    <span
+      className="mb-1.5 inline-flex items-center gap-1.5 pl-0.5 text-[11px] font-semibold"
+      style={{ color: "var(--text-3)" }}
+    >
+      <Icon size={11} style={{ color: "var(--blue)" }} />
+      {label}
+    </span>
+  );
+}
+
+function ProfileDisclosure({
   profiles,
-  icon: Icon,
   label,
   count,
 }: {
-  profiles: import("@/shared/types/profile").Profile[];
-  icon: typeof import("lucide-react").Search;
+  profiles: ProfileOutput[];
   label: string;
   count: number;
 }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div
-      className="rounded-xl border overflow-hidden"
-      style={{
-        borderColor: "var(--border)",
-        background: "var(--bg-raised)",
-      }}
-    >
+    <div className="w-full max-w-md">
       <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-(--fill)"
+        onClick={() => setExpanded((v) => !v)}
+        className="group/disc inline-flex items-center gap-2 rounded-full py-1 pr-2 pl-1 text-left transition-colors hover:bg-(--fill)"
       >
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-          style={{ background: "rgba(147,197,253,0.12)" }}
+        <span
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
+          style={{ background: "rgba(147,197,253,0.16)" }}
         >
-          <Icon size={15} style={{ color: "var(--blue)" }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>
-            {label}
-          </p>
-          <p className="text-[11px] font-medium" style={{ color: "var(--text-3)" }}>
-            {count} {count === 1 ? "profile" : "profiles"} found
-          </p>
-        </div>
-        <motion.div
+          <Check size={12} style={{ color: "var(--blue)" }} />
+        </span>
+        <span className="text-[12.5px] font-semibold" style={{ color: "var(--text-2)" }}>
+          {label}
+        </span>
+        <span
+          className="rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums"
+          style={{ background: "var(--fill-hover)", color: "var(--text-3)" }}
+        >
+          {count}
+        </span>
+        <motion.span
           animate={{ rotate: expanded ? 180 : 0 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="flex"
         >
-          <ChevronDown size={16} style={{ color: "var(--text-3)" }} />
-        </motion.div>
+          <ChevronDown size={14} style={{ color: "var(--text-3)" }} />
+        </motion.span>
       </button>
 
       <AnimatePresence initial={false}>
@@ -163,11 +167,11 @@ function ProfileToolCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
             className="overflow-hidden"
           >
-            <div className="border-t px-4 py-3" style={{ borderColor: "var(--border)" }}>
-              <ChatProfileList profiles={profiles} max={5} />
+            <div className="pt-2">
+              <ChatProfileList profiles={profiles} max={6} />
             </div>
           </motion.div>
         )}
@@ -176,19 +180,14 @@ function ProfileToolCard({
   );
 }
 
-function ErrorCard({ text }: { text: string }) {
+function ErrorLine({ text }: { text: string }) {
   return (
-    <div
-      className="flex items-start gap-3 rounded-xl border px-4 py-3"
-      style={{
-        background: "var(--red-bg)",
-        borderColor: "var(--red-border)",
-      }}
+    <span
+      className="inline-flex w-fit max-w-full items-start gap-2 rounded-xl border px-3 py-2 text-[13px] font-medium leading-snug"
+      style={{ background: "var(--red-bg)", borderColor: "var(--red-border)", color: "var(--red)" }}
     >
-      <TriangleAlert size={15} className="mt-0.5 shrink-0" style={{ color: "var(--red)" }} />
-      <span className="text-[13px] font-medium leading-snug" style={{ color: "var(--red)" }}>
-        {text}
-      </span>
-    </div>
+      <TriangleAlert size={14} className="mt-0.5 shrink-0" />
+      {text}
+    </span>
   );
 }

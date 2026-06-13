@@ -1,7 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import { List, PenLine, Search, Sparkles, UserPlus, UserRound, Wrench } from "lucide-react";
 import type { ToolUIPart, DynamicToolUIPart } from "ai";
-import type { Profile } from "@/shared/types/profile";
+import {
+  getProfileToolOutputSchema,
+  profileListToolOutputSchema,
+  ragSearchOutputSchema,
+  toolErrorOutputSchema,
+  writeProfileToolOutputSchema,
+  type ProfileOutput,
+} from "@nexia/shared";
 
 export type ToolPart = ToolUIPart | DynamicToolUIPart;
 
@@ -61,52 +68,42 @@ export interface WriteResult {
   fullName: string;
 }
 
-/** Extracts {id, full_name} from a create/update tool output, if present. */
+/**
+ * Tool outputs are validated against the shared `@nexia/shared` contract rather
+ * than sniffed for field names, so backend and frontend stay in lock-step. Every
+ * parse is a `safeParse`, so an unexpected shape degrades to "no rich UI" instead
+ * of throwing.
+ */
+
+/** Extracts a create/update result, if the output matches the write contract. */
 export function extractWriteResult(output: unknown): WriteResult | null {
-  if (output && typeof output === "object" && "id" in output && "full_name" in output) {
-    const o = output as { id: unknown; full_name: unknown };
-    if (typeof o.id === "number" && typeof o.full_name === "string") {
-      return { id: o.id, fullName: o.full_name };
-    }
-  }
-  return null;
+  const parsed = writeProfileToolOutputSchema.safeParse(output);
+  return parsed.success ? { id: parsed.data.id, fullName: parsed.data.full_name } : null;
 }
 
 /** Tools return `{ error }` for soft failures; surface that text when present. */
 export function extractToolError(output: unknown): string | null {
-  if (output && typeof output === "object" && "error" in output) {
-    const e = (output as { error: unknown }).error;
-    if (typeof e === "string") return e;
-  }
-  return null;
+  const parsed = toolErrorOutputSchema.safeParse(output);
+  return parsed.success ? parsed.data.error : null;
 }
 
-function looksLikeProfile(obj: unknown): obj is Profile {
-  if (!obj || typeof obj !== "object") return false;
-  const o = obj as Record<string, unknown>;
-  return typeof o.id === "number" && typeof o.full_name === "string" && "relationship_type" in o;
-}
-
-export function extractProfilesFromOutput(toolName: string, output: unknown): Profile[] {
-  if (!output || typeof output !== "object") return [];
-
-  if (toolName === "getProfile") {
-    return looksLikeProfile(output) ? [output] : [];
+/** Pulls the profiles a read tool returned, per the tool's output contract. */
+export function extractProfilesFromOutput(toolName: string, output: unknown): ProfileOutput[] {
+  switch (toolName) {
+    case "ragSearch": {
+      const parsed = ragSearchOutputSchema.safeParse(output);
+      return parsed.success ? parsed.data : [];
+    }
+    case "getProfile": {
+      const parsed = getProfileToolOutputSchema.safeParse(output);
+      return parsed.success && "id" in parsed.data ? [parsed.data] : [];
+    }
+    case "searchProfiles":
+    case "listProfiles": {
+      const parsed = profileListToolOutputSchema.safeParse(output);
+      return parsed.success ? parsed.data.profiles : [];
+    }
+    default:
+      return [];
   }
-
-  if (toolName === "ragSearch" && Array.isArray(output)) {
-    return output
-      .filter((item) => item && typeof item === "object")
-      .map((item) => {
-        const { profile_id: _pid, score: _score, ...rest } = item as Record<string, unknown>;
-        return rest;
-      })
-      .filter(looksLikeProfile) as Profile[];
-  }
-
-  if ("data" in output && Array.isArray((output as { data: unknown }).data)) {
-    return (output as { data: unknown[] }).data.filter(looksLikeProfile) as Profile[];
-  }
-
-  return [];
 }
