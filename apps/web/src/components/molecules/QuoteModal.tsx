@@ -57,28 +57,12 @@ export default function QuoteModal({ quote, onClose }: { quote: string; onClose:
         </div>
 
         <div className="min-h-0 overflow-y-auto px-8 pb-8 pt-2">
-          <blockquote className="relative pl-5">
-            <span
-              className="absolute left-0 top-0 text-4xl leading-none -mt-2 select-none"
-              style={{ color: "var(--border-mid)" }}
-              aria-hidden="true"
-            >
-              &ldquo;
-            </span>
-            <p
-              className="text-xl sm:text-2xl leading-relaxed italic break-words"
-              style={{ color: "var(--text-1)" }}
-            >
-              {quote}
-            </p>
-            <span
-              className="absolute -bottom-4 right-0 text-4xl leading-none select-none"
-              style={{ color: "var(--border-mid)" }}
-              aria-hidden="true"
-            >
-              &rdquo;
-            </span>
-          </blockquote>
+          <p
+            className="text-xl leading-relaxed break-words sm:text-2xl"
+            style={{ color: "var(--text-1)" }}
+          >
+            {quote}
+          </p>
         </div>
       </motion.div>
     </motion.div>

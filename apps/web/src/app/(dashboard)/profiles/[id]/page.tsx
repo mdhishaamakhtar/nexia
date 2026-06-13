@@ -162,7 +162,7 @@ function QuoteCard({ quote, onOpen }: { quote: string; onOpen: () => void }) {
     <button
       onClick={onOpen}
       title="Read full quote"
-      className="flex h-full flex-col rounded-2xl border p-4 text-left text-sm italic leading-relaxed transition-all duration-200 hover:scale-[1.01]"
+      className="flex h-full flex-col rounded-2xl border p-4 text-left text-sm leading-relaxed transition-all duration-200 hover:scale-[1.01]"
       style={{
         background: "var(--fill)",
         borderColor: "var(--border)",
@@ -170,11 +170,11 @@ function QuoteCard({ quote, onOpen }: { quote: string; onOpen: () => void }) {
       }}
     >
       <span ref={textRef} className="line-clamp-3 break-words">
-        &ldquo;{quote}&rdquo;
+        {quote}
       </span>
       {isClamped && (
         <span
-          className="mt-1.5 text-xs font-semibold not-italic underline underline-offset-2"
+          className="mt-1.5 text-xs font-semibold underline underline-offset-2"
           style={{ color: "var(--text-3)" }}
         >
           more
