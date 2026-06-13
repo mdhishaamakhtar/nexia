@@ -346,7 +346,7 @@ function drawNumberedSongs(
     const rowHeight = Math.max(badgeSize + 4, contentHeight + 8);
     ensureSpace(ctx, rowHeight);
 
-    const accent = sectionAccents[index % sectionAccents.length];
+    const accent = sectionAccents[index % sectionAccents.length]!;
     setFill(ctx.pdf, accent.soft);
     setDraw(ctx.pdf, accent.tape);
     ctx.pdf.setLineWidth(0.4);
@@ -584,7 +584,7 @@ export async function exportProfilePdf(profile: Profile) {
     ["Zodiac", profile.zodiac_sign],
   ]);
 
-  renderSection(ctx, "Overview", sectionAccents[0], [
+  renderSection(ctx, "Overview", sectionAccents[0]!, [
     overviewFields.length > 0 ? () => drawFieldGrid(ctx, overviewFields) : null,
     tags.length > 0
       ? () =>
@@ -603,7 +603,7 @@ export async function exportProfilePdf(profile: Profile) {
     ["Music Preference", profile.music_preference],
   ]);
 
-  renderSection(ctx, "Favorites & Interests", sectionAccents[1], [
+  renderSection(ctx, "Favorites & Interests", sectionAccents[1]!, [
     favoriteFields.length > 0 ? () => drawFieldGrid(ctx, favoriteFields) : null,
     hasAssociatedSong
       ? () => drawSongCard(ctx, "Associated Song", associatedSong?.name, associatedSong?.artist)
@@ -613,7 +613,7 @@ export async function exportProfilePdf(profile: Profile) {
     bookGenres.length > 0 ? () => drawLabeledPillGroup(ctx, "Book Genres", bookGenres) : null,
   ]);
 
-  renderSection(ctx, "Lifestyle", sectionAccents[2], [
+  renderSection(ctx, "Lifestyle", sectionAccents[2]!, [
     hangoutPlaces.length > 0
       ? () => drawLabeledPillGroup(ctx, "Hangout Places", hangoutPlaces)
       : null,
@@ -625,7 +625,7 @@ export async function exportProfilePdf(profile: Profile) {
       : null,
   ]);
 
-  renderSection(ctx, "Deep Dive", sectionAccents[3], [
+  renderSection(ctx, "Deep Dive", sectionAccents[3]!, [
     hasText(profile.long_term_goals)
       ? () => drawParagraph(ctx, "Long-term Goals", profile.long_term_goals!)
       : null,

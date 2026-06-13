@@ -71,7 +71,7 @@ export function toProfileFormValues(profile?: Profile): ProfileFormValues {
     bio: profile?.bio ?? "",
     profession: profile?.profession ?? "",
     long_term_goals: profile?.long_term_goals ?? "",
-    birthday: profile?.birthday ? profile.birthday.split("T")[0] : "",
+    birthday: profile?.birthday ? (profile.birthday.split("T")[0] ?? "") : "",
     music_preference: profile?.music_preference ?? "",
     favorite_movie: profile?.favorite_movie ?? "",
     favorite_book: profile?.favorite_book ?? "",

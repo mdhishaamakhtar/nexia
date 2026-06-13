@@ -28,8 +28,8 @@ ai:
   gemini_api_key: ""
   redis_url: "127.0.0.1:6379"
   opencode_api_key: ""
-  opencode_base_url: "https://opencode.ai/zen/go/v1"
-  chat_model: "deepseek-v4-pro"
+  opencode_base_url: "https://opencode.ai/zen/v1"
+  chat_model: "mimo-v2.5-free"
 
 email:
   resend_api_key: ""
