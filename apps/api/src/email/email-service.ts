@@ -46,7 +46,9 @@ export class EmailService {
       }
       this.logger.info({ toEmail }, "verification email sent");
     } catch (err) {
-      throw new Error(`resend: send verification email: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `resend: send verification email: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 
@@ -79,7 +81,9 @@ export class EmailService {
       }
       this.logger.info({ toEmail }, "password reset email sent");
     } catch (err) {
-      throw new Error(`resend: send password reset email: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `resend: send password reset email: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 }

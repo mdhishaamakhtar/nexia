@@ -2,5 +2,8 @@
   "name": "nexia",
   "private": true,
   "workspaces": ["apps/*", "packages/*"],
-  "packageManager": "bun@1.3.14"
+  "packageManager": "bun@1.3.14",
+  "overrides": {
+    "ioredis": "5.10.1"
+  }
 }

@@ -38,25 +38,37 @@ describe("deriveZodiac", () => {
 
 describe("applyDerivedZodiac", () => {
   test("sets zodiac from birthday", () => {
-    const profile: { birthday?: string | null | undefined; zodiac_sign?: string | null | undefined } = { birthday: "2001-03-22" };
+    const profile: {
+      birthday?: string | null | undefined;
+      zodiac_sign?: string | null | undefined;
+    } = { birthday: "2001-03-22" };
     applyDerivedZodiac(profile);
     expect(profile.zodiac_sign).toBe("Aries");
   });
 
   test("null birthday → null zodiac", () => {
-    const profile: { birthday?: string | null | undefined; zodiac_sign?: string | null | undefined } = { birthday: null };
+    const profile: {
+      birthday?: string | null | undefined;
+      zodiac_sign?: string | null | undefined;
+    } = { birthday: null };
     applyDerivedZodiac(profile);
     expect(profile.zodiac_sign).toBeNull();
   });
 
   test("undefined birthday → null zodiac", () => {
-    const profile: { birthday?: string | null | undefined; zodiac_sign?: string | null | undefined } = {};
+    const profile: {
+      birthday?: string | null | undefined;
+      zodiac_sign?: string | null | undefined;
+    } = {};
     applyDerivedZodiac(profile);
     expect(profile.zodiac_sign).toBeNull();
   });
 
   test("sets null zodiac for empty birthday", () => {
-    const profile: { birthday?: string | null | undefined; zodiac_sign?: string | null | undefined } = { birthday: "" };
+    const profile: {
+      birthday?: string | null | undefined;
+      zodiac_sign?: string | null | undefined;
+    } = { birthday: "" };
     applyDerivedZodiac(profile);
     expect(profile.zodiac_sign).toBeNull();
   });

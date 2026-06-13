@@ -22,7 +22,7 @@ describe("chat controller", () => {
       body: JSON.stringify({ messages: [{ role: "user", content: "hello" }] }),
     });
     expect(res.status).toBe(503);
-    const body = await res.json() as { error: { code: string } };
+    const body = (await res.json()) as { error: { code: string } };
     expect(body.error.code).toBe("AI_UNAVAILABLE");
   });
 

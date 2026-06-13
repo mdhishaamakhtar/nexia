@@ -1,5 +1,9 @@
 import { describe, test, expect } from "bun:test";
-import { EmbeddingService, type EmbeddingGenerator, type EmbeddingStorage } from "../services/embedding-service";
+import {
+  EmbeddingService,
+  type EmbeddingGenerator,
+  type EmbeddingStorage,
+} from "../services/embedding-service";
 import { ServiceError, ErrorKind } from "../services/errors";
 import pino from "pino";
 const logger = pino({ level: "silent" });
@@ -15,12 +19,22 @@ class FakeEmbeddingGenerator implements EmbeddingGenerator {
 }
 
 class FakeEmbeddingStorage implements EmbeddingStorage {
-  upserted: Array<{ profileId: number; userId: number; embedding: number[]; payload: Record<string, unknown> }> = [];
+  upserted: Array<{
+    profileId: number;
+    userId: number;
+    embedding: number[];
+    payload: Record<string, unknown>;
+  }> = [];
   deletedProfiles: number[] = [];
   upsertErr: Error | null = null;
   deleteErr: Error | null = null;
 
-  async upsertProfile(profileId: number, userId: number, embedding: number[], payload: Record<string, unknown>) {
+  async upsertProfile(
+    profileId: number,
+    userId: number,
+    embedding: number[],
+    payload: Record<string, unknown>
+  ) {
     if (this.upsertErr) throw this.upsertErr;
     this.upserted.push({ profileId, userId, embedding, payload });
   }
@@ -33,16 +47,33 @@ class FakeEmbeddingStorage implements EmbeddingStorage {
 describe("EmbeddingService", () => {
   function fullProfileRepo() {
     return {
-      async create() { return { id: 1, userId: 1 }; },
-      async findById() { return null as unknown as Record<string, unknown>; },
-      async findAll() { return { profiles: [], total: 0 }; },
-      async update() { return {}; },
+      async create() {
+        return { id: 1, userId: 1 };
+      },
+      async findById() {
+        return null as unknown as Record<string, unknown>;
+      },
+      async findAll() {
+        return { profiles: [], total: 0 };
+      },
+      async update() {
+        return {};
+      },
       async loadForEmbedding(_profileId: number) {
         return {
-          id: 7, userId: 42, fullName: "Alice", bio: "A great friend",
-          profession: "Engineer", relationshipType: "Friend", zodiacSign: "Aries",
-          birthday: "2001-03-22", longTermGoals: "Travel", musicPreference: "Pop",
-          favoriteMovie: "Inception", favoriteBook: "Dune", favoriteMemory: "Road trip",
+          id: 7,
+          userId: 42,
+          fullName: "Alice",
+          bio: "A great friend",
+          profession: "Engineer",
+          relationshipType: "Friend",
+          zodiacSign: "Aries",
+          birthday: "2001-03-22",
+          longTermGoals: "Travel",
+          musicPreference: "Pop",
+          favoriteMovie: "Inception",
+          favoriteBook: "Dune",
+          favoriteMemory: "Road trip",
           notes: "Awesome",
           tags: [{ tag: "kind" }, { tag: "funny" }],
           politicalViews: [{ view: "moderate" }],
@@ -61,11 +92,21 @@ describe("EmbeddingService", () => {
 
   function emptyProfileRepo() {
     return {
-      async create() { return { id: 1, userId: 1 }; },
-      async findById() { return null as unknown as Record<string, unknown>; },
-      async findAll() { return { profiles: [], total: 0 }; },
-      async update() { return {}; },
-      async loadForEmbedding(_profileId: number) { return null; },
+      async create() {
+        return { id: 1, userId: 1 };
+      },
+      async findById() {
+        return null as unknown as Record<string, unknown>;
+      },
+      async findAll() {
+        return { profiles: [], total: 0 };
+      },
+      async update() {
+        return {};
+      },
+      async loadForEmbedding(_profileId: number) {
+        return null;
+      },
       async delete() {},
     };
   }
@@ -87,7 +128,12 @@ describe("EmbeddingService", () => {
 
   test("embed profile not found", async () => {
     const profiles = emptyProfileRepo();
-    const svc = new EmbeddingService(profiles, new FakeEmbeddingGenerator(), new FakeEmbeddingStorage(), logger);
+    const svc = new EmbeddingService(
+      profiles,
+      new FakeEmbeddingGenerator(),
+      new FakeEmbeddingStorage(),
+      logger
+    );
 
     try {
       await svc.embedProfile(7);

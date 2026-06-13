@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { setCookie, deleteCookie } from "hono/cookie";
 import type { Config } from "../config/config";
 import type { AuthService } from "../services/auth-service";
 import type { ProfileService } from "../services/profile-service";
@@ -11,16 +11,14 @@ import type { UserLookup } from "../middleware/auth";
 import { requestContext, recovery } from "../middleware/request-context";
 import { authMiddleware, type AppEnv } from "../middleware/auth";
 import { csrfMiddleware } from "../middleware/csrf";
-import { createAuthRateLimiter } from "../middleware/auth-rate-limit";
 import { createChatRateLimiter } from "../middleware/chat-rate-limit";
-import { createAuthController } from "../controllers/auth-controller";
 import { createProfileController } from "../controllers/profile-controller";
 import { createChatController } from "../controllers/chat-controller";
 import { generateCsrfToken } from "../utils/csrf";
 import { CSRF_COOKIE_NAME } from "../middleware/csrf";
 import { respondWithServiceError } from "../services/errors";
 
-export function buildApp(deps: {
+type BuildDeps = {
   config: Config;
   logger: Logger;
   db: DB;
@@ -28,17 +26,22 @@ export function buildApp(deps: {
   authService: AuthService;
   profileService: ProfileService;
   chatAgent: ChatAgent;
-}) {
+};
+
+export function buildApp(deps: BuildDeps) {
   const { config, logger, db, userLookup, authService, profileService, chatAgent } = deps;
 
   const app = new Hono();
 
-  app.use("*", cors({
-    origin: config.server.cors_origins,
-    credentials: true,
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Origin", "Content-Type", "Authorization", "X-CSRF-Token"],
-  }));
+  app.use(
+    "*",
+    cors({
+      origin: config.server.cors_origins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowHeaders: ["Origin", "Content-Type", "Authorization", "X-CSRF-Token"],
+    })
+  );
   app.use("*", requestContext(logger));
   app.use("*", recovery(logger));
 
@@ -56,11 +59,17 @@ export function buildApp(deps: {
   app.post("/api/v1/auth/signup", async (c) => {
     const { email, password } = await c.req.json();
     if (!email || !password) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "Email and password required" } }, 400);
+      return c.json(
+        { error: { code: "VALIDATION_ERROR", message: "Email and password required" } },
+        400
+      );
     }
     try {
       await authService.signup(email, password);
-      return c.json({ message: "Account created. Please check your email to verify your account." }, 201);
+      return c.json(
+        { message: "Account created. Please check your email to verify your account." },
+        201
+      );
     } catch (err) {
       return respondWithServiceError(c, err);
     }
@@ -69,7 +78,10 @@ export function buildApp(deps: {
   app.post("/api/v1/auth/login", async (c) => {
     const { email, password } = await c.req.json();
     if (!email || !password) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "Email and password required" } }, 400);
+      return c.json(
+        { error: { code: "VALIDATION_ERROR", message: "Email and password required" } },
+        400
+      );
     }
     try {
       const token = await authService.login(email, password);
@@ -79,11 +91,20 @@ export function buildApp(deps: {
       const sameSite = isSecure ? ("None" as const) : ("Lax" as const);
 
       setCookie(c, "nexia_token", token, {
-        httpOnly: true, secure: isSecure, sameSite, path: "/", domain, maxAge,
+        httpOnly: true,
+        secure: isSecure,
+        sameSite,
+        path: "/",
+        domain,
+        maxAge,
       });
       const csrfToken = generateCsrfToken();
       setCookie(c, CSRF_COOKIE_NAME, csrfToken, {
-        secure: isSecure, sameSite, path: "/", domain, maxAge,
+        secure: isSecure,
+        sameSite,
+        path: "/",
+        domain,
+        maxAge,
       });
       return c.json({ token });
     } catch (err) {
@@ -120,7 +141,10 @@ export function buildApp(deps: {
   app.post("/api/v1/auth/reset-password", async (c) => {
     const { token, new_password } = await c.req.json();
     if (!token || !new_password) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "Token and new password required" } }, 400);
+      return c.json(
+        { error: { code: "VALIDATION_ERROR", message: "Token and new password required" } },
+        400
+      );
     }
     try {
       await authService.resetPassword(token, new_password);

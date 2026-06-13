@@ -1,23 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { Send, User, Trash2, MessageSquare, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2, MessageSquare } from "lucide-react";
 import { NexiaIcon, StickerSparkle } from "@/shared/ui/AIIcons";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
-import { useMutation } from "@tanstack/react-query";
-import remarkGfm from "remark-gfm";
-import { sendChatMessage } from "@/features/chat/api";
-import { useToast } from "@/shared/ui/toast";
-import { getErrorMessage } from "@/shared/api/client";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
+import { useChat } from "@ai-sdk/react";
+import type { UIMessage, UITools, ToolUIPart, DynamicToolUIPart } from "ai";
+import { createChatTransport } from "@/features/chat/api";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import {
+  PromptInput,
+  type PromptInputMessage,
+  PromptInputBody,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputSubmit,
+} from "@/components/ai-elements/prompt-input";
+import {
+  Tool,
+  ToolHeader,
+  ToolContent,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
 
 const SUGGESTED_PROMPTS = [
   "Who are my oldest friends?",
@@ -28,120 +39,92 @@ const SUGGESTED_PROMPTS = [
 
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) {
+  if (hour >= 5 && hour < 12)
     return "Good morning! Your people are all here — ask me anything about them.";
-  }
-  if (hour >= 12 && hour < 17) {
+  if (hour >= 12 && hour < 17)
     return "Hey! I've got all your profiles loaded up. What do you want to know?";
-  }
-  if (hour >= 17 && hour < 21) {
+  if (hour >= 17 && hour < 21)
     return "Evening! I've been keeping tabs on your people. Ask me anything.";
-  }
   return "Late night Nexia session? I'm here. Ask me about anyone in your slambook.";
 }
 
+function toolLabel(toolName: string): string {
+  const labels: Record<string, string> = {
+    ragSearch: "Searching memories",
+    searchProfiles: "Searching profiles",
+    getProfile: "Finding profile",
+    listProfiles: "Listing profiles",
+    createProfile: "Creating profile",
+    updateProfile: "Updating profile",
+  };
+  return labels[toolName] ?? `Running ${toolName}`;
+}
+
+function toolTitle(name: string, state: string): string {
+  const label = toolLabel(name);
+  if (state === "output-available") return `${label} complete`;
+  if (state === "output-error") return `${label} failed`;
+  return label;
+}
+
 export default function ChatPage() {
-  const { error: showError } = useToast();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: getGreeting(),
-      timestamp: new Date(),
-    },
-  ]);
   const [input, setInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messageIdRef = useRef(2);
+  const greeting = getGreeting();
+  const greetingId = "greeting";
 
-  const chatMutation = useMutation({ mutationFn: sendChatMessage });
+  const { messages, status, sendMessage, regenerate, setMessages } = useChat<UIMessage>({
+    transport: createChatTransport(),
+    messages: [
+      {
+        id: greetingId,
+        role: "assistant" as const,
+        parts: [{ type: "text" as const, text: greeting }],
+      },
+    ],
+  });
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const handleSubmit = async (e?: React.FormEvent, overrideInput?: string) => {
-    e?.preventDefault();
-    const finalInput = overrideInput || input;
-    if (!finalInput.trim() || chatMutation.isPending) return;
-    const nextId = () => String(messageIdRef.current++);
-
-    const userMessage: Message = {
-      id: nextId(),
-      role: "user",
-      content: finalInput,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+  const handleSubmit = (message: PromptInputMessage) => {
+    if (!message.text.trim() || status === "streaming" || status === "submitted") return;
+    sendMessage({ text: message.text });
     setInput("");
-
-    try {
-      const messagesPayload = [
-        ...messages.map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
-        { role: "user" as const, content: userMessage.content },
-      ];
-      const response = await chatMutation.mutateAsync(messagesPayload);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: nextId(),
-          role: "assistant",
-          content: response.response,
-          timestamp: new Date(),
-        },
-      ]);
-    } catch (error: unknown) {
-      showError(await getErrorMessage(error, "Failed to send message"));
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: nextId(),
-          role: "assistant",
-          content: "I'm having trouble right now. Make sure your friends' profiles are synced!",
-          timestamp: new Date(),
-        },
-      ]);
-    }
   };
 
   const clearChat = () => {
     setMessages([
       {
-        id: String(messageIdRef.current++),
-        role: "assistant",
-        content: "Chat cleared. What else can I help you discover?",
-        timestamp: new Date(),
+        id: String(Date.now()),
+        role: "assistant" as const,
+        parts: [
+          { type: "text" as const, text: "Chat cleared. What else can I help you discover?" },
+        ],
       },
     ]);
   };
 
+  const isStreaming = status === "streaming" || status === "submitted";
+  const isEmpty = messages.length === 1 && messages[0]?.id === greetingId;
+
   return (
-    // Fixed below the navbar — takes the chat out of document flow entirely so the
-    // body has nothing to scroll. Sticky navbar (z-50) sits on top.
     <main
       className="fixed inset-x-0 bottom-0 mx-auto flex max-w-3xl flex-col overflow-hidden px-4 py-4"
-      style={{ top: "48px", color: "var(--text-1)" }}
+      style={{ top: "48px", background: "var(--bg)" }}
     >
-      {/* ── Header ── */}
+      {/* Header */}
       <motion.header
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 220, damping: 26 }}
         className="relative mb-3 flex shrink-0 items-center justify-between overflow-hidden rounded-2xl border px-5 py-3 glass-panel"
-        style={{ borderColor: "var(--border)" }}
       >
-        <div className="washi-tape-accent w-20" style={{ opacity: 0.8 }} aria-hidden="true" />
-
+        <div className="washi-tape-accent w-20" style={{ opacity: 0.8 }} />
         <div className="flex items-center gap-3">
           <Link
             href="/profiles"
             prefetch
-            className="rounded-lg p-1.5 transition-colors"
+            className="rounded-lg p-1.5 transition-colors hover:bg-(--fill-hover)"
             style={{ color: "var(--text-3)" }}
-            aria-label="Back to profiles"
           >
-            <ArrowLeft size={16} aria-hidden="true" />
+            <ArrowLeft size={16} />
           </Link>
           <div className="rounded-xl p-2" style={{ background: "var(--blue)" }}>
             <NexiaIcon size={20} className="text-white" />
@@ -161,220 +144,178 @@ export default function ChatPage() {
             </div>
           </div>
         </div>
-
         <button
           onClick={clearChat}
-          className="rounded-xl p-2 transition-all duration-200 hover:rotate-12"
+          className="rounded-xl p-2 transition-all duration-200 hover:rotate-12 hover:bg-(--fill-hover)"
           style={{ color: "var(--text-3)" }}
-          aria-label="Clear chat"
         >
-          <Trash2 size={16} aria-hidden="true" />
+          <Trash2 size={16} />
         </button>
       </motion.header>
 
-      {/* ── Messages ──
-          min-h-0 is required: without it a flex child can't shrink below its content
-          height, which breaks overflow-y-auto and causes double scroll.        */}
-      <div
-        role="log"
-        aria-label="Chat messages"
-        aria-live="polite"
-        className="min-h-0 flex-1 overflow-y-auto px-1"
-      >
-        <div className="flex flex-col gap-4 py-2">
-          <AnimatePresence initial={false}>
-            {/* Empty state — shown only when there's just the greeting */}
-            {messages.length === 1 && (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ type: "spring", stiffness: 220, damping: 26 }}
-                className="flex flex-col items-center py-8 text-center"
-              >
-                <div
-                  className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border"
-                  style={{
-                    background: "var(--fill-hover)",
-                    borderColor: "var(--border)",
-                    transform: "rotate(-3deg)",
-                    boxShadow: "2px 2px 0 var(--border-mid)",
-                  }}
+      {/* Conversation */}
+      <div className="min-h-0 flex-1">
+        <Conversation>
+          <ConversationContent>
+            <AnimatePresence initial={false}>
+              {isEmpty && (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 220, damping: 26 }}
+                  className="flex flex-col items-center justify-center py-8 text-center"
                 >
-                  <StickerSparkle size={28} className="text-(--blue)" />
-                </div>
-                <h2 className="mb-1.5 text-lg font-bold" style={{ color: "var(--text-1)" }}>
-                  What do you want to know?
-                </h2>
-                <p
-                  className="mb-6 max-w-xs text-sm leading-relaxed"
-                  style={{ color: "var(--text-3)" }}
-                >
-                  I search through all your profiles to give you accurate insights.
-                </p>
-                <div className="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
-                  {SUGGESTED_PROMPTS.map((prompt) => (
-                    <button
-                      key={prompt}
-                      onClick={() => handleSubmit(undefined, prompt)}
-                      className="group flex items-center justify-between rounded-xl border px-4 py-3 text-left text-xs transition-all active:scale-[0.97] hover:border-(--border-mid)"
-                      style={{
-                        background: "var(--fill)",
-                        borderColor: "var(--border)",
-                        color: "var(--text-2)",
-                      }}
-                    >
-                      {prompt}
-                      <MessageSquare
-                        size={12}
-                        className="ml-2 shrink-0 opacity-0 transition-opacity group-hover:opacity-50"
-                        aria-hidden="true"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Message bubbles */}
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 220, damping: 26 }}
-                className={`flex items-end gap-2 ${
-                  msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                }`}
-              >
-                {/* Avatar */}
-                <div
-                  className="h-7 w-7 shrink-0 rounded-xl flex items-center justify-center"
-                  style={
-                    msg.role === "user"
-                      ? {
-                          background: "var(--fill-hover)",
-                          border: "1px solid var(--border-mid)",
-                          color: "var(--text-2)",
-                        }
-                      : { background: "var(--blue)", color: "#fff" }
-                  }
-                >
-                  {msg.role === "user" ? (
-                    <User size={14} aria-hidden="true" />
-                  ) : (
-                    <NexiaIcon size={15} aria-hidden="true" />
-                  )}
-                </div>
-
-                {/* Bubble */}
-                <div
-                  className={`max-w-[80%] rounded-2xl border px-4 py-3 text-sm leading-relaxed ${
-                    msg.role === "user" ? "rounded-br-sm" : "rounded-bl-sm"
-                  }`}
-                  style={
-                    msg.role === "user"
-                      ? {
-                          background: "var(--fill-hover)",
-                          borderColor: "var(--border-mid)",
-                          color: "var(--text-1)",
-                        }
-                      : {
-                          background: "var(--glass)",
-                          borderColor: "var(--border)",
-                          backdropFilter: "blur(12px)",
-                          WebkitBackdropFilter: "blur(12px)",
-                          color: "var(--text-1)",
-                        }
-                  }
-                >
-                  <div className="chat-markdown">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                  <div
+                    className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border floating"
+                    style={{
+                      background: "var(--fill-hover)",
+                      borderColor: "var(--border)",
+                      transform: "rotate(-3deg)",
+                      boxShadow: "3px 3px 0 var(--border-mid)",
+                    }}
+                  >
+                    <StickerSparkle size={32} className="text-(--blue)" />
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                  <h2 className="mb-1.5 text-lg font-bold" style={{ color: "var(--text-1)" }}>
+                    What do you want to know?
+                  </h2>
+                  <p
+                    className="mb-8 max-w-xs text-sm leading-relaxed"
+                    style={{ color: "var(--text-3)" }}
+                  >
+                    I search through all your profiles to give you accurate insights.
+                  </p>
+                  <div className="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
+                    {SUGGESTED_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => sendMessage({ text: prompt })}
+                        className="group flex items-center justify-between rounded-xl border px-4 py-3 text-left text-xs transition-all active:scale-[0.97] hover:bg-(--fill-hover)"
+                        style={{
+                          background: "var(--fill)",
+                          borderColor: "var(--border)",
+                          color: "var(--text-2)",
+                        }}
+                      >
+                        <span className="leading-snug">{prompt}</span>
+                        <MessageSquare
+                          size={12}
+                          className="ml-2 shrink-0 opacity-0 transition-opacity group-hover:opacity-50"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
 
-          {/* Typing indicator */}
-          <AnimatePresence>
-            {chatMutation.isPending && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                transition={{ type: "spring", stiffness: 220, damping: 26 }}
-                className="flex items-end gap-2"
-              >
-                <div
-                  className="h-7 w-7 shrink-0 rounded-xl flex items-center justify-center"
-                  style={{ background: "var(--blue)" }}
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 220, damping: 26 }}
                 >
-                  <NexiaIcon size={15} className="text-white" aria-hidden="true" />
-                </div>
-                <div
-                  className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm border px-4 py-3"
+                  {message.parts.map((part, i) => {
+                    // Tool parts — check type directly
+                    if (part.type === "dynamic-tool" || part.type.startsWith("tool-")) {
+                      const toolPart = part as ToolUIPart<UITools> | DynamicToolUIPart;
+                      const toolName =
+                        toolPart.type === "dynamic-tool"
+                          ? toolPart.toolName
+                          : toolPart.type.slice(5);
+                      const isDone = toolPart.state === "output-available";
+                      const isError = toolPart.state === "output-error";
+
+                      return (
+                        <div key={`${message.id}-${i}`} className="px-1 py-0.5">
+                          <Tool defaultOpen={isDone || isError}>
+                            {toolPart.type === "dynamic-tool" ? (
+                              <ToolHeader
+                                type={toolPart.type}
+                                state={toolPart.state}
+                                toolName={toolPart.toolName}
+                                title={toolTitle(toolName, toolPart.state)}
+                              />
+                            ) : (
+                              <ToolHeader
+                                type={toolPart.type}
+                                state={toolPart.state}
+                                title={toolTitle(toolName, toolPart.state)}
+                              />
+                            )}
+                            <ToolContent>
+                              {toolPart.input != null && <ToolInput input={toolPart.input} />}
+                              {isDone && toolPart.output != null && (
+                                <ToolOutput output={toolPart.output} errorText={undefined} />
+                              )}
+                            </ToolContent>
+                          </Tool>
+                        </div>
+                      );
+                    }
+
+                    // Text parts
+                    if (part.type === "text") {
+                      return (
+                        <Message from={message.role} key={`${message.id}-${i}`}>
+                          <MessageContent>
+                            <MessageResponse>{part.text}</MessageResponse>
+                          </MessageContent>
+                        </Message>
+                      );
+                    }
+
+                    // Other parts (reasoning, source, file, etc.) — skip for now
+                    return null;
+                  })}
+                </motion.div>
+              ))}
+
+              {/* Error */}
+              {status === "error" && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="mx-auto mt-4 rounded-xl border px-4 py-3 text-center text-xs"
                   style={{
-                    background: "var(--glass)",
-                    borderColor: "var(--border)",
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
+                    borderColor: "var(--red-border)",
+                    background: "var(--red-bg)",
+                    color: "var(--red)",
                   }}
-                  aria-label="Nexia is thinking"
                 >
-                  {[0, 150, 300].map((delay) => (
-                    <div
-                      key={delay}
-                      className="h-1.5 w-1.5 rounded-full animate-bounce"
-                      style={{
-                        background: "var(--blue)",
-                        animationDelay: `${delay}ms`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div ref={messagesEndRef} />
-        </div>
+                  <p className="mb-1 font-semibold">Something went wrong</p>
+                  <button onClick={() => regenerate()} className="underline hover:no-underline">
+                    Try again
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
       </div>
 
-      {/* ── Input ── */}
-      <div className="shrink-0 pb-1 pt-3">
-        <form onSubmit={handleSubmit}>
-          <div
-            className="flex items-center gap-2 rounded-2xl border px-4 py-2 transition-all duration-200 focus-within:border-(--blue)"
-            style={{
-              background: "var(--fill-hover)",
-              borderColor: "var(--border)",
-            }}
-          >
-            <input
-              type="text"
+      {/* Input */}
+      <div className="shrink-0 pt-3">
+        <PromptInput onSubmit={handleSubmit} className="w-full">
+          <PromptInputBody>
+            <PromptInputTextarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
               placeholder="ask about someone's favorites, memories, or vibes…"
-              aria-label="Ask about your people"
-              className="min-w-0 flex-1 bg-transparent py-2 text-base sm:text-sm focus:outline-none"
-              style={{ color: "var(--text-1)" }}
-              disabled={chatMutation.isPending}
+              onChange={(e) => setInput(e.currentTarget.value)}
+              disabled={isStreaming}
+              className="min-h-[48px] rounded-2xl border-(--border) bg-(--fill-hover) text-(--text-1) placeholder:text-(--text-3)"
             />
-            <motion.button
-              type="submit"
-              disabled={!input.trim() || chatMutation.isPending}
-              whileTap={{ scale: 0.88 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              aria-label="Send message"
-              className="shrink-0 rounded-xl p-2 text-white transition-opacity hover:opacity-90 disabled:opacity-30 cursor-pointer"
-              style={{ background: "var(--blue)" }}
-            >
-              <Send size={15} aria-hidden="true" />
-            </motion.button>
-          </div>
-        </form>
+          </PromptInputBody>
+          <PromptInputFooter>
+            <PromptInputSubmit
+              status={status === "streaming" ? "streaming" : "ready"}
+              disabled={!input.trim() || isStreaming}
+            />
+          </PromptInputFooter>
+        </PromptInput>
       </div>
     </main>
   );

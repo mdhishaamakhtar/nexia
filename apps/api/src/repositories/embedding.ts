@@ -12,14 +12,14 @@ export type SearchResult = {
 export class EmbeddingRepository {
   constructor(
     private db: DB,
-    private logger: Logger,
+    private logger: Logger
   ) {}
 
   async upsertProfile(
     profileId: number,
     userId: number,
     embedding: number[],
-    payload: Record<string, unknown>,
+    payload: Record<string, unknown>
   ): Promise<void> {
     try {
       await this.db
@@ -49,9 +49,7 @@ export class EmbeddingRepository {
 
   async deleteProfile(profileId: number): Promise<void> {
     try {
-      await this.db
-        .delete(profileEmbeddings)
-        .where(eq(profileEmbeddings.profileId, profileId));
+      await this.db.delete(profileEmbeddings).where(eq(profileEmbeddings.profileId, profileId));
       this.logger.info({ profileId }, "embedding deleted");
     } catch (err) {
       this.logger.error({ profileId, err }, "embedding delete failed");
@@ -62,7 +60,7 @@ export class EmbeddingRepository {
   async searchContext(
     userId: number,
     queryEmbedding: number[],
-    limit: number,
+    limit: number
   ): Promise<SearchResult[]> {
     // Format embedding as pgvector literal
     const vecStr = `[${queryEmbedding.join(",")}]`;
@@ -81,7 +79,7 @@ export class EmbeddingRepository {
         WHERE  user_id = ${userId}
         ORDER  BY embedding <=> ${vecLiteral}
         LIMIT  ${limit}
-      `,
+      `
     );
 
     const results: SearchResult[] = [];

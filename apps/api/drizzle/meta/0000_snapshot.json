@@ -33,12 +33,8 @@
           "name": "associated_songs_profile_id_profiles_id_fk",
           "tableFrom": "associated_songs",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -94,12 +90,8 @@
           "name": "book_genres_profile_id_profiles_id_fk",
           "tableFrom": "book_genres",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -190,12 +182,8 @@
           "name": "email_verification_tokens_user_id_users_id_fk",
           "tableFrom": "email_verification_tokens",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -205,9 +193,7 @@
         "email_verification_tokens_token_unique": {
           "name": "email_verification_tokens_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -259,12 +245,8 @@
           "name": "food_restrictions_profile_id_profiles_id_fk",
           "tableFrom": "food_restrictions",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -320,12 +302,8 @@
           "name": "hangout_places_profile_id_profiles_id_fk",
           "tableFrom": "hangout_places",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -381,12 +359,8 @@
           "name": "movie_genres_profile_id_profiles_id_fk",
           "tableFrom": "movie_genres",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -462,12 +436,8 @@
           "name": "password_reset_tokens_user_id_users_id_fk",
           "tableFrom": "password_reset_tokens",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -477,9 +447,7 @@
         "password_reset_tokens_token_unique": {
           "name": "password_reset_tokens_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -531,12 +499,8 @@
           "name": "political_views_profile_id_profiles_id_fk",
           "tableFrom": "political_views",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -605,12 +569,8 @@
           "name": "profile_embeddings_profile_id_profiles_id_fk",
           "tableFrom": "profile_embeddings",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -768,12 +728,8 @@
           "name": "profiles_user_id_users_id_fk",
           "tableFrom": "profiles",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -829,12 +785,8 @@
           "name": "quotes_profile_id_profiles_id_fk",
           "tableFrom": "quotes",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -890,12 +842,8 @@
           "name": "tags_profile_id_profiles_id_fk",
           "tableFrom": "tags",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -957,12 +905,8 @@
           "name": "top_songs_profile_id_profiles_id_fk",
           "tableFrom": "top_songs",
           "tableTo": "profiles",
-          "columnsFrom": [
-            "profile_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["profile_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

@@ -9,10 +9,7 @@ export class EmailVerificationRepository {
   constructor(private db: DB) {}
 
   async create(token: NewEmailVerificationToken): Promise<EmailVerificationTokenRow> {
-    const [row] = await this.db
-      .insert(emailVerificationTokens)
-      .values(token)
-      .returning();
+    const [row] = await this.db.insert(emailVerificationTokens).values(token).returning();
     return row!;
   }
 

@@ -13,7 +13,9 @@ function authRateLimitConfigFromConfig(cfg: Config | null): RateLimitConfig {
       DEFAULT_AUTH_REQUESTS,
       DEFAULT_AUTH_BURST,
       DEFAULT_AUTH_WINDOW_SECONDS,
-      0, 0, 0,
+      0,
+      0,
+      0
     );
   }
   return rateLimitConfigFromValues(
@@ -22,7 +24,7 @@ function authRateLimitConfigFromConfig(cfg: Config | null): RateLimitConfig {
     DEFAULT_AUTH_WINDOW_SECONDS,
     cfg.server.auth_rate_limit_requests,
     cfg.server.auth_rate_limit_burst,
-    cfg.server.auth_rate_limit_window_seconds,
+    cfg.server.auth_rate_limit_window_seconds
   );
 }
 

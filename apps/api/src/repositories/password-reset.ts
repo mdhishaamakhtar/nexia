@@ -9,10 +9,7 @@ export class PasswordResetRepository {
   constructor(private db: DB) {}
 
   async create(token: NewPasswordResetToken): Promise<PasswordResetTokenRow> {
-    const [row] = await this.db
-      .insert(passwordResetTokens)
-      .values(token)
-      .returning();
+    const [row] = await this.db.insert(passwordResetTokens).values(token).returning();
     return row!;
   }
 

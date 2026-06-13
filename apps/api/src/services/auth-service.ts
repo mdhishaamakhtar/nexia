@@ -2,14 +2,27 @@ import { randomBytes } from "node:crypto";
 import type { Config } from "../config/config";
 import type { Logger } from "../logging/logger";
 import { generateToken as generateJWT } from "../utils/jwt";
-import { ErrorKind, errValidation, errEmailConflict, errAccountNotFound, errUnauthorized, errEmailNotVerified, errNotFound } from "./errors";
+import {
+  errValidation,
+  errEmailConflict,
+  errAccountNotFound,
+  errUnauthorized,
+  errEmailNotVerified,
+  errNotFound,
+} from "./errors";
 
 const RESET_TOKEN_EXPIRY = 15 * 60 * 1000; // 15 minutes
 const VERIFY_TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface UserRepo {
-  create(user: { email: string; password: string; emailVerified: boolean }): Promise<{ id: number; email: string }>;
-  findByEmail(email: string): Promise<{ id: number; email: string; password: string; emailVerified: boolean } | null>;
+  create(user: {
+    email: string;
+    password: string;
+    emailVerified: boolean;
+  }): Promise<{ id: number; email: string }>;
+  findByEmail(
+    email: string
+  ): Promise<{ id: number; email: string; password: string; emailVerified: boolean } | null>;
   findById(id: number): Promise<{ id: number } | null>;
   updatePassword(userId: number, hashedPassword: string): Promise<void>;
   updateEmailVerified(userId: number): Promise<void>;
@@ -17,13 +30,17 @@ export interface UserRepo {
 
 export interface PasswordResetRepo {
   create(token: { userId: number; token: string; expiresAt: Date }): Promise<{ id: number }>;
-  findByToken(token: string): Promise<{ id: number; userId: number; token: string; expiresAt: Date; used: boolean } | null>;
+  findByToken(
+    token: string
+  ): Promise<{ id: number; userId: number; token: string; expiresAt: Date; used: boolean } | null>;
   markAsUsed(id: number): Promise<void>;
 }
 
 export interface EmailVerificationRepo {
   create(token: { userId: number; token: string; expiresAt: Date }): Promise<{ id: number }>;
-  findByToken(token: string): Promise<{ id: number; userId: number; token: string; expiresAt: Date; used: boolean } | null>;
+  findByToken(
+    token: string
+  ): Promise<{ id: number; userId: number; token: string; expiresAt: Date; used: boolean } | null>;
   markAsUsed(id: number): Promise<void>;
 }
 
@@ -48,7 +65,7 @@ export class AuthService {
     private verifyRepo: EmailVerificationRepo,
     private emailSvc: EmailSender,
     private config: Config,
-    private logger: Logger,
+    private logger: Logger
   ) {}
 
   async signup(email: string, password: string): Promise<void> {
@@ -71,7 +88,11 @@ export class AuthService {
     }
 
     const hashedPassword = await Bun.password.hash(password, { algorithm: "bcrypt", cost: 10 });
-    const newUser = await this.repo.create({ email, password: hashedPassword, emailVerified: false });
+    const newUser = await this.repo.create({
+      email,
+      password: hashedPassword,
+      emailVerified: false,
+    });
 
     const tokenStr = generateToken();
     await this.verifyRepo.create({
@@ -83,7 +104,10 @@ export class AuthService {
     try {
       await this.emailSvc.sendVerificationEmail(email, tokenStr);
     } catch (sendErr) {
-      this.logger.warn({ email, userId: newUser.id, err: String(sendErr) }, "failed to send verification email");
+      this.logger.warn(
+        { email, userId: newUser.id, err: String(sendErr) },
+        "failed to send verification email"
+      );
     }
   }
 
@@ -147,7 +171,10 @@ export class AuthService {
     try {
       await this.emailSvc.sendPasswordResetEmail(email, tokenStr);
     } catch (sendErr) {
-      this.logger.warn({ email, userId: user.id, err: String(sendErr) }, "failed to send password reset email");
+      this.logger.warn(
+        { email, userId: user.id, err: String(sendErr) },
+        "failed to send password reset email"
+      );
     }
   }
 

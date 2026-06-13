@@ -1,5 +1,5 @@
 import type { Logger } from "../logging/logger";
-import { ErrorKind, errNotFound } from "./errors";
+import { errNotFound } from "./errors";
 import type { ProfileRepo } from "./profile-service";
 
 export interface EmbeddingGenerator {
@@ -7,7 +7,12 @@ export interface EmbeddingGenerator {
 }
 
 export interface EmbeddingStorage {
-  upsertProfile(profileId: number, userId: number, embedding: number[], payload: Record<string, unknown>): Promise<void>;
+  upsertProfile(
+    profileId: number,
+    userId: number,
+    embedding: number[],
+    payload: Record<string, unknown>
+  ): Promise<void>;
   deleteProfile(profileId: number): Promise<void>;
 }
 
@@ -16,7 +21,7 @@ export class EmbeddingService {
     private profiles: ProfileRepo,
     private generator: EmbeddingGenerator,
     private repo: EmbeddingStorage,
-    private logger: Logger,
+    private logger: Logger
   ) {}
 
   async embedProfile(profileId: number): Promise<void> {
@@ -32,14 +37,18 @@ export class EmbeddingService {
       embedding = await this.generator.generateEmbedding(text);
     } catch (err) {
       this.logger.error({ profileId, err: String(err) }, "embedding generation failed");
-      throw new Error(`gemini embedding failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `gemini embedding failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
 
     try {
       await this.repo.upsertProfile(Number(profile.id), Number(profile.userId), embedding, profile);
     } catch (err) {
       this.logger.error({ profileId, err: String(err) }, "embedding upsert failed");
-      throw new Error(`pgvector upsert failed: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `pgvector upsert failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
 
     this.logger.info({ profileId, userId: profile.userId }, "profile embedded");
@@ -52,8 +61,20 @@ export class EmbeddingService {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00Z");
-  const months = ["January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"];
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
   const month = months[d.getUTCMonth()];
   const day = d.getUTCDate();
   const year = d.getUTCFullYear();

@@ -13,7 +13,7 @@ export type ErrorKind = (typeof ErrorKind)[keyof typeof ErrorKind];
 export class ServiceError extends Error {
   constructor(
     public kind: ErrorKind,
-    message?: string,
+    message?: string
   ) {
     super(message ?? kind);
     this.name = "ServiceError";
@@ -48,10 +48,7 @@ export function isServiceError(err: unknown): err is ServiceError {
 
 import type { Context } from "hono";
 
-export function respondWithServiceError(
-  c: Context,
-  err: unknown,
-): Response {
+export function respondWithServiceError(c: Context, err: unknown): Response {
   if (isServiceError(err)) {
     switch (err.kind) {
       case ErrorKind.AccountNotFound:
@@ -65,20 +62,25 @@ export function respondWithServiceError(
       case ErrorKind.AIUnavailable:
         return respondError(c, 503, "AI_UNAVAILABLE", "AI service unavailable");
       case ErrorKind.EmailNotVerified:
-        return respondError(c, 403, "EMAIL_NOT_VERIFIED", "Please verify your email before signing in");
+        return respondError(
+          c,
+          403,
+          "EMAIL_NOT_VERIFIED",
+          "Please verify your email before signing in"
+        );
       case ErrorKind.EmailConflict:
         return respondError(c, 409, "EMAIL_CONFLICT", "An account with that email already exists");
     }
   }
-  return respondError(c, 500, "SERVER_ERROR", err instanceof Error ? err.message : "Internal server error");
+  return respondError(
+    c,
+    500,
+    "SERVER_ERROR",
+    err instanceof Error ? err.message : "Internal server error"
+  );
 }
 
-export function respondError(
-  _c: Context,
-  status: number,
-  code: string,
-  message: string,
-): Response {
+export function respondError(_c: Context, status: number, code: string, message: string): Response {
   return new Response(JSON.stringify({ error: { code, message } }), {
     status,
     headers: { "Content-Type": "application/json" },

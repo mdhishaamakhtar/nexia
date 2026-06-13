@@ -22,7 +22,7 @@ export function rateLimitConfigFromValues(
   defaultWindowSeconds: number,
   requests: number,
   burst: number,
-  windowSeconds: number,
+  windowSeconds: number
 ): RateLimitConfig {
   return {
     requests: requests > 0 ? requests : defaultRequests,
@@ -36,7 +36,7 @@ export function createRateLimiter(
   name: string,
   message: string,
   cfg: RateLimitConfig,
-  pathPrefix: string,
+  _pathPrefix: string
 ): MiddlewareHandler {
   if (!logger) {
     throw new Error(`${name} rate limit requires a logger`);
@@ -93,16 +93,22 @@ export function createRateLimiter(
       const waitTime = Math.ceil((1 - entry.tokens) / rate);
       const retryAfter = Math.max(1, waitTime);
       c.header("Retry-After", String(retryAfter));
-      c.header("X-RateLimit-Limit", `${cfg.requests} requests per ${cfg.windowSeconds}s (burst ${cfg.burst})`);
-      logger.warn({ name, path: c.req.routePath, client_ip: ip, retry_after: retryAfter }, `${name} rate limit exceeded`);
-      return c.json(
-        { error: { code: "RATE_LIMITED", message } },
-        429,
+      c.header(
+        "X-RateLimit-Limit",
+        `${cfg.requests} requests per ${cfg.windowSeconds}s (burst ${cfg.burst})`
       );
+      logger.warn(
+        { name, path: c.req.routePath, client_ip: ip, retry_after: retryAfter },
+        `${name} rate limit exceeded`
+      );
+      return c.json({ error: { code: "RATE_LIMITED", message } }, 429);
     }
 
     entry.tokens -= 1;
-    c.header("X-RateLimit-Limit", `${cfg.requests} requests per ${cfg.windowSeconds}s (burst ${cfg.burst})`);
+    c.header(
+      "X-RateLimit-Limit",
+      `${cfg.requests} requests per ${cfg.windowSeconds}s (burst ${cfg.burst})`
+    );
     return next();
   };
 }

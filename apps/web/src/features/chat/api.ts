@@ -1,34 +1,26 @@
-import { api } from "@/shared/api/client";
+import { DefaultChatTransport } from "ai";
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export async function sendChatMessage(messages: ChatMessage[]): Promise<{ response: string }> {
-  const res = await api.post("chat", { json: { messages } });
-  const text = await res.text();
-
-  // Parse SSE stream to extract final assistant content
-  const lines = text.split("\n");
-  let finalContent = "";
-
-  for (const line of lines) {
-    if (line.startsWith("data: ")) {
-      try {
-        const data = JSON.parse(line.slice(6));
-        // AI SDK UI message format: { type: "text-delta", textDelta: "..." }
-        // or: { type: "finish", ... }
-        if (data.type === "text-delta" && data.textDelta) {
-          finalContent += data.textDelta;
-        } else if (data.type === "finish" && data.content) {
-          finalContent = data.content;
-        }
-      } catch {
-        // Skip unparseable lines
-      }
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const prefix = `${name}=`;
+  for (const cookie of document.cookie.split(";")) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
     }
   }
+  return null;
+}
 
-  return { response: finalContent || "No response received" };
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
+
+export function createChatTransport() {
+  return new DefaultChatTransport({
+    api: `${backendUrl}/api/v1/chat`,
+    credentials: "include",
+    headers: (): Record<string, string> => {
+      const csrfToken = getCookie("nexia_csrf");
+      return csrfToken ? { "X-CSRF-Token": csrfToken } : {};
+    },
+  });
 }

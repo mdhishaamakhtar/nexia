@@ -1,4 +1,4 @@
-import { tool, stepCountIs } from "ai";
+import { tool } from "ai";
 import { z } from "zod";
 import type { ProfileService } from "../services/profile-service";
 import type { EmbeddingRepository } from "../repositories/embedding";
@@ -72,8 +72,20 @@ export function buildAgentTools(params: {
     description: "Create a new profile for someone in your network",
     inputSchema: z.object({
       full_name: z.string().min(1).max(150).describe("Full name of the person"),
-      relationship_type: z.enum(["Friend", "Family", "Colleague", "Classmate", "Crush", "Ex", "Mentor", "Other"]),
-      birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      relationship_type: z.enum([
+        "Friend",
+        "Family",
+        "Colleague",
+        "Classmate",
+        "Crush",
+        "Ex",
+        "Mentor",
+        "Other",
+      ]),
+      birthday: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
       bio: z.string().optional(),
       profession: z.string().optional(),
       notes: z.string().optional(),
@@ -98,8 +110,13 @@ export function buildAgentTools(params: {
     inputSchema: z.object({
       id: z.number().describe("The profile ID to update"),
       full_name: z.string().min(1).max(150).optional(),
-      relationship_type: z.enum(["Friend", "Family", "Colleague", "Classmate", "Crush", "Ex", "Mentor", "Other"]).optional(),
-      birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      relationship_type: z
+        .enum(["Friend", "Family", "Colleague", "Classmate", "Crush", "Ex", "Mentor", "Other"])
+        .optional(),
+      birthday: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
       bio: z.string().optional(),
       profession: z.string().optional(),
       notes: z.string().optional(),

@@ -61,11 +61,20 @@ describe("rateLimitConfigFromValues", () => {
 describe("rate limiter", () => {
   test("rejects requests beyond burst", async () => {
     const app = new Hono();
-    app.use("*", createRateLimiter(nopLogger, "test", "Too many", {
-      requests: 2,
-      burst: 2,
-      windowSeconds: 60,
-    }, "/test"));
+    app.use(
+      "*",
+      createRateLimiter(
+        nopLogger,
+        "test",
+        "Too many",
+        {
+          requests: 2,
+          burst: 2,
+          windowSeconds: 60,
+        },
+        "/test"
+      )
+    );
     app.post("/test", (c) => c.json({ ok: true }));
 
     // First two should pass
@@ -77,7 +86,7 @@ describe("rate limiter", () => {
     // Third should be rate limited
     const res = await app.request("/test", { method: "POST" });
     expect(res.status).toBe(429);
-    const body = await res.json() as { error: { code: string; message: string } };
+    const body = (await res.json()) as { error: { code: string; message: string } };
     expect(body.error.code).toBe("RATE_LIMITED");
     expect(body.error.message).toBe("Too many");
     expect(res.headers.get("Retry-After")).toBeTruthy();
@@ -113,11 +122,17 @@ describe("chatRateLimiter", () => {
 describe("rate limiter panics on nil logger", () => {
   test("throws on nil logger", () => {
     expect(() =>
-      createRateLimiter(null as unknown as Logger, "auth", "msg", {
-        requests: 1,
-        burst: 1,
-        windowSeconds: 60,
-      }, "/auth")
+      createRateLimiter(
+        null as unknown as Logger,
+        "auth",
+        "msg",
+        {
+          requests: 1,
+          burst: 1,
+          windowSeconds: 60,
+        },
+        "/auth"
+      )
     ).toThrow("auth rate limit requires a logger");
   });
 });

@@ -33,7 +33,13 @@ export function createProfileController(profileService: ProfileService) {
       const search = c.req.query("search") || undefined;
       const relationshipType = c.req.query("relationship_type") || undefined;
 
-      const result = await profileService.listProfiles(page, limit, search, relationshipType, userId);
+      const result = await profileService.listProfiles(
+        page,
+        limit,
+        search,
+        relationshipType,
+        userId
+      );
       return c.json({
         data: result.profiles,
         total: result.total,

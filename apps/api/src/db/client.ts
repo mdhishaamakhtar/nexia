@@ -6,8 +6,7 @@ import * as schema from "./schema";
 export type DB = ReturnType<typeof drizzle<typeof schema>>;
 
 export function createDb(cfg: Config): { db: DB; sql: ReturnType<typeof postgres> } {
-  const ssl: boolean | undefined =
-    cfg.db.ssl_mode === "require" ? true : undefined;
+  const ssl: boolean | undefined = cfg.db.ssl_mode === "require" ? true : undefined;
 
   const sql = postgres({
     host: cfg.db.host,

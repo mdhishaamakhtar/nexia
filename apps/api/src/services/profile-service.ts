@@ -17,19 +17,29 @@ export interface ProfileRepo {
     associatedSong?: { name: string; artist: string } | null;
   }): Promise<{ id: number; userId: number }>;
   findById(id: number, userId: number): Promise<Record<string, unknown> | null>;
-  findAll(params: { page: number; limit: number; search?: string; relationshipType?: string; userId: number }): Promise<{ profiles: Record<string, unknown>[]; total: number }>;
-  update(profileId: number, userId: number, input: {
-    profile: Partial<Record<string, unknown>>;
-    tags?: Array<{ tag: string }>;
-    politicalViews?: Array<{ view: string }>;
-    foodRestrictions?: Array<{ restriction: string }>;
-    movieGenres?: Array<{ genre: string }>;
-    bookGenres?: Array<{ genre: string }>;
-    hangoutPlaces?: Array<{ place: string }>;
-    quotes?: Array<{ quote: string }>;
-    topSongs?: Array<{ name: string; artist: string }>;
-    associatedSong?: { name: string; artist: string } | null;
-  }): Promise<Record<string, unknown>>;
+  findAll(params: {
+    page: number;
+    limit: number;
+    search?: string;
+    relationshipType?: string;
+    userId: number;
+  }): Promise<{ profiles: Record<string, unknown>[]; total: number }>;
+  update(
+    profileId: number,
+    userId: number,
+    input: {
+      profile: Partial<Record<string, unknown>>;
+      tags?: Array<{ tag: string }>;
+      politicalViews?: Array<{ view: string }>;
+      foodRestrictions?: Array<{ restriction: string }>;
+      movieGenres?: Array<{ genre: string }>;
+      bookGenres?: Array<{ genre: string }>;
+      hangoutPlaces?: Array<{ place: string }>;
+      quotes?: Array<{ quote: string }>;
+      topSongs?: Array<{ name: string; artist: string }>;
+      associatedSong?: { name: string; artist: string } | null;
+    }
+  ): Promise<Record<string, unknown>>;
   loadForEmbedding(profileId: number): Promise<Record<string, unknown> | null>;
   delete(id: number, userId: number): Promise<void>;
 }
@@ -45,7 +55,7 @@ export class ProfileService {
   constructor(
     private repo: ProfileRepo,
     private queue: EmbeddingQueue | null,
-    private logger: Logger,
+    private logger: Logger
   ) {}
 
   async createProfile(profile: ProfileInput, userId: number): Promise<Record<string, unknown>> {
@@ -63,7 +73,10 @@ export class ProfileService {
       try {
         await this.queue.enqueueEmbeddingTask(created.id);
       } catch (err) {
-        this.logger.warn({ profileId: created.id, err: String(err) }, "failed to enqueue profile embedding task");
+        this.logger.warn(
+          { profileId: created.id, err: String(err) },
+          "failed to enqueue profile embedding task"
+        );
       }
     }
 
@@ -74,14 +87,24 @@ export class ProfileService {
     return this.repo.findById(id, userId);
   }
 
-  async listProfiles(page: number, limit: number, search: string | undefined, relationshipType: string | undefined, userId: number): Promise<{ profiles: Record<string, unknown>[]; total: number }> {
+  async listProfiles(
+    page: number,
+    limit: number,
+    search: string | undefined,
+    relationshipType: string | undefined,
+    userId: number
+  ): Promise<{ profiles: Record<string, unknown>[]; total: number }> {
     if (page < 1) page = 1;
     if (limit < 1) limit = 10;
     if (limit > 100) limit = 100;
     return this.repo.findAll({ page, limit, search, relationshipType, userId });
   }
 
-  async updateProfile(id: number, profile: Partial<ProfileInput>, userId: number): Promise<Record<string, unknown>> {
+  async updateProfile(
+    id: number,
+    profile: Partial<ProfileInput>,
+    userId: number
+  ): Promise<Record<string, unknown>> {
     const topSongs = profile.top_songs ?? [];
     if (topSongs.length > 3) {
       throw errValidation("cannot have more than 3 top songs");
@@ -95,7 +118,10 @@ export class ProfileService {
       try {
         await this.queue.enqueueEmbeddingTask(id);
       } catch (err) {
-        this.logger.warn({ profileId: id, err: String(err) }, "failed to enqueue profile embedding task");
+        this.logger.warn(
+          { profileId: id, err: String(err) },
+          "failed to enqueue profile embedding task"
+        );
       }
     }
 
@@ -109,7 +135,10 @@ export class ProfileService {
       try {
         await this.queue.enqueueDeletionTask(id);
       } catch (err) {
-        this.logger.warn({ profileId: id, err: String(err) }, "failed to enqueue profile deletion task");
+        this.logger.warn(
+          { profileId: id, err: String(err) },
+          "failed to enqueue profile deletion task"
+        );
       }
     }
   }
@@ -139,7 +168,10 @@ function mapProfileToRepoInput(p: ProfileInput, userId: number) {
     bookGenres: p.book_genres?.map((g) => ({ genre: g.genre })),
     hangoutPlaces: p.hangout_places?.map((hp) => ({ place: hp.place })),
     quotes: p.quotes?.map((q) => ({ quote: q.quote })),
-    topSongs: (p.top_songs as TopSongInput[] | undefined)?.map((s) => ({ name: s.name, artist: s.artist })),
+    topSongs: (p.top_songs as TopSongInput[] | undefined)?.map((s) => ({
+      name: s.name,
+      artist: s.artist,
+    })),
     associatedSong: p.associated_song
       ? { name: p.associated_song.name, artist: p.associated_song.artist }
       : null,
@@ -169,7 +201,10 @@ function mapProfileToRepoUpdate(p: Partial<ProfileInput>) {
     bookGenres: p.book_genres?.map((g) => ({ genre: g.genre })),
     hangoutPlaces: p.hangout_places?.map((hp) => ({ place: hp.place })),
     quotes: p.quotes?.map((q) => ({ quote: q.quote })),
-    topSongs: (p.top_songs as TopSongInput[] | undefined)?.map((s) => ({ name: s.name, artist: s.artist })),
+    topSongs: (p.top_songs as TopSongInput[] | undefined)?.map((s) => ({
+      name: s.name,
+      artist: s.artist,
+    })),
     associatedSong: p.associated_song
       ? { name: p.associated_song.name, artist: p.associated_song.artist }
       : null,

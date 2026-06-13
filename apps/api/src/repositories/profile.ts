@@ -32,10 +32,7 @@ export class ProfileRepository {
     associatedSong?: { name: string; artist: string } | null;
   }): Promise<ProfileRow> {
     return this.db.transaction(async (tx) => {
-      const [profile] = await tx
-        .insert(profiles)
-        .values(data.profile)
-        .returning();
+      const [profile] = await tx.insert(profiles).values(data.profile).returning();
       if (!profile) throw new Error("Failed to create profile");
 
       const pid = profile.id;
@@ -44,19 +41,27 @@ export class ProfileRepository {
         await tx.insert(tags).values(data.tags.map((t) => ({ ...t, profileId: pid })));
       }
       if (data.politicalViews?.length) {
-        await tx.insert(politicalViews).values(data.politicalViews.map((v) => ({ ...v, profileId: pid })));
+        await tx
+          .insert(politicalViews)
+          .values(data.politicalViews.map((v) => ({ ...v, profileId: pid })));
       }
       if (data.foodRestrictions?.length) {
-        await tx.insert(foodRestrictions).values(data.foodRestrictions.map((r) => ({ ...r, profileId: pid })));
+        await tx
+          .insert(foodRestrictions)
+          .values(data.foodRestrictions.map((r) => ({ ...r, profileId: pid })));
       }
       if (data.movieGenres?.length) {
-        await tx.insert(movieGenres).values(data.movieGenres.map((g) => ({ ...g, profileId: pid })));
+        await tx
+          .insert(movieGenres)
+          .values(data.movieGenres.map((g) => ({ ...g, profileId: pid })));
       }
       if (data.bookGenres?.length) {
         await tx.insert(bookGenres).values(data.bookGenres.map((g) => ({ ...g, profileId: pid })));
       }
       if (data.hangoutPlaces?.length) {
-        await tx.insert(hangoutPlaces).values(data.hangoutPlaces.map((p) => ({ ...p, profileId: pid })));
+        await tx
+          .insert(hangoutPlaces)
+          .values(data.hangoutPlaces.map((p) => ({ ...p, profileId: pid })));
       }
       if (data.quotes?.length) {
         await tx.insert(quotes).values(data.quotes.map((q) => ({ ...q, profileId: pid })));
@@ -96,19 +101,11 @@ export class ProfileRepository {
 
     const where = and(...conditions);
 
-    const [totalRow] = await this.db
-      .select({ count: sqlCount() })
-      .from(profiles)
-      .where(where);
+    const [totalRow] = await this.db.select({ count: sqlCount() }).from(profiles).where(where);
     const total = Number(totalRow?.count ?? 0);
 
     const offset = (page - 1) * limit;
-    const rows = await this.db
-      .select()
-      .from(profiles)
-      .where(where)
-      .offset(offset)
-      .limit(limit);
+    const rows = await this.db.select().from(profiles).where(where).offset(offset).limit(limit);
 
     return { profiles: rows, total };
   }
@@ -127,7 +124,7 @@ export class ProfileRepository {
       quotes?: Array<{ quote: string }>;
       topSongs?: Array<{ name: string; artist: string }>;
       associatedSong?: { name: string; artist: string } | null;
-    },
+    }
   ): Promise<ProfileRow> {
     return this.db.transaction(async (tx) => {
       const [existing] = await tx
@@ -154,13 +151,17 @@ export class ProfileRepository {
       if (data.politicalViews !== undefined) {
         await tx.delete(politicalViews).where(eq(politicalViews.profileId, profileId));
         if (data.politicalViews.length > 0) {
-          await tx.insert(politicalViews).values(data.politicalViews.map((v) => ({ ...v, profileId })));
+          await tx
+            .insert(politicalViews)
+            .values(data.politicalViews.map((v) => ({ ...v, profileId })));
         }
       }
       if (data.foodRestrictions !== undefined) {
         await tx.delete(foodRestrictions).where(eq(foodRestrictions.profileId, profileId));
         if (data.foodRestrictions.length > 0) {
-          await tx.insert(foodRestrictions).values(data.foodRestrictions.map((r) => ({ ...r, profileId })));
+          await tx
+            .insert(foodRestrictions)
+            .values(data.foodRestrictions.map((r) => ({ ...r, profileId })));
         }
       }
       if (data.movieGenres !== undefined) {
@@ -178,7 +179,9 @@ export class ProfileRepository {
       if (data.hangoutPlaces !== undefined) {
         await tx.delete(hangoutPlaces).where(eq(hangoutPlaces.profileId, profileId));
         if (data.hangoutPlaces.length > 0) {
-          await tx.insert(hangoutPlaces).values(data.hangoutPlaces.map((p) => ({ ...p, profileId })));
+          await tx
+            .insert(hangoutPlaces)
+            .values(data.hangoutPlaces.map((p) => ({ ...p, profileId })));
         }
       }
       if (data.quotes !== undefined) {
@@ -207,17 +210,11 @@ export class ProfileRepository {
   }
 
   async loadForEmbedding(profileId: number): Promise<ProfileRow | null> {
-    const [row] = await this.db
-      .select()
-      .from(profiles)
-      .where(eq(profiles.id, profileId))
-      .limit(1);
+    const [row] = await this.db.select().from(profiles).where(eq(profiles.id, profileId)).limit(1);
     return row ?? null;
   }
 
   async delete(id: number, userId: number): Promise<void> {
-    await this.db
-      .delete(profiles)
-      .where(and(eq(profiles.id, id), eq(profiles.userId, userId)));
+    await this.db.delete(profiles).where(and(eq(profiles.id, id), eq(profiles.userId, userId)));
   }
 }

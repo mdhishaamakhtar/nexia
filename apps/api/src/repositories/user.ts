@@ -1,4 +1,4 @@
-import { eq, ilike, and, sql, inArray, count, notInArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { users } from "../db/schema";
 import type { DB } from "../db/client";
 
@@ -14,20 +14,12 @@ export class UserRepository {
   }
 
   async findByEmail(email: string): Promise<UserRow | null> {
-    const [row] = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+    const [row] = await this.db.select().from(users).where(eq(users.email, email)).limit(1);
     return row ?? null;
   }
 
   async findById(id: number): Promise<UserRow | null> {
-    const [row] = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
+    const [row] = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
     return row ?? null;
   }
 

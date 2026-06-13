@@ -7,9 +7,15 @@ ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
 COPY package.json bun.lock ./
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
+COPY packages/eslint-config/package.json packages/eslint-config/
+COPY packages/eslint-config/*.mjs packages/eslint-config/
+COPY packages/prettier-config/package.json packages/prettier-config/
+COPY packages/prettier-config/*.js packages/prettier-config/
 RUN bun install
 
 COPY packages/shared packages/shared
+COPY packages/eslint-config packages/eslint-config
+COPY packages/prettier-config packages/prettier-config
 COPY apps/web apps/web
 
 WORKDIR /repo/apps/web
@@ -21,6 +27,10 @@ WORKDIR /repo
 COPY package.json bun.lock ./
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
+COPY packages/eslint-config/package.json packages/eslint-config/
+COPY packages/eslint-config/*.mjs packages/eslint-config/
+COPY packages/prettier-config/package.json packages/prettier-config/
+COPY packages/prettier-config/*.js packages/prettier-config/
 RUN bun install
 
 COPY --from=builder /repo/apps/web/.next apps/web/.next

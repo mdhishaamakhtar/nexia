@@ -29,13 +29,19 @@ describe("csrfMiddleware", () => {
 
   test("bearer auth bypasses CSRF on POST", async () => {
     const app = makeApp();
-    const res = await app.request("/protected", { method: "POST", headers: { Authorization: "Bearer token" } });
+    const res = await app.request("/protected", {
+      method: "POST",
+      headers: { Authorization: "Bearer token" },
+    });
     expect(res.status).toBe(200);
   });
 
   test("missing CSRF cookie returns 403", async () => {
     const app = makeApp();
-    const res = await app.request("/protected", { method: "POST", headers: { Cookie: "nexia_token=abc" } });
+    const res = await app.request("/protected", {
+      method: "POST",
+      headers: { Cookie: "nexia_token=abc" },
+    });
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.error.code).toBe("CSRF_TOKEN_MISSING");

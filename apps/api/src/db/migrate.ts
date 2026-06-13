@@ -30,7 +30,13 @@ export async function runMigrations(sql: ReturnType<typeof postgres>, log: Logge
         assert: { type: "json" },
       });
       const journal = journalModule.default as {
-        entries: Array<{ idx: number; version: string; when: number; tag: string; breakpoints: boolean }>;
+        entries: Array<{
+          idx: number;
+          version: string;
+          when: number;
+          tag: string;
+          breakpoints: boolean;
+        }>;
       };
 
       const { createHash } = await import("node:crypto");

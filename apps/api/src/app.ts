@@ -42,8 +42,12 @@ export async function createApp(configDir = "config") {
 
   // Auth Service
   const authService = new AuthService(
-    userRepo, passwordResetRepo, emailVerificationRepo,
-    emailService, config, logger,
+    userRepo,
+    passwordResetRepo,
+    emailVerificationRepo,
+    emailService,
+    config,
+    logger
   );
 
   // Embedding infrastructure (optional)
@@ -67,7 +71,10 @@ export async function createApp(configDir = "config") {
           // Worker
           if (embeddingRepo && embeddingGenerator) {
             embeddingService = new EmbeddingService(
-              profileRepo, embeddingGenerator, embeddingRepo, logger,
+              profileRepo,
+              embeddingGenerator,
+              embeddingRepo,
+              logger
             );
             createWorker(redis, embeddingService, logger);
           }

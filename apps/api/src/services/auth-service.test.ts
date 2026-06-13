@@ -1,5 +1,11 @@
 import { describe, test, expect } from "bun:test";
-import { AuthService, type UserRepo, type PasswordResetRepo, type EmailVerificationRepo, type EmailSender } from "../services/auth-service";
+import {
+  AuthService,
+  type UserRepo,
+  type PasswordResetRepo,
+  type EmailVerificationRepo,
+  type EmailSender,
+} from "../services/auth-service";
 import { ServiceError, ErrorKind } from "../services/errors";
 import pino from "pino";
 const logger = pino({ level: "silent" });
@@ -19,8 +25,25 @@ const config = {
     chat_rate_limit_window_seconds: 60,
     chat_rate_limit_burst: 3,
   },
-  db: { host: "", port: 5432, user: "", password: "", name: "", ssl_mode: "disable" as const, run_migrations: false, max_idle_conns: 10, max_open_conns: 50, conn_max_lifetime_minutes: 60 },
-  ai: { gemini_api_key: "", redis_url: "", opencode_api_key: "", opencode_base_url: "", chat_model: "" },
+  db: {
+    host: "",
+    port: 5432,
+    user: "",
+    password: "",
+    name: "",
+    ssl_mode: "disable" as const,
+    run_migrations: false,
+    max_idle_conns: 10,
+    max_open_conns: 50,
+    conn_max_lifetime_minutes: 60,
+  },
+  ai: {
+    gemini_api_key: "",
+    redis_url: "",
+    opencode_api_key: "",
+    opencode_base_url: "",
+    chat_model: "",
+  },
   email: { resend_api_key: "", from_address: "", app_base_url: "" },
 };
 
@@ -115,7 +138,7 @@ function newSvc(
   userRepo = new FakeUserRepo(),
   resetRepo = new FakeResetRepo(),
   verifyRepo = new FakeVerifyRepo(),
-  emailSvc = new FakeEmailSender(),
+  emailSvc = new FakeEmailSender()
 ) {
   return new AuthService(userRepo, resetRepo, verifyRepo, emailSvc, config, logger);
 }
@@ -216,8 +239,11 @@ describe("AuthService", () => {
   test("verify email success", async () => {
     const verifyRepo = new FakeVerifyRepo();
     verifyRepo.stored.push({
-      id: 1, userId: 5, token: "validtoken",
-      expiresAt: new Date(Date.now() + 3600000), used: false,
+      id: 1,
+      userId: 5,
+      token: "validtoken",
+      expiresAt: new Date(Date.now() + 3600000),
+      used: false,
     });
     const svc = newSvc(new FakeUserRepo(), new FakeResetRepo(), verifyRepo);
 
@@ -228,8 +254,11 @@ describe("AuthService", () => {
   test("verify email expired", async () => {
     const verifyRepo = new FakeVerifyRepo();
     verifyRepo.stored.push({
-      id: 1, userId: 5, token: "expiredtoken",
-      expiresAt: new Date(Date.now() - 3600000), used: false,
+      id: 1,
+      userId: 5,
+      token: "expiredtoken",
+      expiresAt: new Date(Date.now() - 3600000),
+      used: false,
     });
     const svc = newSvc(new FakeUserRepo(), new FakeResetRepo(), verifyRepo);
 
@@ -244,8 +273,11 @@ describe("AuthService", () => {
   test("verify email already used", async () => {
     const verifyRepo = new FakeVerifyRepo();
     verifyRepo.stored.push({
-      id: 1, userId: 5, token: "usedtoken",
-      expiresAt: new Date(Date.now() + 3600000), used: true,
+      id: 1,
+      userId: 5,
+      token: "usedtoken",
+      expiresAt: new Date(Date.now() + 3600000),
+      used: true,
     });
     const svc = newSvc(new FakeUserRepo(), new FakeResetRepo(), verifyRepo);
 
@@ -305,8 +337,11 @@ describe("AuthService", () => {
   test("reset password success", async () => {
     const resetRepo = new FakeResetRepo();
     resetRepo.stored.push({
-      id: 1, userId: 5, token: "validtoken",
-      expiresAt: new Date(Date.now() + 10 * 60000), used: false,
+      id: 1,
+      userId: 5,
+      token: "validtoken",
+      expiresAt: new Date(Date.now() + 10 * 60000),
+      used: false,
     });
     const userRepo = new FakeUserRepo();
     const svc = newSvc(userRepo, resetRepo);
@@ -329,8 +364,11 @@ describe("AuthService", () => {
   test("reset password token already used", async () => {
     const resetRepo = new FakeResetRepo();
     resetRepo.stored.push({
-      id: 2, userId: 5, token: "usedtoken",
-      expiresAt: new Date(Date.now() + 10 * 60000), used: true,
+      id: 2,
+      userId: 5,
+      token: "usedtoken",
+      expiresAt: new Date(Date.now() + 10 * 60000),
+      used: true,
     });
     const svc = newSvc(new FakeUserRepo(), resetRepo);
     try {
@@ -344,8 +382,11 @@ describe("AuthService", () => {
   test("reset password token expired", async () => {
     const resetRepo = new FakeResetRepo();
     resetRepo.stored.push({
-      id: 3, userId: 5, token: "expiredtoken",
-      expiresAt: new Date(Date.now() - 60000), used: false,
+      id: 3,
+      userId: 5,
+      token: "expiredtoken",
+      expiresAt: new Date(Date.now() - 60000),
+      used: false,
     });
     const svc = newSvc(new FakeUserRepo(), resetRepo);
     try {

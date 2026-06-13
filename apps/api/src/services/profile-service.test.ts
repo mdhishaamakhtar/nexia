@@ -15,7 +15,10 @@ class FakeProfileRepo implements ProfileRepo {
 
   async create(input: Parameters<ProfileRepo["create"]>[0]) {
     if (this.err) throw this.err;
-    const created = { id: 100, userId: (input.profile as Record<string, unknown>).userId as number };
+    const created = {
+      id: 100,
+      userId: (input.profile as Record<string, unknown>).userId as number,
+    };
     this.created.push(created);
     return created;
   }
@@ -70,8 +73,12 @@ describe("ProfileService", () => {
     repo.findByIdResp = { id: 100, userId: 77, fullName: "Alice", zodiacSign: "Aries" };
 
     const result = await svc.createProfile(
-      { ...minimalProfile, birthday: "2001-03-22", top_songs: [{ name: "Song", artist: "Artist" }] },
-      77,
+      {
+        ...minimalProfile,
+        birthday: "2001-03-22",
+        top_songs: [{ name: "Song", artist: "Artist" }],
+      },
+      77
     );
     expect(result.fullName).toBe("Alice");
     expect(queue.embedded).toEqual([100]);
@@ -80,15 +87,18 @@ describe("ProfileService", () => {
   test("create validation — >3 top songs", async () => {
     const svc = new ProfileService(new FakeProfileRepo(), new FakeEmbeddingQueue(), logger);
     try {
-      await svc.createProfile({
-        ...minimalProfile,
-        top_songs: [
-          { name: "a", artist: "b" },
-          { name: "c", artist: "d" },
-          { name: "e", artist: "f" },
-          { name: "g", artist: "h" },
-        ],
-      }, 1);
+      await svc.createProfile(
+        {
+          ...minimalProfile,
+          top_songs: [
+            { name: "a", artist: "b" },
+            { name: "c", artist: "d" },
+            { name: "e", artist: "f" },
+            { name: "g", artist: "h" },
+          ],
+        },
+        1
+      );
       expect.unreachable();
     } catch (err) {
       expect(err instanceof ServiceError).toBe(true);
@@ -112,7 +122,11 @@ describe("ProfileService", () => {
     const queue = new FakeEmbeddingQueue();
     const svc = new ProfileService(repo, queue, logger);
 
-    await svc.updateProfile(10, { full_name: "Bob", relationship_type: "Friend", top_songs: [{ name: "Song", artist: "A" }] }, 3);
+    await svc.updateProfile(
+      10,
+      { full_name: "Bob", relationship_type: "Friend", top_songs: [{ name: "Song", artist: "A" }] },
+      3
+    );
     expect(repo.updatedProfiles.length).toBe(1);
     expect(repo.updatedProfiles[0]!.id).toBe(10);
     expect(queue.embedded).toEqual([10]);
@@ -138,15 +152,19 @@ describe("ProfileService", () => {
   test("update validation — >3 top songs", async () => {
     const svc = new ProfileService(new FakeProfileRepo(), new FakeEmbeddingQueue(), logger);
     try {
-      await svc.updateProfile(1, {
-        ...minimalProfile,
-        top_songs: [
-          { name: "a", artist: "b" },
-          { name: "c", artist: "d" },
-          { name: "e", artist: "f" },
-          { name: "g", artist: "h" },
-        ],
-      }, 1);
+      await svc.updateProfile(
+        1,
+        {
+          ...minimalProfile,
+          top_songs: [
+            { name: "a", artist: "b" },
+            { name: "c", artist: "d" },
+            { name: "e", artist: "f" },
+            { name: "g", artist: "h" },
+          ],
+        },
+        1
+      );
       expect.unreachable();
     } catch (err) {
       expect(err instanceof ServiceError).toBe(true);
@@ -180,7 +198,10 @@ describe("ProfileService", () => {
     queue.err = new Error("queue unavailable");
     const svc = new ProfileService(repo, queue, logger);
 
-    await svc.createProfile({ ...minimalProfile, top_songs: [{ name: "Song", artist: "Artist" }] }, 1);
+    await svc.createProfile(
+      { ...minimalProfile, top_songs: [{ name: "Song", artist: "Artist" }] },
+      1
+    );
     expect(repo.created.length).toBe(1);
   });
 });

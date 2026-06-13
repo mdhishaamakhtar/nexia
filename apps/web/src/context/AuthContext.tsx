@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { getSession, logoutSession } from "@/features/auth/api";
@@ -22,7 +22,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const refreshSession = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    getSession()
+      .then((session) => {
+        if (cancelled) return;
+        setIsAuthenticated(session.authenticated);
+        setUserID(session.user_id);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setIsAuthenticated(false);
+        setUserID(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const refreshSession = useCallback(async () => {
     try {
       const session = await getSession();
       setIsAuthenticated(session.authenticated);
@@ -31,10 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(false);
       setUserID(null);
     }
-  };
-
-  useEffect(() => {
-    refreshSession().finally(() => setIsLoading(false));
   }, []);
 
   const login = async () => {

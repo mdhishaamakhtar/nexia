@@ -40,7 +40,10 @@ export const aiConfigSchema = z.object({
 export const emailConfigSchema = z.object({
   resend_api_key: z.string().default(""),
   from_address: z.string().default("Nexia <noreply@nexia.hishaam.dev>"),
-  app_base_url: z.string().default("http://localhost:3000"),
+  app_base_url: z
+    .string()
+    .default("http://localhost:3000")
+    .transform((v) => (v === "" ? "http://localhost:3000" : v)),
 });
 
 export const configSchema = z.object({
@@ -60,15 +63,13 @@ const ENV_PREFIX = "NEXIA_";
 
 function coerceValue(section: string, key: string, value: string): unknown {
   if (key === "cors_origins") {
-    return value.split(",").map((s) => s.trim()).filter(Boolean);
+    return value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
   }
   if (section === "db") {
-    const intFields = [
-      "port",
-      "max_idle_conns",
-      "max_open_conns",
-      "conn_max_lifetime_minutes",
-    ];
+    const intFields = ["port", "max_idle_conns", "max_open_conns", "conn_max_lifetime_minutes"];
     if (intFields.includes(key)) return Number(value);
   }
   if (section === "server") {

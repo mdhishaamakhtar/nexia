@@ -21,28 +21,19 @@ export function csrfMiddleware() {
 
     const cookieToken = getCookie(c, CSRF_COOKIE_NAME);
     if (!cookieToken) {
-      return c.json(
-        { error: { code: "CSRF_TOKEN_MISSING", message: "CSRF token required" } },
-        403,
-      );
+      return c.json({ error: { code: "CSRF_TOKEN_MISSING", message: "CSRF token required" } }, 403);
     }
 
     const headerToken = c.req.header(CSRF_HEADER_NAME);
     if (!headerToken) {
-      return c.json(
-        { error: { code: "CSRF_TOKEN_MISSING", message: "CSRF token required" } },
-        403,
-      );
+      return c.json({ error: { code: "CSRF_TOKEN_MISSING", message: "CSRF token required" } }, 403);
     }
 
     const cookieBuf = Buffer.from(cookieToken);
     const headerBuf = Buffer.from(headerToken);
 
     if (cookieBuf.length !== headerBuf.length || !timingSafeEqual(cookieBuf, headerBuf)) {
-      return c.json(
-        { error: { code: "CSRF_TOKEN_INVALID", message: "Invalid CSRF token" } },
-        403,
-      );
+      return c.json({ error: { code: "CSRF_TOKEN_INVALID", message: "Invalid CSRF token" } }, 403);
     }
 
     return next();

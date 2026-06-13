@@ -27,7 +27,7 @@ export function authMiddleware(cfg: Config, userLookup: UserLookup) {
       if (parts.length !== 2 || parts[0] !== "Bearer") {
         return c.json(
           { error: { code: "UNAUTHORIZED", message: "Invalid authorization header format" } },
-          401,
+          401
         );
       }
       tokenString = parts[1]!;
@@ -37,7 +37,7 @@ export function authMiddleware(cfg: Config, userLookup: UserLookup) {
       if (!cookieToken) {
         return c.json(
           { error: { code: "UNAUTHORIZED", message: "Authorization token required" } },
-          401,
+          401
         );
       }
       tokenString = cookieToken;
@@ -48,26 +48,17 @@ export function authMiddleware(cfg: Config, userLookup: UserLookup) {
     try {
       claims = await validateToken(tokenString, cfg);
     } catch {
-      return c.json(
-        { error: { code: "UNAUTHORIZED", message: "Invalid or expired token" } },
-        401,
-      );
+      return c.json({ error: { code: "UNAUTHORIZED", message: "Invalid or expired token" } }, 401);
     }
 
     let user;
     try {
       user = await userLookup.findById(claims.user_id);
     } catch {
-      return c.json(
-        { error: { code: "UNAUTHORIZED", message: "User not found" } },
-        401,
-      );
+      return c.json({ error: { code: "UNAUTHORIZED", message: "User not found" } }, 401);
     }
     if (!user) {
-      return c.json(
-        { error: { code: "UNAUTHORIZED", message: "User not found" } },
-        401,
-      );
+      return c.json({ error: { code: "UNAUTHORIZED", message: "User not found" } }, 401);
     }
 
     c.set("userId", claims.user_id);

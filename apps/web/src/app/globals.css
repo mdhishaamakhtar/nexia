@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 @theme {
   --font-sans: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
@@ -31,6 +32,27 @@
   --lavender: #c4b5fd;
   --peach: #fdba74;
   --green: #22c55e;
+
+  /* ── shadcn/ui theme (mapped to Nexia tokens) ── */
+  --background: var(--bg);
+  --foreground: var(--text-1);
+  --card: var(--bg-raised);
+  --card-foreground: var(--text-1);
+  --popover: var(--bg-raised);
+  --popover-foreground: var(--text-1);
+  --primary: var(--blue);
+  --primary-foreground: #ffffff;
+  --secondary: var(--lavender);
+  --secondary-foreground: #5b21b6;
+  --muted: var(--fill-hover);
+  --muted-foreground: var(--text-3);
+  --accent: var(--lavender);
+  --accent-foreground: #5b21b6;
+  --destructive: var(--red);
+  --destructive-foreground: #ffffff;
+  --ring: var(--blue);
+  --input: var(--border);
+  --radius: 0.75rem;
 
   /* Semantic surface / state tokens */
   --peach-text: #7c2d12; /* text on peach surfaces */

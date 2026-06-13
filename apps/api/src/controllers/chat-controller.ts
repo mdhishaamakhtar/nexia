@@ -20,7 +20,10 @@ export function createChatController(agent: ChatAgent) {
     }
 
     if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "messages array is required" } }, 400);
+      return c.json(
+        { error: { code: "VALIDATION_ERROR", message: "messages array is required" } },
+        400
+      );
     }
 
     try {

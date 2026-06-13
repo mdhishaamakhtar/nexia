@@ -1,6 +1,11 @@
 import { Queue } from "bullmq";
 import Redis from "ioredis";
-import { TYPE_EMBEDDING_TASK, TYPE_DELETION_TASK, type EmbeddingPayload, type DeletionPayload } from "./types";
+import {
+  TYPE_EMBEDDING_TASK,
+  TYPE_DELETION_TASK,
+  type EmbeddingPayload,
+  type DeletionPayload,
+} from "./types";
 import type { Logger } from "../logging/logger";
 
 export class EmbeddingQueueProducer {

@@ -6,12 +6,22 @@ import type { Config } from "../config/config";
 
 const testCfg: Config = {
   server: {
-    port: 8080, mode: "test", jwt_secret: "test-secret", jwt_expiry_minutes: 30,
-    cors_origins: [], cookie_domain: "",
-    auth_rate_limit_requests: 10, auth_rate_limit_window_seconds: 10, auth_rate_limit_burst: 10,
-    chat_rate_limit_requests: 10, chat_rate_limit_window_seconds: 60, chat_rate_limit_burst: 3,
+    port: 8080,
+    mode: "test",
+    jwt_secret: "test-secret",
+    jwt_expiry_minutes: 30,
+    cors_origins: [],
+    cookie_domain: "",
+    auth_rate_limit_requests: 10,
+    auth_rate_limit_window_seconds: 10,
+    auth_rate_limit_burst: 10,
+    chat_rate_limit_requests: 10,
+    chat_rate_limit_window_seconds: 60,
+    chat_rate_limit_burst: 3,
   },
-  db: {} as Config["db"], ai: {} as Config["ai"], email: {} as Config["email"],
+  db: {} as Config["db"],
+  ai: {} as Config["ai"],
+  email: {} as Config["email"],
 };
 
 function makeUserLookup(user: { id: number } | null, err?: Error) {
@@ -55,7 +65,7 @@ describe("authMiddleware", () => {
     const app = makeApp();
     const res = await app.request("/protected", { headers: { Authorization: `Bearer ${token}` } });
     expect(res.status).toBe(200);
-    const body = await res.json() as { user_id: number };
+    const body = (await res.json()) as { user_id: number };
     expect(body.user_id).toBe(101);
   });
 
@@ -99,7 +109,7 @@ describe("getUserId", () => {
       return c.json({ user_id: id ?? null });
     });
     const res = await app2.request("/id");
-    const body = await res.json() as { user_id: unknown };
+    const body = (await res.json()) as { user_id: unknown };
     expect(body.user_id).toBeNull();
   });
 });

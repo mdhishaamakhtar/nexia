@@ -1,4 +1,4 @@
-import { streamText, stepCountIs } from "ai";
+import { streamText, stepCountIs, convertToModelMessages, type UIMessage } from "ai";
 import type { LanguageModel } from "ai";
 import type { ProfileService } from "../services/profile-service";
 import type { EmbeddingRepository } from "../repositories/embedding";
@@ -12,13 +12,10 @@ export class ChatAgent {
     private model: LanguageModel | null,
     private profileService: ProfileService,
     private embeddingRepo: EmbeddingRepository | null,
-    private embeddingGenerator: EmbeddingGenerator | null,
+    private embeddingGenerator: EmbeddingGenerator | null
   ) {}
 
-  async respond(params: {
-    userId: number;
-    messages: Array<{ role: string; content: string }>;
-  }) {
+  async respond(params: { userId: number; messages: UIMessage[] }) {
     if (!this.model) {
       throw errAIUnavailable();
     }
@@ -30,13 +27,16 @@ export class ChatAgent {
       embeddingGenerator: this.embeddingGenerator,
     });
 
+    // convertToModelMessages expects Omit<UIMessage, 'id'>
+    const uiMessages = params.messages.map(({ id: _id, ...rest }) => rest);
+    const modelMessages = await convertToModelMessages(uiMessages, {
+      ignoreIncompleteToolCalls: true,
+    });
+
     const result = streamText({
       model: this.model,
       system: AGENT_RULES,
-      messages: params.messages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
+      messages: modelMessages,
       tools,
       stopWhen: stepCountIs(10),
     });

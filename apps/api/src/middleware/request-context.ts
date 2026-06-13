@@ -51,12 +51,9 @@ export function recovery(logger: Logger): MiddlewareHandler {
           method: c.req.method,
           path: c.req.path,
         },
-        "panic recovered",
+        "panic recovered"
       );
-      return c.json(
-        { error: { code: "SERVER_ERROR", message: "Internal server error" } },
-        500,
-      );
+      return c.json({ error: { code: "SERVER_ERROR", message: "Internal server error" } }, 500);
     }
   };
 }

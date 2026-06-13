@@ -1,11 +1,11 @@
 import { Hono } from "hono";
-import { getCookie, setCookie, deleteCookie } from "hono/cookie";
+import { setCookie, deleteCookie } from "hono/cookie";
 import type { AuthService } from "../services/auth-service";
 import type { Config } from "../config/config";
 import { generateCsrfToken } from "../utils/csrf";
 import { respondWithServiceError } from "../services/errors";
 import { CSRF_COOKIE_NAME } from "../middleware/csrf";
-import { getUserId, type UserLookup } from "../middleware/auth";
+import { getUserId } from "../middleware/auth";
 
 export function createAuthController(authService: AuthService, config: Config) {
   const app = new Hono();
@@ -14,11 +14,17 @@ export function createAuthController(authService: AuthService, config: Config) {
     const body = await c.req.json();
     const { email, password } = body;
     if (!email || !password) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "Email and password required" } }, 400);
+      return c.json(
+        { error: { code: "VALIDATION_ERROR", message: "Email and password required" } },
+        400
+      );
     }
     try {
       await authService.signup(email, password);
-      return c.json({ message: "Account created. Please check your email to verify your account." }, 201);
+      return c.json(
+        { message: "Account created. Please check your email to verify your account." },
+        201
+      );
     } catch (err) {
       return respondWithServiceError(c, err);
     }
@@ -28,20 +34,21 @@ export function createAuthController(authService: AuthService, config: Config) {
     const body = await c.req.json();
     const { email, password } = body;
     if (!email || !password) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "Email and password required" } }, 400);
+      return c.json(
+        { error: { code: "VALIDATION_ERROR", message: "Email and password required" } },
+        400
+      );
     }
     try {
       const token = await authService.login(email, password);
 
       const maxAge = config.server.jwt_expiry_minutes * 60;
       const domain = config.server.cookie_domain || undefined;
-      const isSecure = config.server.mode === "release";
-      const sameSite = isSecure ? ("None" as const) : ("Lax" as const);
 
       setCookie(c, "nexia_token", token, {
         httpOnly: true,
-        secure: isSecure,
-        sameSite,
+        secure: false,
+        sameSite: "Lax",
         path: "/",
         domain,
         maxAge,
@@ -49,8 +56,8 @@ export function createAuthController(authService: AuthService, config: Config) {
 
       const csrfToken = generateCsrfToken();
       setCookie(c, CSRF_COOKIE_NAME, csrfToken, {
-        secure: isSecure,
-        sameSite,
+        secure: false,
+        sameSite: "Lax",
         path: "/",
         domain,
         maxAge,
@@ -107,7 +114,10 @@ export function createAuthController(authService: AuthService, config: Config) {
     const body = await c.req.json();
     const { token, new_password } = body;
     if (!token || !new_password) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "Token and new password required" } }, 400);
+      return c.json(
+        { error: { code: "VALIDATION_ERROR", message: "Token and new password required" } },
+        400
+      );
     }
     try {
       await authService.resetPassword(token, new_password);

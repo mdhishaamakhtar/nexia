@@ -1,6 +1,11 @@
 import { Worker, UnrecoverableError } from "bullmq";
 import Redis from "ioredis";
-import { TYPE_EMBEDDING_TASK, TYPE_DELETION_TASK, type EmbeddingPayload, type DeletionPayload } from "./types";
+import {
+  TYPE_EMBEDDING_TASK,
+  TYPE_DELETION_TASK,
+  type EmbeddingPayload,
+  type DeletionPayload,
+} from "./types";
 import type { Logger } from "../logging/logger";
 import { ErrorKind, isServiceError } from "../services/errors";
 
@@ -13,7 +18,7 @@ export function createWorker(
   redis: Redis,
   runner: EmbeddingRunner,
   logger: Logger,
-  concurrency = 2,
+  concurrency = 2
 ): Worker {
   const log = logger.child({ component: "queue_worker" });
 
@@ -33,7 +38,10 @@ export function createWorker(
             await runner.embedProfile(payload.profile_id);
           } catch (err) {
             if (isServiceError(err) && err.kind === ErrorKind.NotFound) {
-              log.warn({ profileId: payload.profile_id }, "embedding task skipped: profile not found");
+              log.warn(
+                { profileId: payload.profile_id },
+                "embedding task skipped: profile not found"
+              );
               throw new UnrecoverableError("profile not found");
             }
             throw err;
@@ -68,7 +76,7 @@ export function createWorker(
     {
       connection: redis,
       concurrency,
-    },
+    }
   );
 
   worker.on("failed", (job, err) => {

@@ -13,7 +13,9 @@ function chatRateLimitConfigFromConfig(cfg: Config | null): RateLimitConfig {
       DEFAULT_CHAT_REQUESTS,
       DEFAULT_CHAT_BURST,
       DEFAULT_CHAT_WINDOW_SECONDS,
-      0, 0, 0,
+      0,
+      0,
+      0
     );
   }
   return rateLimitConfigFromValues(
@@ -22,7 +24,7 @@ function chatRateLimitConfigFromConfig(cfg: Config | null): RateLimitConfig {
     DEFAULT_CHAT_WINDOW_SECONDS,
     cfg.server.chat_rate_limit_requests,
     cfg.server.chat_rate_limit_burst,
-    cfg.server.chat_rate_limit_window_seconds,
+    cfg.server.chat_rate_limit_window_seconds
   );
 }
 
