@@ -568,7 +568,7 @@ export default function ProfileDetailPage() {
               {quotes.length > 0 && (
                 <div>
                   <SubLabel icon={Quote}>Their Quotes</SubLabel>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-start">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {quotes.map((q) => (
                       <button
                         key={q.id ?? q.quote}
