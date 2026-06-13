@@ -30,7 +30,7 @@ ai:
   redis_url: "127.0.0.1:6379"
   opencode_api_key: ""
   opencode_base_url: "https://opencode.ai/zen/v1"
-  chat_model: "mimo-v2.5-free"
+  chat_model: "deepseek-v4-flash-free"
 
 email:
   resend_api_key: ""

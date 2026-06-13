@@ -33,8 +33,8 @@ export const aiConfigSchema = z.object({
   gemini_api_key: z.string().default(""),
   redis_url: z.string().default("127.0.0.1:6379"),
   opencode_api_key: z.string().default(""),
-  opencode_base_url: z.string().default("https://opencode.ai/zen/go/v1"),
-  chat_model: z.string().default("deepseek-v4-pro"),
+  opencode_base_url: z.string().default("https://opencode.ai/zen/v1"),
+  chat_model: z.string().default("deepseek-v4-flash-free"),
 });
 
 export const emailConfigSchema = z.object({
