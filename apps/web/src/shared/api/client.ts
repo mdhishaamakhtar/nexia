@@ -1,17 +1,6 @@
 import ky, { HTTPError } from "ky";
 import type { ApiErrorResponse } from "@/shared/types/api";
-
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const prefix = `${name}=`;
-  for (const cookie of document.cookie.split(";")) {
-    const trimmed = cookie.trim();
-    if (trimmed.startsWith(prefix)) {
-      return decodeURIComponent(trimmed.slice(prefix.length));
-    }
-  }
-  return null;
-}
+import { readCookie, CSRF_COOKIE_NAME } from "@/shared/api/cookies";
 
 export const api = ky.create({
   prefixUrl: `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080"}/api/v1`,
@@ -24,7 +13,7 @@ export const api = ky.create({
       (request) => {
         const method = request.method.toUpperCase();
         if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-          const csrfToken = getCookie("nexia_csrf");
+          const csrfToken = readCookie(CSRF_COOKIE_NAME);
           if (csrfToken) {
             request.headers.set("X-CSRF-Token", csrfToken);
           }

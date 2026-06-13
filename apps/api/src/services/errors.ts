@@ -1,3 +1,5 @@
+import type { Context } from "hono";
+
 export const ErrorKind = {
   NotFound: "not_found",
   Unauthorized: "unauthorized",
@@ -45,8 +47,6 @@ export function errEmailConflict(msg?: string): ServiceError {
 export function isServiceError(err: unknown): err is ServiceError {
   return err instanceof ServiceError;
 }
-
-import type { Context } from "hono";
 
 export function respondWithServiceError(c: Context, err: unknown): Response {
   if (isServiceError(err)) {

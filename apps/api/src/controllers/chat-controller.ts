@@ -1,6 +1,7 @@
 import { Hono } from "hono";
+import type { UIMessage } from "ai";
 import type { ChatAgent } from "../ai/agent";
-import { respondWithServiceError } from "../services/errors";
+import { respondWithServiceError, respondError } from "../services/errors";
 import { getUserId } from "../middleware/auth";
 
 export function createChatController(agent: ChatAgent) {
@@ -8,26 +9,21 @@ export function createChatController(agent: ChatAgent) {
 
   app.post("/", async (c) => {
     const userId = getUserId(c);
-    if (!userId) {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
-    }
+    if (!userId) return respondError(c, 401, "UNAUTHORIZED", "Authentication required");
 
-    let body;
+    let body: { messages?: unknown };
     try {
       body = await c.req.json();
     } catch {
-      return c.json({ error: { code: "BAD_REQUEST", message: "Invalid JSON" } }, 400);
+      return respondError(c, 400, "BAD_REQUEST", "Invalid JSON body");
     }
 
-    if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
-      return c.json(
-        { error: { code: "VALIDATION_ERROR", message: "messages array is required" } },
-        400
-      );
+    if (!Array.isArray(body.messages) || body.messages.length === 0) {
+      return respondError(c, 400, "VALIDATION_ERROR", "messages array is required");
     }
 
     try {
-      const result = await agent.respond({ userId, messages: body.messages });
+      const result = await agent.respond({ userId, messages: body.messages as UIMessage[] });
       return result.toUIMessageStreamResponse();
     } catch (err) {
       return respondWithServiceError(c, err);

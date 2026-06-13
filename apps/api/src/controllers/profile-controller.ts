@@ -1,19 +1,20 @@
 import { Hono } from "hono";
+import { profileInputSchema, listProfilesQuerySchema } from "@nexia/shared";
 import type { ProfileService } from "../services/profile-service";
-import { respondWithServiceError } from "../services/errors";
+import { respondWithServiceError, respondError } from "../services/errors";
 import { getUserId } from "../middleware/auth";
+import { parseJsonBody } from "../utils/validation";
 
 export function createProfileController(profileService: ProfileService) {
   const app = new Hono();
 
   app.post("/", async (c) => {
     const userId = getUserId(c);
-    if (!userId) {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
-    }
+    if (!userId) return respondError(c, 401, "UNAUTHORIZED", "Authentication required");
+    const parsed = await parseJsonBody(c, profileInputSchema);
+    if (!parsed.ok) return parsed.response;
     try {
-      const body = await c.req.json();
-      const created = await profileService.createProfile(body, userId);
+      const created = await profileService.createProfile(parsed.data, userId);
       return c.json({ id: created.id }, 201);
     } catch (err) {
       return respondWithServiceError(c, err);
@@ -22,30 +23,26 @@ export function createProfileController(profileService: ProfileService) {
 
   app.get("/", async (c) => {
     const userId = getUserId(c);
-    if (!userId) {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
+    if (!userId) return respondError(c, 401, "UNAUTHORIZED", "Authentication required");
+    const query = listProfilesQuerySchema.safeParse({
+      page: c.req.query("page"),
+      limit: c.req.query("limit"),
+      search: c.req.query("search"),
+      relationship_type: c.req.query("relationship_type"),
+    });
+    if (!query.success) {
+      return respondError(c, 400, "VALIDATION_ERROR", "Invalid query parameters");
     }
+    const { page = 1, limit = 10, search, relationship_type } = query.data;
     try {
-      const page = Math.max(1, Number(c.req.query("page")) || 1);
-      let limit = Number(c.req.query("limit")) || 10;
-      if (limit < 1) limit = 10;
-      if (limit > 100) limit = 100;
-      const search = c.req.query("search") || undefined;
-      const relationshipType = c.req.query("relationship_type") || undefined;
-
       const result = await profileService.listProfiles(
         page,
         limit,
         search,
-        relationshipType,
+        relationship_type,
         userId
       );
-      return c.json({
-        data: result.profiles,
-        total: result.total,
-        page,
-        limit,
-      });
+      return c.json({ data: result.profiles, total: result.total, page, limit });
     } catch (err) {
       return respondWithServiceError(c, err);
     }
@@ -53,18 +50,12 @@ export function createProfileController(profileService: ProfileService) {
 
   app.get("/:id", async (c) => {
     const userId = getUserId(c);
-    if (!userId) {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
-    }
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) {
-      return c.json({ error: { code: "BAD_REQUEST", message: "Invalid profile ID" } }, 400);
-    }
+    if (!userId) return respondError(c, 401, "UNAUTHORIZED", "Authentication required");
+    const id = parseId(c.req.param("id"));
+    if (id === null) return respondError(c, 400, "BAD_REQUEST", "Invalid profile ID");
     try {
       const profile = await profileService.getProfile(id, userId);
-      if (!profile) {
-        return c.json({ error: { code: "NOT_FOUND", message: "Resource not found" } }, 404);
-      }
+      if (!profile) return respondError(c, 404, "NOT_FOUND", "Resource not found");
       return c.json(profile);
     } catch (err) {
       return respondWithServiceError(c, err);
@@ -73,16 +64,13 @@ export function createProfileController(profileService: ProfileService) {
 
   app.put("/:id", async (c) => {
     const userId = getUserId(c);
-    if (!userId) {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
-    }
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) {
-      return c.json({ error: { code: "BAD_REQUEST", message: "Invalid profile ID" } }, 400);
-    }
+    if (!userId) return respondError(c, 401, "UNAUTHORIZED", "Authentication required");
+    const id = parseId(c.req.param("id"));
+    if (id === null) return respondError(c, 400, "BAD_REQUEST", "Invalid profile ID");
+    const parsed = await parseJsonBody(c, profileInputSchema);
+    if (!parsed.ok) return parsed.response;
     try {
-      const body = await c.req.json();
-      await profileService.updateProfile(id, body, userId);
+      await profileService.updateProfile(id, parsed.data, userId);
       return c.json({ message: "Profile updated" });
     } catch (err) {
       return respondWithServiceError(c, err);
@@ -91,13 +79,9 @@ export function createProfileController(profileService: ProfileService) {
 
   app.delete("/:id", async (c) => {
     const userId = getUserId(c);
-    if (!userId) {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "Authentication required" } }, 401);
-    }
-    const id = Number(c.req.param("id"));
-    if (isNaN(id)) {
-      return c.json({ error: { code: "BAD_REQUEST", message: "Invalid profile ID" } }, 400);
-    }
+    if (!userId) return respondError(c, 401, "UNAUTHORIZED", "Authentication required");
+    const id = parseId(c.req.param("id"));
+    if (id === null) return respondError(c, 400, "BAD_REQUEST", "Invalid profile ID");
     try {
       await profileService.deleteProfile(id, userId);
       return c.json({ message: "Profile deleted" });
@@ -107,4 +91,9 @@ export function createProfileController(profileService: ProfileService) {
   });
 
   return app;
+}
+
+function parseId(raw: string): number | null {
+  const id = Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
 }

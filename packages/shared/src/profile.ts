@@ -102,12 +102,8 @@ export const profileOutputSchema = z.object({
   notes: z.string(),
   created_at: z.string(),
   updated_at: z.string(),
-  tags: z.array(
-    z.object({ id: z.number(), profile_id: z.number(), tag: z.string() })
-  ),
-  political_views: z.array(
-    z.object({ id: z.number(), profile_id: z.number(), view: z.string() })
-  ),
+  tags: z.array(z.object({ id: z.number(), profile_id: z.number(), tag: z.string() })),
+  political_views: z.array(z.object({ id: z.number(), profile_id: z.number(), view: z.string() })),
   food_restrictions: z.array(
     z.object({
       id: z.number(),
@@ -115,18 +111,10 @@ export const profileOutputSchema = z.object({
       restriction: z.string(),
     })
   ),
-  movie_genres: z.array(
-    z.object({ id: z.number(), profile_id: z.number(), genre: z.string() })
-  ),
-  book_genres: z.array(
-    z.object({ id: z.number(), profile_id: z.number(), genre: z.string() })
-  ),
-  hangout_places: z.array(
-    z.object({ id: z.number(), profile_id: z.number(), place: z.string() })
-  ),
-  quotes: z.array(
-    z.object({ id: z.number(), profile_id: z.number(), quote: z.string() })
-  ),
+  movie_genres: z.array(z.object({ id: z.number(), profile_id: z.number(), genre: z.string() })),
+  book_genres: z.array(z.object({ id: z.number(), profile_id: z.number(), genre: z.string() })),
+  hangout_places: z.array(z.object({ id: z.number(), profile_id: z.number(), place: z.string() })),
+  quotes: z.array(z.object({ id: z.number(), profile_id: z.number(), quote: z.string() })),
   top_songs: z.array(
     z.object({
       id: z.number(),

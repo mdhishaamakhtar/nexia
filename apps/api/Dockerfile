@@ -1,28 +1,18 @@
+# Bun + Hono API. Build context is the repo root (monorepo workspace install).
 FROM oven/bun:1
+WORKDIR /repo
 
-# Shared packages (must be at /repo/packages/ for file: dep resolution)
-COPY packages/shared/package.json /repo/packages/shared/package.json
-COPY packages/shared/src /repo/packages/shared/src
-COPY packages/eslint-config/package.json /repo/packages/eslint-config/package.json
-COPY packages/eslint-config/*.mjs /repo/packages/eslint-config/
-COPY packages/prettier-config/package.json /repo/packages/prettier-config/package.json
-COPY packages/prettier-config/*.js /repo/packages/prettier-config/
+# Install deps from the root lockfile. All workspace manifests are copied so the
+# frozen install matches the lockfile; sources are added afterwards for caching.
+COPY package.json bun.lock ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/shared/package.json packages/shared/
+RUN bun install --frozen-lockfile
 
-# API app
+COPY packages/shared packages/shared
+COPY apps/api apps/api
+
 WORKDIR /repo/apps/api
-COPY apps/api/package.json .
-COPY apps/api/src src
-COPY apps/api/config config
-COPY apps/api/drizzle drizzle
-COPY apps/api/drizzle.config.ts .
-COPY apps/api/tsconfig.json .
-COPY apps/api/eslint.config.mjs .
-COPY apps/api/prettier.config.js .
-
-# Override workspace:* to file: dep for Docker
-RUN sed -i 's/"workspace:\*"/"file:..\/..\/packages\/shared"/g' package.json
-
-RUN bun install
-
 EXPOSE 8080
 CMD ["bun", "src/index.ts"]

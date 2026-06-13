@@ -1,46 +1,37 @@
 import type { Logger } from "../logging/logger";
-import type { ProfileInput } from "@nexia/shared";
+import type { ProfileInput, ProfileOutput } from "@nexia/shared";
 import { errValidation } from "./errors";
 import { applyDerivedZodiac } from "./zodiac";
 
+/** Child collections in the DB-facing (value-only) shape repositories expect. */
+interface ProfileChildInput {
+  tags?: Array<{ tag: string }>;
+  politicalViews?: Array<{ view: string }>;
+  foodRestrictions?: Array<{ restriction: string }>;
+  movieGenres?: Array<{ genre: string }>;
+  bookGenres?: Array<{ genre: string }>;
+  hangoutPlaces?: Array<{ place: string }>;
+  quotes?: Array<{ quote: string }>;
+  topSongs?: Array<{ name: string; artist: string }>;
+  associatedSong?: { name: string; artist: string } | null;
+}
+
 export interface ProfileRepo {
-  create(input: {
-    profile: Record<string, unknown>;
-    tags?: Array<{ tag: string }>;
-    politicalViews?: Array<{ view: string }>;
-    foodRestrictions?: Array<{ restriction: string }>;
-    movieGenres?: Array<{ genre: string }>;
-    bookGenres?: Array<{ genre: string }>;
-    hangoutPlaces?: Array<{ place: string }>;
-    quotes?: Array<{ quote: string }>;
-    topSongs?: Array<{ name: string; artist: string }>;
-    associatedSong?: { name: string; artist: string } | null;
-  }): Promise<{ id: number; userId: number }>;
-  findById(id: number, userId: number): Promise<Record<string, unknown> | null>;
+  create(input: ProfileChildInput & { profile: Record<string, unknown> }): Promise<ProfileOutput>;
+  findById(id: number, userId: number): Promise<ProfileOutput | null>;
   findAll(params: {
     page: number;
     limit: number;
     search?: string;
     relationshipType?: string;
     userId: number;
-  }): Promise<{ profiles: Record<string, unknown>[]; total: number }>;
+  }): Promise<{ profiles: ProfileOutput[]; total: number }>;
   update(
     profileId: number,
     userId: number,
-    input: {
-      profile: Partial<Record<string, unknown>>;
-      tags?: Array<{ tag: string }>;
-      politicalViews?: Array<{ view: string }>;
-      foodRestrictions?: Array<{ restriction: string }>;
-      movieGenres?: Array<{ genre: string }>;
-      bookGenres?: Array<{ genre: string }>;
-      hangoutPlaces?: Array<{ place: string }>;
-      quotes?: Array<{ quote: string }>;
-      topSongs?: Array<{ name: string; artist: string }>;
-      associatedSong?: { name: string; artist: string } | null;
-    }
-  ): Promise<Record<string, unknown>>;
-  loadForEmbedding(profileId: number): Promise<Record<string, unknown> | null>;
+    input: ProfileChildInput & { profile: Record<string, unknown> }
+  ): Promise<ProfileOutput>;
+  loadForEmbedding(profileId: number): Promise<ProfileOutput | null>;
   delete(id: number, userId: number): Promise<void>;
 }
 
@@ -49,7 +40,7 @@ export interface EmbeddingQueue {
   enqueueDeletionTask(profileId: number): Promise<void>;
 }
 
-type TopSongInput = { name: string; artist: string };
+const MAX_TOP_SONGS = 3;
 
 export class ProfileService {
   constructor(
@@ -58,32 +49,19 @@ export class ProfileService {
     private logger: Logger
   ) {}
 
-  async createProfile(profile: ProfileInput, userId: number): Promise<Record<string, unknown>> {
-    const topSongs = profile.top_songs ?? [];
-    if (topSongs.length > 3) {
+  async createProfile(profile: ProfileInput, userId: number): Promise<ProfileOutput> {
+    if ((profile.top_songs?.length ?? 0) > MAX_TOP_SONGS) {
       throw errValidation("cannot have more than 3 top songs");
     }
 
     applyDerivedZodiac(profile);
 
     const created = await this.repo.create(mapProfileToRepoInput(profile, userId));
-    const result = await this.repo.findById(created.id, userId);
-
-    if (this.queue) {
-      try {
-        await this.queue.enqueueEmbeddingTask(created.id);
-      } catch (err) {
-        this.logger.warn(
-          { profileId: created.id, err: String(err) },
-          "failed to enqueue profile embedding task"
-        );
-      }
-    }
-
-    return result!;
+    await this.enqueueEmbedding(created.id);
+    return created;
   }
 
-  async getProfile(id: number, userId: number): Promise<Record<string, unknown> | null> {
+  async getProfile(id: number, userId: number): Promise<ProfileOutput | null> {
     return this.repo.findById(id, userId);
   }
 
@@ -93,7 +71,7 @@ export class ProfileService {
     search: string | undefined,
     relationshipType: string | undefined,
     userId: number
-  ): Promise<{ profiles: Record<string, unknown>[]; total: number }> {
+  ): Promise<{ profiles: ProfileOutput[]; total: number }> {
     if (page < 1) page = 1;
     if (limit < 1) limit = 10;
     if (limit > 100) limit = 100;
@@ -104,42 +82,39 @@ export class ProfileService {
     id: number,
     profile: Partial<ProfileInput>,
     userId: number
-  ): Promise<Record<string, unknown>> {
-    const topSongs = profile.top_songs ?? [];
-    if (topSongs.length > 3) {
+  ): Promise<ProfileOutput> {
+    if ((profile.top_songs?.length ?? 0) > MAX_TOP_SONGS) {
       throw errValidation("cannot have more than 3 top songs");
     }
 
     applyDerivedZodiac(profile);
 
-    const result = await this.repo.update(id, userId, mapProfileToRepoUpdate(profile));
-
-    if (this.queue) {
-      try {
-        await this.queue.enqueueEmbeddingTask(id);
-      } catch (err) {
-        this.logger.warn(
-          { profileId: id, err: String(err) },
-          "failed to enqueue profile embedding task"
-        );
-      }
-    }
-
-    return result;
+    const updated = await this.repo.update(id, userId, mapProfileToRepoUpdate(profile));
+    await this.enqueueEmbedding(id);
+    return updated;
   }
 
   async deleteProfile(id: number, userId: number): Promise<void> {
     await this.repo.delete(id, userId);
 
-    if (this.queue) {
-      try {
-        await this.queue.enqueueDeletionTask(id);
-      } catch (err) {
-        this.logger.warn(
-          { profileId: id, err: String(err) },
-          "failed to enqueue profile deletion task"
-        );
-      }
+    if (!this.queue) return;
+    try {
+      await this.queue.enqueueDeletionTask(id);
+    } catch (err) {
+      this.logger.warn(
+        { profileId: id, err: String(err) },
+        "failed to enqueue profile deletion task"
+      );
+    }
+  }
+
+  /** Enqueues an embedding refresh; failures are logged, never thrown. */
+  private async enqueueEmbedding(profileId: number): Promise<void> {
+    if (!this.queue) return;
+    try {
+      await this.queue.enqueueEmbeddingTask(profileId);
+    } catch (err) {
+      this.logger.warn({ profileId, err: String(err) }, "failed to enqueue profile embedding task");
     }
   }
 }
@@ -161,20 +136,7 @@ function mapProfileToRepoInput(p: ProfileInput, userId: number) {
       favoriteMemory: p.favorite_memory ?? "",
       notes: p.notes ?? "",
     },
-    tags: p.tags?.map((t) => ({ tag: t.tag })),
-    politicalViews: p.political_views?.map((v) => ({ view: v.view })),
-    foodRestrictions: p.food_restrictions?.map((r) => ({ restriction: r.restriction })),
-    movieGenres: p.movie_genres?.map((g) => ({ genre: g.genre })),
-    bookGenres: p.book_genres?.map((g) => ({ genre: g.genre })),
-    hangoutPlaces: p.hangout_places?.map((hp) => ({ place: hp.place })),
-    quotes: p.quotes?.map((q) => ({ quote: q.quote })),
-    topSongs: (p.top_songs as TopSongInput[] | undefined)?.map((s) => ({
-      name: s.name,
-      artist: s.artist,
-    })),
-    associatedSong: p.associated_song
-      ? { name: p.associated_song.name, artist: p.associated_song.artist }
-      : null,
+    ...mapChildren(p),
   };
 }
 
@@ -194,6 +156,13 @@ function mapProfileToRepoUpdate(p: Partial<ProfileInput>) {
       favoriteMemory: p.favorite_memory,
       notes: p.notes,
     },
+    ...mapChildren(p),
+  };
+}
+
+/** Maps the contract's child arrays into the value-only DB child shape. */
+function mapChildren(p: Partial<ProfileInput>) {
+  return {
     tags: p.tags?.map((t) => ({ tag: t.tag })),
     politicalViews: p.political_views?.map((v) => ({ view: v.view })),
     foodRestrictions: p.food_restrictions?.map((r) => ({ restriction: r.restriction })),
@@ -201,12 +170,11 @@ function mapProfileToRepoUpdate(p: Partial<ProfileInput>) {
     bookGenres: p.book_genres?.map((g) => ({ genre: g.genre })),
     hangoutPlaces: p.hangout_places?.map((hp) => ({ place: hp.place })),
     quotes: p.quotes?.map((q) => ({ quote: q.quote })),
-    topSongs: (p.top_songs as TopSongInput[] | undefined)?.map((s) => ({
-      name: s.name,
-      artist: s.artist,
-    })),
+    topSongs: p.top_songs?.map((s) => ({ name: s.name, artist: s.artist })),
     associatedSong: p.associated_song
       ? { name: p.associated_song.name, artist: p.associated_song.artist }
-      : null,
+      : p.associated_song === null
+        ? null
+        : undefined,
   };
 }

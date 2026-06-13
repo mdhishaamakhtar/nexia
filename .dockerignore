@@ -7,4 +7,3 @@
 *.tsbuildinfo
 npm-debug.log
 .env
-backend

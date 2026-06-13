@@ -1,26 +1,30 @@
-import { Hono } from "hono";
-import { setCookie, deleteCookie } from "hono/cookie";
+import { Hono, type Context } from "hono";
+import { setCookie } from "hono/cookie";
+import type { CookieOptions } from "hono/utils/cookie";
+import {
+  signupRequestSchema,
+  loginRequestSchema,
+  forgotPasswordRequestSchema,
+  resetPasswordRequestSchema,
+} from "@nexia/shared";
 import type { AuthService } from "../services/auth-service";
 import type { Config } from "../config/config";
 import { generateCsrfToken } from "../utils/csrf";
-import { respondWithServiceError } from "../services/errors";
+import { respondWithServiceError, respondError } from "../services/errors";
 import { CSRF_COOKIE_NAME } from "../middleware/csrf";
-import { getUserId } from "../middleware/auth";
+import { parseJsonBody } from "../utils/validation";
 
+export const AUTH_TOKEN_COOKIE = "nexia_token";
+
+/** Public authentication routes. Session routes (/me, /logout) live in routes.ts. */
 export function createAuthController(authService: AuthService, config: Config) {
   const app = new Hono();
 
   app.post("/signup", async (c) => {
-    const body = await c.req.json();
-    const { email, password } = body;
-    if (!email || !password) {
-      return c.json(
-        { error: { code: "VALIDATION_ERROR", message: "Email and password required" } },
-        400
-      );
-    }
+    const parsed = await parseJsonBody(c, signupRequestSchema);
+    if (!parsed.ok) return parsed.response;
     try {
-      await authService.signup(email, password);
+      await authService.signup(parsed.data.email, parsed.data.password);
       return c.json(
         { message: "Account created. Please check your email to verify your account." },
         201
@@ -31,38 +35,11 @@ export function createAuthController(authService: AuthService, config: Config) {
   });
 
   app.post("/login", async (c) => {
-    const body = await c.req.json();
-    const { email, password } = body;
-    if (!email || !password) {
-      return c.json(
-        { error: { code: "VALIDATION_ERROR", message: "Email and password required" } },
-        400
-      );
-    }
+    const parsed = await parseJsonBody(c, loginRequestSchema);
+    if (!parsed.ok) return parsed.response;
     try {
-      const token = await authService.login(email, password);
-
-      const maxAge = config.server.jwt_expiry_minutes * 60;
-      const domain = config.server.cookie_domain || undefined;
-
-      setCookie(c, "nexia_token", token, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "Lax",
-        path: "/",
-        domain,
-        maxAge,
-      });
-
-      const csrfToken = generateCsrfToken();
-      setCookie(c, CSRF_COOKIE_NAME, csrfToken, {
-        secure: false,
-        sameSite: "Lax",
-        path: "/",
-        domain,
-        maxAge,
-      });
-
+      const token = await authService.login(parsed.data.email, parsed.data.password);
+      setAuthCookies(c, token, config);
       return c.json({ token });
     } catch (err) {
       return respondWithServiceError(c, err);
@@ -72,7 +49,7 @@ export function createAuthController(authService: AuthService, config: Config) {
   app.get("/verify-email", async (c) => {
     const token = c.req.query("token");
     if (!token) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "Token is required" } }, 400);
+      return respondError(c, 400, "VALIDATION_ERROR", "Token is required");
     }
     try {
       await authService.verifyEmail(token);
@@ -82,28 +59,11 @@ export function createAuthController(authService: AuthService, config: Config) {
     }
   });
 
-  app.get("/me", (c) => {
-    const userId = getUserId(c);
-    if (!userId) {
-      return c.json({ authenticated: false, user_id: null as never }, 200);
-    }
-    return c.json({ authenticated: true, user_id: userId });
-  });
-
-  app.post("/logout", (c) => {
-    deleteCookie(c, "nexia_token", { path: "/" });
-    deleteCookie(c, CSRF_COOKIE_NAME, { path: "/" });
-    return c.json({ message: "Logged out successfully" });
-  });
-
   app.post("/forgot-password", async (c) => {
-    const body = await c.req.json();
-    const { email } = body;
-    if (!email) {
-      return c.json({ error: { code: "VALIDATION_ERROR", message: "Email is required" } }, 400);
-    }
+    const parsed = await parseJsonBody(c, forgotPasswordRequestSchema);
+    if (!parsed.ok) return parsed.response;
     try {
-      await authService.forgotPassword(email);
+      await authService.forgotPassword(parsed.data.email);
       return c.json({ message: "If the email exists, a reset link has been sent" });
     } catch (err) {
       return respondWithServiceError(c, err);
@@ -111,16 +71,10 @@ export function createAuthController(authService: AuthService, config: Config) {
   });
 
   app.post("/reset-password", async (c) => {
-    const body = await c.req.json();
-    const { token, new_password } = body;
-    if (!token || !new_password) {
-      return c.json(
-        { error: { code: "VALIDATION_ERROR", message: "Token and new password required" } },
-        400
-      );
-    }
+    const parsed = await parseJsonBody(c, resetPasswordRequestSchema);
+    if (!parsed.ok) return parsed.response;
     try {
-      await authService.resetPassword(token, new_password);
+      await authService.resetPassword(parsed.data.token, parsed.data.new_password);
       return c.json({ message: "Password reset successfully" });
     } catch (err) {
       return respondWithServiceError(c, err);
@@ -128,4 +82,23 @@ export function createAuthController(authService: AuthService, config: Config) {
   });
 
   return app;
+}
+
+/**
+ * Sets the auth (httpOnly) and CSRF (readable) cookies. In release mode they are
+ * Secure + SameSite=None for cross-subdomain auth; locally they stay Lax so they
+ * work over plain HTTP.
+ */
+function setAuthCookies(c: Context, token: string, config: Config): void {
+  const isSecure = config.server.mode === "release";
+  const base: CookieOptions = {
+    secure: isSecure,
+    sameSite: isSecure ? "None" : "Lax",
+    path: "/",
+    domain: config.server.cookie_domain || undefined,
+    maxAge: config.server.jwt_expiry_minutes * 60,
+  };
+
+  setCookie(c, AUTH_TOKEN_COOKIE, token, { ...base, httpOnly: true });
+  setCookie(c, CSRF_COOKIE_NAME, generateCsrfToken(), base);
 }

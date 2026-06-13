@@ -1,15 +1,20 @@
 import { createApp } from "./app";
 
-const configDir = Bun.env.CONFIG_DIR ?? "config";
+const { app, config, logger, shutdown } = await createApp(Bun.env.CONFIG_DIR ?? "config");
 
-const app = await createApp(configDir);
+const port = config.server.port;
+const server = Bun.serve({ port, fetch: app.fetch, idleTimeout: 0 });
+logger.info({ port }, "nexia api listening");
 
-const port = Bun.env.PORT ? Number(Bun.env.PORT) : 8080;
+let shuttingDown = false;
+async function handleSignal(signal: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal }, "received shutdown signal");
+  await server.stop();
+  await shutdown();
+  process.exit(0);
+}
 
-console.log(`Starting server on port ${port}...`);
-
-Bun.serve({
-  port,
-  fetch: app.fetch,
-  idleTimeout: 0,
-});
+process.on("SIGTERM", () => void handleSignal("SIGTERM"));
+process.on("SIGINT", () => void handleSignal("SIGINT"));

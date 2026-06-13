@@ -302,6 +302,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-underline-offset: 2px;
 }
 
+/* User bubbles sit on peach; shift link + code tints so they stay readable */
+.group.is-user .chat-markdown a {
+  color: var(--peach-text);
+}
+.group.is-user .chat-markdown code {
+  background: rgba(255, 255, 255, 0.45);
+  border-color: rgba(124, 45, 18, 0.15);
+}
+.group.is-user .chat-markdown blockquote {
+  border-color: rgba(124, 45, 18, 0.25);
+  color: var(--peach-text);
+}
+
 /* ── Utilities ── */
 ::-webkit-scrollbar {
   width: 5px;

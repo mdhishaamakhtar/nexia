@@ -1,6 +1,6 @@
+import type { ProfileOutput } from "@nexia/shared";
 import type { Logger } from "../logging/logger";
 import { errNotFound } from "./errors";
-import type { ProfileRepo } from "./profile-service";
 
 export interface EmbeddingGenerator {
   generateEmbedding(text: string): Promise<number[]>;
@@ -16,9 +16,13 @@ export interface EmbeddingStorage {
   deleteProfile(profileId: number): Promise<void>;
 }
 
+export interface ProfileLoader {
+  loadForEmbedding(profileId: number): Promise<ProfileOutput | null>;
+}
+
 export class EmbeddingService {
   constructor(
-    private profiles: ProfileRepo,
+    private profiles: ProfileLoader,
     private generator: EmbeddingGenerator,
     private repo: EmbeddingStorage,
     private logger: Logger
@@ -43,7 +47,7 @@ export class EmbeddingService {
     }
 
     try {
-      await this.repo.upsertProfile(Number(profile.id), Number(profile.userId), embedding, profile);
+      await this.repo.upsertProfile(profile.id, profile.user_id, embedding, profile);
     } catch (err) {
       this.logger.error({ profileId, err: String(err) }, "embedding upsert failed");
       throw new Error(
@@ -51,7 +55,7 @@ export class EmbeddingService {
       );
     }
 
-    this.logger.info({ profileId, userId: profile.userId }, "profile embedded");
+    this.logger.info({ profileId, userId: profile.user_id }, "profile embedded");
   }
 
   async deleteEmbedding(profileId: number): Promise<void> {
@@ -59,90 +63,69 @@ export class EmbeddingService {
   }
 }
 
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+/** Formats "YYYY-MM-DD" as "Month DD, YYYY" to match the Go embedding text. */
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00Z");
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  const month = months[d.getUTCMonth()];
-  const day = d.getUTCDate();
-  const year = d.getUTCFullYear();
-  return `${month} ${String(day).padStart(2, "0")}, ${year}`;
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  const month = MONTHS[d.getUTCMonth()];
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${month} ${day}, ${d.getUTCFullYear()}`;
 }
 
-function buildEmbeddingText(profile: Record<string, unknown>): string {
+/** Flattens a profile into the labelled text block fed to the embedding model. */
+export function buildEmbeddingText(p: ProfileOutput): string {
   const lines: string[] = [];
-  lines.push(`Profile of ${profile.fullName}`);
-  lines.push(`Bio: ${profile.bio ?? ""}`);
-  lines.push(`Profession: ${profile.profession ?? ""}`);
-  lines.push(`Relationship Type: ${profile.relationshipType ?? ""}`);
-  if (profile.zodiacSign) {
-    lines.push(`Zodiac Sign: ${profile.zodiacSign}`);
-  }
-  if (profile.birthday) {
-    lines.push(`Birthday: ${formatDate(profile.birthday as string)}`);
-  }
-  lines.push(`Long Term Goals: ${profile.longTermGoals ?? ""}`);
-  lines.push(`Music Preference: ${profile.musicPreference ?? ""}`);
-  lines.push(`Favorite Movie: ${profile.favoriteMovie ?? ""}`);
-  lines.push(`Favorite Book: ${profile.favoriteBook ?? ""}`);
-  lines.push(`Favorite Memory: ${profile.favoriteMemory ?? ""}`);
-  lines.push(`Notes: ${profile.notes ?? ""}`);
+  lines.push(`Profile of ${p.full_name}`);
+  lines.push(`Bio: ${p.bio}`);
+  lines.push(`Profession: ${p.profession}`);
+  lines.push(`Relationship Type: ${p.relationship_type}`);
+  if (p.zodiac_sign) lines.push(`Zodiac Sign: ${p.zodiac_sign}`);
+  if (p.birthday) lines.push(`Birthday: ${formatDate(p.birthday)}`);
+  lines.push(`Long Term Goals: ${p.long_term_goals}`);
+  lines.push(`Music Preference: ${p.music_preference}`);
+  lines.push(`Favorite Movie: ${p.favorite_movie}`);
+  lines.push(`Favorite Book: ${p.favorite_book}`);
+  lines.push(`Favorite Memory: ${p.favorite_memory}`);
+  lines.push(`Notes: ${p.notes}`);
 
-  const tags = profile.tags as Array<{ tag: string }> | undefined;
-  if (tags?.length) {
-    lines.push(`Interests/Tags: ${tags.map((t) => t.tag).join(", ")}`);
+  if (p.tags.length) lines.push(`Interests/Tags: ${p.tags.map((t) => t.tag).join(", ")}`);
+  if (p.political_views.length) {
+    lines.push(`Political Views: ${p.political_views.map((v) => v.view).join(", ")}`);
   }
-
-  const pv = profile.politicalViews as Array<{ view: string }> | undefined;
-  if (pv?.length) {
-    lines.push(`Political Views: ${pv.map((v) => v.view).join(", ")}`);
+  if (p.food_restrictions.length) {
+    lines.push(`Food Restrictions: ${p.food_restrictions.map((r) => r.restriction).join(", ")}`);
   }
-
-  const fr = profile.foodRestrictions as Array<{ restriction: string }> | undefined;
-  if (fr?.length) {
-    lines.push(`Food Restrictions: ${fr.map((r) => r.restriction).join(", ")}`);
+  if (p.movie_genres.length) {
+    lines.push(`Favorite Movie Genres: ${p.movie_genres.map((g) => g.genre).join(", ")}`);
   }
-
-  const mg = profile.movieGenres as Array<{ genre: string }> | undefined;
-  if (mg?.length) {
-    lines.push(`Favorite Movie Genres: ${mg.map((g) => g.genre).join(", ")}`);
+  if (p.book_genres.length) {
+    lines.push(`Favorite Book Genres: ${p.book_genres.map((g) => g.genre).join(", ")}`);
   }
-
-  const bg = profile.bookGenres as Array<{ genre: string }> | undefined;
-  if (bg?.length) {
-    lines.push(`Favorite Book Genres: ${bg.map((g) => g.genre).join(", ")}`);
+  if (p.hangout_places.length) {
+    lines.push(`Favorite Hangout Places: ${p.hangout_places.map((h) => h.place).join(", ")}`);
   }
-
-  const hp = profile.hangoutPlaces as Array<{ place: string }> | undefined;
-  if (hp?.length) {
-    lines.push(`Favorite Hangout Places: ${hp.map((p) => p.place).join(", ")}`);
+  if (p.top_songs.length) {
+    lines.push(`Top Songs: ${p.top_songs.map((s) => `${s.name} by ${s.artist}`).join(", ")}`);
   }
-
-  const ts = profile.topSongs as Array<{ name: string; artist: string }> | undefined;
-  if (ts?.length) {
-    lines.push(`Top Songs: ${ts.map((s) => `${s.name} by ${s.artist}`).join(", ")}`);
+  if (p.associated_song) {
+    lines.push(`Associated Song: ${p.associated_song.name} by ${p.associated_song.artist}`);
   }
-
-  const as = profile.associatedSong as { name: string; artist: string } | undefined;
-  if (as) {
-    lines.push(`Associated Song: ${as.name} by ${as.artist}`);
-  }
-
-  const quotes = profile.quotes as Array<{ quote: string }> | undefined;
-  if (quotes?.length) {
-    lines.push(`Quotes: ${quotes.map((q) => `"${q.quote}"`).join(", ")}`);
+  if (p.quotes.length) {
+    lines.push(`Quotes: ${p.quotes.map((q) => `"${q.quote}"`).join(", ")}`);
   }
 
   return lines.join("\n");

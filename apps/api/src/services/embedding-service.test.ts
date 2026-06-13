@@ -1,8 +1,10 @@
 import { describe, test, expect } from "bun:test";
+import type { ProfileOutput } from "@nexia/shared";
 import {
   EmbeddingService,
   type EmbeddingGenerator,
   type EmbeddingStorage,
+  type ProfileLoader,
 } from "../services/embedding-service";
 import { ServiceError, ErrorKind } from "../services/errors";
 import pino from "pino";
@@ -45,69 +47,48 @@ class FakeEmbeddingStorage implements EmbeddingStorage {
 }
 
 describe("EmbeddingService", () => {
-  function fullProfileRepo() {
+  function fullProfileRepo(): ProfileLoader {
     return {
-      async create() {
-        return { id: 1, userId: 1 };
-      },
-      async findById() {
-        return null as unknown as Record<string, unknown>;
-      },
-      async findAll() {
-        return { profiles: [], total: 0 };
-      },
-      async update() {
-        return {};
-      },
-      async loadForEmbedding(_profileId: number) {
+      async loadForEmbedding(_profileId: number): Promise<ProfileOutput> {
         return {
           id: 7,
-          userId: 42,
-          fullName: "Alice",
+          user_id: 42,
+          full_name: "Alice",
+          relationship_type: "Friend",
           bio: "A great friend",
           profession: "Engineer",
-          relationshipType: "Friend",
-          zodiacSign: "Aries",
+          long_term_goals: "Travel",
           birthday: "2001-03-22",
-          longTermGoals: "Travel",
-          musicPreference: "Pop",
-          favoriteMovie: "Inception",
-          favoriteBook: "Dune",
-          favoriteMemory: "Road trip",
+          zodiac_sign: "Aries",
+          music_preference: "Pop",
+          favorite_movie: "Inception",
+          favorite_book: "Dune",
+          favorite_memory: "Road trip",
           notes: "Awesome",
-          tags: [{ tag: "kind" }, { tag: "funny" }],
-          politicalViews: [{ view: "moderate" }],
-          foodRestrictions: [{ restriction: "vegetarian" }],
-          movieGenres: [{ genre: "sci-fi" }],
-          bookGenres: [{ genre: "fiction" }],
-          hangoutPlaces: [{ place: "coffee shop" }],
-          quotes: [{ quote: "Be yourself" }],
-          topSongs: [{ name: "Song 1", artist: "Artist 1" }],
-          associatedSong: { name: "Anthem", artist: "Band" },
-        } as Record<string, unknown>;
+          created_at: "2026-01-01T00:00:00.000Z",
+          updated_at: "2026-01-01T00:00:00.000Z",
+          tags: [
+            { id: 1, profile_id: 7, tag: "kind" },
+            { id: 2, profile_id: 7, tag: "funny" },
+          ],
+          political_views: [{ id: 1, profile_id: 7, view: "moderate" }],
+          food_restrictions: [{ id: 1, profile_id: 7, restriction: "vegetarian" }],
+          movie_genres: [{ id: 1, profile_id: 7, genre: "sci-fi" }],
+          book_genres: [{ id: 1, profile_id: 7, genre: "fiction" }],
+          hangout_places: [{ id: 1, profile_id: 7, place: "coffee shop" }],
+          quotes: [{ id: 1, profile_id: 7, quote: "Be yourself" }],
+          top_songs: [{ id: 1, profile_id: 7, name: "Song 1", artist: "Artist 1" }],
+          associated_song: { profile_id: 7, name: "Anthem", artist: "Band" },
+        };
       },
-      async delete() {},
     };
   }
 
-  function emptyProfileRepo() {
+  function emptyProfileRepo(): ProfileLoader {
     return {
-      async create() {
-        return { id: 1, userId: 1 };
-      },
-      async findById() {
-        return null as unknown as Record<string, unknown>;
-      },
-      async findAll() {
-        return { profiles: [], total: 0 };
-      },
-      async update() {
-        return {};
-      },
       async loadForEmbedding(_profileId: number) {
         return null;
       },
-      async delete() {},
     };
   }
 

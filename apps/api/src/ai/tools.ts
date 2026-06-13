@@ -1,137 +1,87 @@
-import { tool } from "ai";
-import { z } from "zod";
+import { tool, type ToolSet } from "ai";
+import {
+  ragSearchInputSchema,
+  searchProfilesInputSchema,
+  getProfileInputSchema,
+  listProfilesInputSchema,
+  createProfileToolInputSchema,
+  updateProfileToolInputSchema,
+} from "@nexia/shared";
 import type { ProfileService } from "../services/profile-service";
 import type { EmbeddingRepository } from "../repositories/embedding";
 import type { EmbeddingGenerator } from "./embeddings";
 
-export function buildAgentTools(params: {
+export interface AgentToolDeps {
   userId: number;
   profileService: ProfileService;
   embeddingRepo: EmbeddingRepository | null;
   embeddingGenerator: EmbeddingGenerator | null;
-}) {
-  const { userId, profileService, embeddingRepo, embeddingGenerator } = params;
+}
 
-  const ragSearch = tool({
-    description: "Semantically search profile data using AI embeddings",
-    inputSchema: z.object({
-      query: z.string().describe("The search query"),
-      limit: z.number().max(10).optional().default(5),
-    }),
-    execute: async ({ query, limit }) => {
-      if (!embeddingGenerator || !embeddingRepo) {
-        return { error: "semantic search unavailable" };
-      }
-      const embedding = await embeddingGenerator.generateEmbedding(query);
-      const results = await embeddingRepo.searchContext(userId, embedding, limit);
-      return results.map((r) => ({
-        profile_id: r.profileId,
-        score: r.score,
-        ...r.payload,
-      }));
-    },
-  });
-
-  const searchProfiles = tool({
-    description: "Search profiles by name or relationship type",
-    inputSchema: z.object({
-      search: z.string().optional().describe("Text to search in profile names"),
-      relationship_type: z.string().optional(),
-      page: z.number().optional().default(1),
-      limit: z.number().max(100).optional().default(10),
-    }),
-    execute: async ({ search, relationship_type, page, limit }) => {
-      return profileService.listProfiles(page, limit, search, relationship_type, userId);
-    },
-  });
-
-  const getProfile = tool({
-    description: "Get a single profile by ID",
-    inputSchema: z.object({
-      id: z.number().describe("The profile ID"),
-    }),
-    execute: async ({ id }) => {
-      const profile = await profileService.getProfile(id, userId);
-      if (!profile) return { error: "Profile not found" };
-      return profile;
-    },
-  });
-
-  const listProfiles = tool({
-    description: "List profiles with pagination",
-    inputSchema: z.object({
-      page: z.number().optional().default(1),
-      limit: z.number().max(100).optional().default(10),
-    }),
-    execute: async ({ page, limit }) => {
-      return profileService.listProfiles(page, limit, undefined, undefined, userId);
-    },
-  });
-
-  const createProfile = tool({
-    description: "Create a new profile for someone in your network",
-    inputSchema: z.object({
-      full_name: z.string().min(1).max(150).describe("Full name of the person"),
-      relationship_type: z.enum([
-        "Friend",
-        "Family",
-        "Colleague",
-        "Classmate",
-        "Crush",
-        "Ex",
-        "Mentor",
-        "Other",
-      ]),
-      birthday: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
-        .optional(),
-      bio: z.string().optional(),
-      profession: z.string().optional(),
-      notes: z.string().optional(),
-      tags: z.array(z.string()).optional(),
-    }),
-    execute: async ({ tags, ...input }) => {
-      const profile = {
-        full_name: input.full_name,
-        relationship_type: input.relationship_type,
-        birthday: input.birthday,
-        bio: input.bio,
-        profession: input.profession,
-        notes: input.notes,
-        tags: (tags ?? []).map((t) => ({ tag: t })),
-      };
-      return profileService.createProfile(profile, userId);
-    },
-  });
-
-  const updateProfile = tool({
-    description: "Update an existing profile",
-    inputSchema: z.object({
-      id: z.number().describe("The profile ID to update"),
-      full_name: z.string().min(1).max(150).optional(),
-      relationship_type: z
-        .enum(["Friend", "Family", "Colleague", "Classmate", "Crush", "Ex", "Mentor", "Other"])
-        .optional(),
-      birthday: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/)
-        .optional(),
-      bio: z.string().optional(),
-      profession: z.string().optional(),
-      notes: z.string().optional(),
-    }),
-    execute: async ({ id, ...rest }) => {
-      return profileService.updateProfile(id, rest, userId);
-    },
-  });
+/**
+ * Builds the Nexia Intel tool set, hard-scoped to the authenticated user. Every
+ * tool delegates to the same services the REST API uses, so validation, zodiac
+ * derivation, and embedding re-queue all apply identically. Tools return error
+ * objects instead of throwing so a single failure never tears down the stream.
+ */
+export function buildAgentTools(deps: AgentToolDeps): ToolSet {
+  const { userId, profileService, embeddingRepo, embeddingGenerator } = deps;
 
   return {
-    ragSearch,
-    searchProfiles,
-    getProfile,
-    listProfiles,
-    createProfile,
-    updateProfile,
+    ragSearch: tool({
+      description: "Semantically search the user's profiles using AI embeddings (RAG).",
+      inputSchema: ragSearchInputSchema,
+      execute: async ({ query, limit }) => {
+        if (!embeddingGenerator || !embeddingRepo) {
+          return { error: "Semantic search is unavailable. Use searchProfiles instead." };
+        }
+        const embedding = await embeddingGenerator.generateEmbedding(query);
+        const results = await embeddingRepo.searchContext(userId, embedding, limit);
+        return results.map((r) => ({ profile_id: r.profileId, score: r.score, ...r.payload }));
+      },
+    }),
+
+    searchProfiles: tool({
+      description: "Search the user's profiles by name substring and/or relationship type.",
+      inputSchema: searchProfilesInputSchema,
+      execute: async ({ search, relationship_type, page, limit }) =>
+        profileService.listProfiles(page, limit, search, relationship_type, userId),
+    }),
+
+    getProfile: tool({
+      description: "Fetch a single profile (with all details) by its ID.",
+      inputSchema: getProfileInputSchema,
+      execute: async ({ id }) => {
+        const profile = await profileService.getProfile(id, userId);
+        return profile ?? { error: "Profile not found." };
+      },
+    }),
+
+    listProfiles: tool({
+      description: "List the user's profiles with pagination.",
+      inputSchema: listProfilesInputSchema,
+      execute: async ({ page, limit }) =>
+        profileService.listProfiles(page, limit, undefined, undefined, userId),
+    }),
+
+    createProfile: tool({
+      description:
+        "Create a new profile. Only call after summarizing the details and getting the user's explicit confirmation.",
+      inputSchema: createProfileToolInputSchema,
+      execute: async (input) => {
+        const profile = await profileService.createProfile(input, userId);
+        return { id: profile.id, full_name: profile.full_name, profile };
+      },
+    }),
+
+    updateProfile: tool({
+      description:
+        "Update an existing profile by ID. Only call after summarizing the changes and getting the user's explicit confirmation.",
+      inputSchema: updateProfileToolInputSchema,
+      execute: async ({ id, profile }) => {
+        const updated = await profileService.updateProfile(id, profile, userId);
+        return { id: updated.id, full_name: updated.full_name, profile: updated };
+      },
+    }),
   };
 }

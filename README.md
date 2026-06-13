@@ -1,7 +1,7 @@
 <!-- markdownlint-disable MD033 -->
 
 <p align="center">
-  <img src="./frontend/public/og-image.svg" alt="Nexia Preview">
+  <img src="./apps/web/public/og-image.svg" alt="Nexia Preview">
 </p>
 
 ## Nexia
@@ -18,7 +18,7 @@ Think: "Who hates mushrooms?" or "What song reminds me of Sam?" and get answers 
 - Search profiles by name and relationship
 - Chat with AI using RAG over your profile data
 - Auto-derive zodiac from birthday
-- Background embedding sync via Redis workers
+- Background embedding sync via BullMQ workers
 
 ## Tech Stack
 
@@ -26,16 +26,14 @@ Think: "Who hates mushrooms?" or "What song reminds me of Sam?" and get answers 
 [![React](https://img.shields.io/badge/React-19-149ECA?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
-[![Gin](https://img.shields.io/badge/Gin-1.11-009688?style=for-the-badge&logo=gin&logoColor=white)](https://gin-gonic.com/)
-[![Fx](https://img.shields.io/badge/Uber_Fx-1.24-232F3E?style=for-the-badge&logo=uber&logoColor=white)](https://github.com/uber-go/fx)
-[![Zap](https://img.shields.io/badge/Uber_Zap-1.27-232F3E?style=for-the-badge&logo=uber&logoColor=white)](https://github.com/uber-go/zap)
-[![GORM](https://img.shields.io/badge/GORM-1.31-1A237E?style=for-the-badge&logo=go&logoColor=white)](https://gorm.io/)
+[![Bun](https://img.shields.io/badge/Bun-1.x-FBF0DF?style=for-the-badge&logo=bun&logoColor=black)](https://bun.sh/)
+[![Hono](https://img.shields.io/badge/Hono-4.10-FF6A00?style=for-the-badge&logo=hono&logoColor=white)](https://hono.dev/)
+[![Drizzle](https://img.shields.io/badge/Drizzle-0.45-C5F74F?style=for-the-badge&logo=drizzle&logoColor=black)](https://orm.drizzle.team/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![pgvector](https://img.shields.io/badge/pgvector-PG17_Extension-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![Asynq](https://img.shields.io/badge/Asynq-0.25.1-CE412B?style=for-the-badge&logo=go&logoColor=white)](https://github.com/hibiken/asynq)
-[![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![BullMQ](https://img.shields.io/badge/BullMQ-5.56-C41E3A?style=for-the-badge&logo=redis&logoColor=white)](https://bullmq.io/)
+[![AI SDK](https://img.shields.io/badge/Vercel_AI_SDK-6.0-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://sdk.vercel.ai/)
 
 ## Quick Start (Docker)
 
@@ -47,7 +45,6 @@ docker-compose up --build
 Then open:
 
 - App: [http://localhost:3000](http://localhost:3000)
-- Swagger: [http://localhost:3000/api/v1/swagger/index.html](http://localhost:3000/api/v1/swagger/index.html)
 
 ## Manual Dev Setup
 
@@ -57,32 +54,44 @@ Then open:
 docker-compose up -d postgres redis
 ```
 
-### 2. Run backend
+### 2. Install dependencies
 
 ```bash
-cd backend
-go run cmd/server/main.go
+bun install
 ```
 
-### 3. Run frontend
+### 3. Run backend
 
 ```bash
-cd frontend
-npm install
-npm run dev
+bun --filter api dev
 ```
 
-### 4. Optional: backfill embeddings
+### 4. Run frontend
 
 ```bash
-cd backend
-go run cmd/sync/main.go
+bun --filter web dev
 ```
 
-## Project Docs
+Visit [http://localhost:3000](http://localhost:3000)
 
-- Backend: [backend/README.md](./backend/README.md)
-- Frontend: [frontend/README.md](./frontend/README.md)
+### 5. Optional: backfill embeddings
+
+```bash
+cd apps/api
+bun run sync
+```
+
+## Project Structure
+
+This is a **Bun workspaces monorepo**:
+
+- `apps/api/` — Backend service (Bun + Hono + Drizzle)
+- `apps/web/` — Frontend application (Next.js 16)
+- `packages/shared/` — Shared Zod schemas and types
+
+## Documentation
+
+See [CLAUDE.md](./CLAUDE.md) for detailed architecture, conventions, and development workflows.
 
 ## Contributor
 

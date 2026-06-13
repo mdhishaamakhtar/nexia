@@ -48,7 +48,6 @@ describe("enums", () => {
   });
 
   test("birthday format validation", () => {
-    const birthdaySchema = profileInputSchema.shape.birthday;
     // Valid birthday
     const valid = profileInputSchema.parse({
       full_name: "Test",

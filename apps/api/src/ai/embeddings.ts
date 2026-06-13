@@ -7,7 +7,7 @@ export type EmbeddingGenerator = {
 
 export function createEmbeddingGenerator(apiKey: string): EmbeddingGenerator {
   const google = createGoogleGenerativeAI({ apiKey });
-  const model = google.textEmbedding("gemini-embedding-001");
+  const model = google.embedding("gemini-embedding-001");
 
   return {
     async generateEmbedding(text: string): Promise<number[]> {

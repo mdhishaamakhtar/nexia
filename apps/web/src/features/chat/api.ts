@@ -1,26 +1,16 @@
 import { DefaultChatTransport } from "ai";
+import { csrfHeaders } from "@/shared/api/cookies";
 
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const prefix = `${name}=`;
-  for (const cookie of document.cookie.split(";")) {
-    const trimmed = cookie.trim();
-    if (trimmed.startsWith(prefix)) {
-      return decodeURIComponent(trimmed.slice(prefix.length));
-    }
-  }
-  return null;
-}
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
 
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8080";
-
+/**
+ * Transport for the Nexia Intel chat endpoint. Sends the auth cookie
+ * (credentials: include) and the CSRF header on every streamed request.
+ */
 export function createChatTransport() {
   return new DefaultChatTransport({
-    api: `${backendUrl}/api/v1/chat`,
+    api: `${BACKEND_URL}/api/v1/chat`,
     credentials: "include",
-    headers: (): Record<string, string> => {
-      const csrfToken = getCookie("nexia_csrf");
-      return csrfToken ? { "X-CSRF-Token": csrfToken } : {};
-    },
+    headers: csrfHeaders,
   });
 }

@@ -7,15 +7,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --fix",
-    "format": "prettier --write ."
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.206",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@hookform/resolvers": "^5.2.2",
-    "@nexia/eslint-config": "workspace:*",
-    "@nexia/prettier-config": "workspace:*",
     "@nexia/shared": "workspace:*",
     "@radix-ui/react-collapsible": "^1.1.13",
     "@radix-ui/react-dialog": "^1.1.16",
@@ -63,8 +60,6 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "baseline-browser-mapping": "^2.10.0",
-    "eslint": "^9",
-    "prettier": "^3.7.4",
     "tailwindcss": "^4",
     "typescript": "^5.9.3",
     "typescript-language-server": "^5.1.3"
