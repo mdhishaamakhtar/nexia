@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/.git
+**/dist
+**/coverage
+**/.DS_Store
+*.tsbuildinfo
+npm-debug.log
+.env

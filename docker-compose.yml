@@ -11,7 +11,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -24,20 +24,21 @@ services:
     restart: always
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
     container_name: nexia-backend
     ports:
       - "8080:8080"
+    # APP_ENV=local → debug mode: non-Secure SameSite=Lax cookies that work over
+    # http://localhost. (prod uses Secure + SameSite=None for cross-subdomain auth.)
     environment:
-      - APP_ENV=prod
+      - APP_ENV=local
       - NEXIA_DB_HOST=postgres
-      - NEXIA_DB_PORT=5432
-      - NEXIA_DB_USER=postgres
-      - NEXIA_DB_PASSWORD=password
-      - NEXIA_DB_NAME=nexia_db
-      - NEXIA_DB_SSL_MODE=disable
       - NEXIA_AI_REDIS_URL=redis:6379
       - NEXIA_AI_GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NEXIA_AI_OPENCODE_API_KEY=${OPENCODE_API_KEY}
+      - NEXIA_EMAIL_RESEND_API_KEY=${NEXIA_EMAIL_RESEND_API_KEY}
       - NEXIA_SERVER_CORS_ORIGINS=http://localhost:3000
     depends_on:
       postgres:
@@ -47,7 +48,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_BACKEND_URL: http://localhost:8080
     container_name: nexia-frontend

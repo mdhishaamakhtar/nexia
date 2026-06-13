@@ -1,0 +1,8 @@
+node_modules
+bun.lock
+**/dist
+apps/web/.next
+apps/web/next-env.d.ts
+apps/api/drizzle
+backend
+*.md
