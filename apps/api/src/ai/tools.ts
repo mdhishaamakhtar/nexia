@@ -35,7 +35,8 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
 
   return {
     ragSearch: tool({
-      description: "Semantically search the user's profiles using AI embeddings (RAG).",
+      description:
+        'Semantic (vector) search over the user\'s own profiles. Best FIRST choice for fuzzy, open-ended, or interest/personality/vibe questions where no specific person is named (e.g. "who likes horror movies?", "which friend is into climbing?"). Returns the top matches with full profile details and a similarity score.',
       inputSchema: ragSearchInputSchema,
       execute: async ({ query, limit }): Promise<RagSearchOutput | ToolErrorOutput> => {
         if (!embeddingGenerator || !embeddingRepo) {
@@ -53,14 +54,16 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
     }),
 
     searchProfiles: tool({
-      description: "Search the user's profiles by name substring and/or relationship type.",
+      description:
+        'Find profiles by name substring and/or relationship type. Use for exact-ish lookups when the user names a person or wants a specific group (e.g. "someone called Sam", "my colleagues"). Returns a paginated summary list — call getProfile for the full details of a match.',
       inputSchema: searchProfilesInputSchema,
       execute: ({ search, relationship_type, page, limit }): Promise<ProfileListToolOutput> =>
         profileService.listProfiles(page, limit, search, relationship_type, userId),
     }),
 
     getProfile: tool({
-      description: "Fetch a single profile (with all details) by its ID.",
+      description:
+        "Fetch one profile with ALL its details by id. Use when you already know the id (from a previous search or list result) and need the complete record — and always before updating a list field, so you can send back the full array.",
       inputSchema: getProfileInputSchema,
       execute: async ({ id }): Promise<GetProfileToolOutput> => {
         const profile = await profileService.getProfile(id, userId);
@@ -69,7 +72,8 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
     }),
 
     listProfiles: tool({
-      description: "List the user's profiles with pagination.",
+      description:
+        'Browse or count ALL of the user\'s profiles, paginated, with no filter. Use for "show me everyone" or to page through the whole collection. Returns summaries — call getProfile for full detail of any one.',
       inputSchema: listProfilesInputSchema,
       execute: ({ page, limit }): Promise<ProfileListToolOutput> =>
         profileService.listProfiles(page, limit, undefined, undefined, userId),
@@ -77,7 +81,7 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
 
     createProfile: tool({
       description:
-        "Create a new profile. Only call after summarizing the details and getting the user's explicit confirmation.",
+        "Create a new profile. Requires full_name and relationship_type. Never set zodiac_sign (it is derived from the birthday). Only call AFTER summarizing the details and getting the user's explicit confirmation.",
       inputSchema: createProfileToolInputSchema,
       execute: async (input): Promise<WriteProfileToolOutput> => {
         const profile = await profileService.createProfile(input, userId);
@@ -87,7 +91,7 @@ export function buildAgentTools(deps: AgentToolDeps): ToolSet {
 
     updateProfile: tool({
       description:
-        "Update an existing profile by ID. Only call after summarizing the changes and getting the user's explicit confirmation.",
+        "Update an existing profile by id. PATCH semantics: send only the fields you are changing. List fields (tags, quotes, top_songs, etc.) are replaced wholesale, so getProfile first and send the complete new array when adding to a list. Only call AFTER summarizing the changes and getting the user's explicit confirmation.",
       inputSchema: updateProfileToolInputSchema,
       execute: async ({ id, profile }): Promise<WriteProfileToolOutput> => {
         const updated = await profileService.updateProfile(id, profile, userId);
