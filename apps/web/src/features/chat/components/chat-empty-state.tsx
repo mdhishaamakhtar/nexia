@@ -50,12 +50,9 @@ export function ChatEmptyState({ onPrompt }: { onPrompt: (text: string) => void 
       </p>
 
       <div className="mt-7 grid w-full max-w-md grid-cols-1 gap-2.5 sm:grid-cols-2">
-        {PROMPTS.map((prompt, i) => (
-          <motion.button
+        {PROMPTS.map((prompt) => (
+          <button
             key={prompt.text}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 + i * 0.05, type: "spring", stiffness: 280, damping: 26 }}
             onClick={() => onPrompt(prompt.text)}
             className="group flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-(--fill-hover) active:translate-y-0 active:scale-[0.98]"
             style={{ borderColor: "var(--border)", background: "var(--bg-raised)" }}
@@ -72,7 +69,7 @@ export function ChatEmptyState({ onPrompt }: { onPrompt: (text: string) => void 
             >
               {prompt.text}
             </span>
-          </motion.button>
+          </button>
         ))}
       </div>
     </motion.div>
