@@ -8,6 +8,7 @@ import type {
   bookGenres,
   hangoutPlaces,
   quotes,
+  favoriteMemories,
   topSongs,
   associatedSongs,
 } from "../db/schema";
@@ -20,6 +21,7 @@ type MovieGenreRow = typeof movieGenres.$inferSelect;
 type BookGenreRow = typeof bookGenres.$inferSelect;
 type HangoutPlaceRow = typeof hangoutPlaces.$inferSelect;
 type QuoteRow = typeof quotes.$inferSelect;
+type FavoriteMemoryRow = typeof favoriteMemories.$inferSelect;
 type TopSongRow = typeof topSongs.$inferSelect;
 type AssociatedSongRow = typeof associatedSongs.$inferSelect;
 
@@ -32,6 +34,7 @@ export interface ProfileChildren {
   bookGenres: BookGenreRow[];
   hangoutPlaces: HangoutPlaceRow[];
   quotes: QuoteRow[];
+  favoriteMemories: FavoriteMemoryRow[];
   topSongs: TopSongRow[];
   associatedSong: AssociatedSongRow | null;
 }
@@ -45,6 +48,7 @@ export function emptyChildren(): ProfileChildren {
     bookGenres: [],
     hangoutPlaces: [],
     quotes: [],
+    favoriteMemories: [],
     topSongs: [],
     associatedSong: null,
   };
@@ -70,7 +74,6 @@ export function toProfileOutput(row: ProfileRow, children: ProfileChildren): Pro
     music_preference: row.musicPreference ?? "",
     favorite_movie: row.favoriteMovie ?? "",
     favorite_book: row.favoriteBook ?? "",
-    favorite_memory: row.favoriteMemory ?? "",
     notes: row.notes ?? "",
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
@@ -108,6 +111,11 @@ export function toProfileOutput(row: ProfileRow, children: ProfileChildren): Pro
       id: q.id,
       profile_id: q.profileId,
       quote: q.quote ?? "",
+    })),
+    favorite_memories: children.favoriteMemories.map((m) => ({
+      id: m.id,
+      profile_id: m.profileId,
+      memory: m.memory ?? "",
     })),
     top_songs: children.topSongs.map((s) => ({
       id: s.id,

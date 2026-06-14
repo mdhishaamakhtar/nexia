@@ -41,7 +41,6 @@ const schema = z.object({
   music_preference: z.string(),
   favorite_movie: z.string(),
   favorite_book: z.string(),
-  favorite_memory: z.string(),
   notes: z.string(),
   // id and profile_id must be included so Zod (strip mode) doesn't discard them on submit.
   // GORM uses id for ON CONFLICT upserts — losing it causes duplicate rows on every update.
@@ -60,6 +59,9 @@ const schema = z.object({
     .max(3, "Max 3 top songs"),
   quotes: z.array(
     z.object({ id: z.number().optional(), profile_id: z.number().optional(), quote: z.string() })
+  ),
+  favorite_memories: z.array(
+    z.object({ id: z.number().optional(), profile_id: z.number().optional(), memory: z.string() })
   ),
   movie_genres: z.array(
     z.object({ id: z.number().optional(), profile_id: z.number().optional(), genre: z.string() })
@@ -108,6 +110,11 @@ export default function ProfileForm({
   // keyName "_key" avoids RHF overwriting the data's own "id" field with its internal UUID.
   const tagsField = useFieldArray({ control, name: "tags", keyName: "_key" });
   const quotesField = useFieldArray({ control, name: "quotes", keyName: "_key" });
+  const favoriteMemoriesField = useFieldArray({
+    control,
+    name: "favorite_memories",
+    keyName: "_key",
+  });
   const movieGenresField = useFieldArray({ control, name: "movie_genres", keyName: "_key" });
   const bookGenresField = useFieldArray({ control, name: "book_genres", keyName: "_key" });
   const hangoutPlacesField = useFieldArray({ control, name: "hangout_places", keyName: "_key" });
@@ -363,18 +370,15 @@ export default function ProfileForm({
             />
           </div>
 
-          <div>
-            <label
-              className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
-              style={{ color: "var(--text-3)" }}
-            >
-              Favorite Memory
-            </label>
-            <textarea
-              {...register("favorite_memory")}
-              className="glass-input h-32 w-full resize-none rounded-xl p-4 focus:outline-none"
-            />
-          </div>
+          <FieldArrayInput
+            label="Favorite Memories"
+            placeholder="Add a memory"
+            fieldKey="memory"
+            items={favoriteMemoriesField.fields}
+            append={favoriteMemoriesField.append}
+            remove={favoriteMemoriesField.remove}
+            variant="block"
+          />
 
           <div>
             <label

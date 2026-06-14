@@ -48,6 +48,12 @@ export const quoteSchema = z.object({
   quote: z.string(),
 });
 
+export const favoriteMemorySchema = z.object({
+  id: z.number().optional(),
+  profile_id: z.number().optional(),
+  memory: z.string(),
+});
+
 export const topSongSchema = z.object({
   id: z.number().optional(),
   profile_id: z.number().optional(),
@@ -72,7 +78,6 @@ export const profileInputSchema = z.object({
   music_preference: z.string().optional(),
   favorite_movie: z.string().optional(),
   favorite_book: z.string().optional(),
-  favorite_memory: z.string().optional(),
   notes: z.string().optional(),
   tags: z.array(tagSchema).optional(),
   political_views: z.array(politicalViewSchema).optional(),
@@ -81,6 +86,7 @@ export const profileInputSchema = z.object({
   book_genres: z.array(bookGenreSchema).optional(),
   hangout_places: z.array(hangoutPlaceSchema).optional(),
   quotes: z.array(quoteSchema).optional(),
+  favorite_memories: z.array(favoriteMemorySchema).optional(),
   top_songs: z.array(topSongSchema).optional(),
   associated_song: associatedSongSchema.nullish(),
 });
@@ -98,7 +104,6 @@ export const profileOutputSchema = z.object({
   music_preference: z.string(),
   favorite_movie: z.string(),
   favorite_book: z.string(),
-  favorite_memory: z.string(),
   notes: z.string(),
   created_at: z.string(),
   updated_at: z.string(),
@@ -115,6 +120,9 @@ export const profileOutputSchema = z.object({
   book_genres: z.array(z.object({ id: z.number(), profile_id: z.number(), genre: z.string() })),
   hangout_places: z.array(z.object({ id: z.number(), profile_id: z.number(), place: z.string() })),
   quotes: z.array(z.object({ id: z.number(), profile_id: z.number(), quote: z.string() })),
+  favorite_memories: z.array(
+    z.object({ id: z.number(), profile_id: z.number(), memory: z.string() })
+  ),
   top_songs: z.array(
     z.object({
       id: z.number(),
@@ -157,6 +165,7 @@ export type MovieGenre = z.infer<typeof movieGenreSchema>;
 export type BookGenre = z.infer<typeof bookGenreSchema>;
 export type HangoutPlace = z.infer<typeof hangoutPlaceSchema>;
 export type Quote = z.infer<typeof quoteSchema>;
+export type FavoriteMemory = z.infer<typeof favoriteMemorySchema>;
 export type TopSong = z.infer<typeof topSongSchema>;
 export type AssociatedSong = z.infer<typeof associatedSongSchema>;
 export type ProfileInput = z.infer<typeof profileInputSchema>;

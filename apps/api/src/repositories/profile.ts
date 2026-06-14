@@ -9,6 +9,7 @@ import {
   bookGenres,
   hangoutPlaces,
   quotes,
+  favoriteMemories,
   topSongs,
   associatedSongs,
 } from "../db/schema";
@@ -28,6 +29,7 @@ export interface ProfileChildInput {
   bookGenres?: Array<{ genre: string }>;
   hangoutPlaces?: Array<{ place: string }>;
   quotes?: Array<{ quote: string }>;
+  favoriteMemories?: Array<{ memory: string }>;
   topSongs?: Array<{ name: string; artist: string }>;
   associatedSong?: { name: string; artist: string } | null;
 }
@@ -77,6 +79,11 @@ export class ProfileRepository {
       }
       if (data.quotes?.length) {
         await tx.insert(quotes).values(data.quotes.map((q) => ({ ...q, profileId: pid })));
+      }
+      if (data.favoriteMemories?.length) {
+        await tx
+          .insert(favoriteMemories)
+          .values(data.favoriteMemories.map((m) => ({ ...m, profileId: pid })));
       }
       if (data.topSongs?.length) {
         await tx.insert(topSongs).values(data.topSongs.map((s) => ({ ...s, profileId: pid })));
@@ -203,6 +210,14 @@ export class ProfileRepository {
           await tx.insert(quotes).values(data.quotes.map((q) => ({ ...q, profileId })));
         }
       }
+      if (data.favoriteMemories !== undefined) {
+        await tx.delete(favoriteMemories).where(eq(favoriteMemories.profileId, profileId));
+        if (data.favoriteMemories.length) {
+          await tx
+            .insert(favoriteMemories)
+            .values(data.favoriteMemories.map((m) => ({ ...m, profileId })));
+        }
+      }
       if (data.topSongs !== undefined) {
         await tx.delete(topSongs).where(eq(topSongs.profileId, profileId));
         if (data.topSongs.length) {
@@ -239,7 +254,7 @@ export class ProfileRepository {
     if (rows.length === 0) return [];
     const ids = rows.map((r) => r.id);
 
-    const [tagRows, pvRows, frRows, mgRows, bgRows, hpRows, quoteRows, tsRows, asRows] =
+    const [tagRows, pvRows, frRows, mgRows, bgRows, hpRows, quoteRows, fmRows, tsRows, asRows] =
       await Promise.all([
         this.db.select().from(tags).where(inArray(tags.profileId, ids)),
         this.db.select().from(politicalViews).where(inArray(politicalViews.profileId, ids)),
@@ -248,6 +263,7 @@ export class ProfileRepository {
         this.db.select().from(bookGenres).where(inArray(bookGenres.profileId, ids)),
         this.db.select().from(hangoutPlaces).where(inArray(hangoutPlaces.profileId, ids)),
         this.db.select().from(quotes).where(inArray(quotes.profileId, ids)),
+        this.db.select().from(favoriteMemories).where(inArray(favoriteMemories.profileId, ids)),
         this.db.select().from(topSongs).where(inArray(topSongs.profileId, ids)),
         this.db.select().from(associatedSongs).where(inArray(associatedSongs.profileId, ids)),
       ]);
@@ -262,6 +278,7 @@ export class ProfileRepository {
     for (const r of bgRows) childrenById.get(r.profileId)?.bookGenres.push(r);
     for (const r of hpRows) childrenById.get(r.profileId)?.hangoutPlaces.push(r);
     for (const r of quoteRows) childrenById.get(r.profileId)?.quotes.push(r);
+    for (const r of fmRows) childrenById.get(r.profileId)?.favoriteMemories.push(r);
     for (const r of tsRows) childrenById.get(r.profileId)?.topSongs.push(r);
     for (const r of asRows) {
       const bucket = childrenById.get(r.profileId);

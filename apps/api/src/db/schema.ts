@@ -43,7 +43,6 @@ export const profiles = pgTable(
     musicPreference: text("music_preference"),
     favoriteMovie: varchar("favorite_movie", { length: 200 }),
     favoriteBook: varchar("favorite_book", { length: 200 }),
-    favoriteMemory: text("favorite_memory"),
     notes: text("notes").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
@@ -136,6 +135,18 @@ export const quotes = pgTable(
     quote: text("quote"),
   },
   (t) => [index("idx_quotes_profile_id").on(t.profileId)]
+);
+
+export const favoriteMemories = pgTable(
+  "favorite_memories",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    profileId: bigint("profile_id", { mode: "number" })
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    memory: text("memory"),
+  },
+  (t) => [index("idx_favorite_memories_profile_id").on(t.profileId)]
 );
 
 export const topSongs = pgTable(

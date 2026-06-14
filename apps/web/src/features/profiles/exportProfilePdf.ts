@@ -570,6 +570,9 @@ export async function exportProfilePdf(profile: Profile) {
   );
   const politicalViews = compactStrings(profile.political_views?.map((view) => view.view) ?? []);
   const quotes = (profile.quotes ?? []).filter((quote) => hasText(quote.quote));
+  const favoriteMemories = (profile.favorite_memories ?? [])
+    .filter((m) => hasText(m.memory))
+    .map((m) => ({ quote: m.memory }));
   const topSongs = (profile.top_songs ?? []).filter(
     (song) => hasText(song.name) || hasText(song.artist)
   );
@@ -629,12 +632,8 @@ export async function exportProfilePdf(profile: Profile) {
     hasText(profile.long_term_goals)
       ? () => drawParagraph(ctx, "Long-term Goals", profile.long_term_goals!)
       : null,
-    hasText(profile.favorite_memory)
-      ? () =>
-          drawQuoteBlock(ctx, profile.favorite_memory!.trim(), {
-            tone: "warm",
-            label: "Favorite Memory",
-          })
+    favoriteMemories.length > 0
+      ? () => drawQuoteList(ctx, "Favorite Memories", favoriteMemories)
       : null,
     hasText(profile.notes) ? () => drawParagraph(ctx, "Additional Notes", profile.notes!) : null,
     quotes.length > 0 ? () => drawQuoteList(ctx, "Their Quotes", quotes) : null,

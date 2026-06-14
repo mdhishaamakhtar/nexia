@@ -23,6 +23,7 @@ type FormMovieGenre = { id?: number; profile_id?: number; genre: string };
 type FormBookGenre = { id?: number; profile_id?: number; genre: string };
 type FormHangoutPlace = { id?: number; profile_id?: number; place: string };
 type FormQuote = { id?: number; profile_id?: number; quote: string };
+type FormFavoriteMemory = { id?: number; profile_id?: number; memory: string };
 type FormTopSong = { id?: number; profile_id?: number; name: string; artist: string };
 
 export type ProfileFormValues = {
@@ -35,7 +36,6 @@ export type ProfileFormValues = {
   music_preference: string;
   favorite_movie: string;
   favorite_book: string;
-  favorite_memory: string;
   notes: string;
   tags: Array<FormTag>;
   political_views: Array<FormPoliticalView>;
@@ -44,6 +44,7 @@ export type ProfileFormValues = {
   book_genres: Array<FormBookGenre>;
   hangout_places: Array<FormHangoutPlace>;
   quotes: Array<FormQuote>;
+  favorite_memories: Array<FormFavoriteMemory>;
   top_songs: Array<FormTopSong>;
   associated_song_name: string;
   associated_song_artist: string;
