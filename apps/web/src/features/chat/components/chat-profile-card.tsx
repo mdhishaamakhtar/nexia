@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Heart, Tag, ArrowUpRight } from "lucide-react";
 import ZodiacIcon from "@/features/profiles/components/ZodiacIcon";
-import type { Profile } from "@/shared/types/profile";
+import type { ProfileSummary } from "@/shared/types/profile";
 
 interface ChatProfileCardProps {
-  profile: Profile;
+  profile: ProfileSummary;
   index?: number;
 }
 
@@ -91,7 +91,7 @@ export function ChatProfileCard({ profile, index = 0 }: ChatProfileCardProps) {
 }
 
 interface ChatProfileListProps {
-  profiles: Profile[];
+  profiles: ProfileSummary[];
   max?: number;
 }
 

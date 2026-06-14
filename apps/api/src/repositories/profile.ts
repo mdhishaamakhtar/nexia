@@ -1,5 +1,5 @@
-import { eq, and, ilike, inArray, count as sqlCount } from "drizzle-orm";
-import type { ProfileOutput } from "@nexia/shared";
+import { eq, and, ilike, count as sqlCount } from "drizzle-orm";
+import type { ProfileOutput, ProfileSummary } from "@nexia/shared";
 import {
   profiles,
   tags,
@@ -14,8 +14,27 @@ import {
   associatedSongs,
 } from "../db/schema";
 import type { DB } from "../db/client";
-import { toProfileOutput, emptyChildren, type ProfileChildren } from "./profile-mapper";
+import { toProfileOutput, toProfileSummary } from "./profile-mapper";
 import { errNotFound } from "../services/errors";
+
+/**
+ * `with` clause that hydrates a profile and every child collection in one
+ * relational query. Drizzle emits lateral json-aggregation, so the result is a
+ * single row per profile (no cartesian explosion from the ten one-to-many
+ * tables).
+ */
+const FULL_PROFILE_WITH = {
+  tags: true,
+  politicalViews: true,
+  foodRestrictions: true,
+  movieGenres: true,
+  bookGenres: true,
+  hangoutPlaces: true,
+  quotes: true,
+  favoriteMemories: true,
+  topSongs: true,
+  associatedSong: true,
+} as const;
 
 export type ProfileRow = typeof profiles.$inferSelect;
 export type NewProfile = typeof profiles.$inferInsert;
@@ -101,14 +120,12 @@ export class ProfileRepository {
   }
 
   async findById(id: number, userId: number): Promise<ProfileOutput | null> {
-    const [row] = await this.db
-      .select()
-      .from(profiles)
-      .where(and(eq(profiles.id, id), eq(profiles.userId, userId)))
-      .limit(1);
+    const row = await this.db.query.profiles.findFirst({
+      where: and(eq(profiles.id, id), eq(profiles.userId, userId)),
+      with: FULL_PROFILE_WITH,
+    });
     if (!row) return null;
-    const [hydrated] = await this.hydrate([row]);
-    return hydrated ?? null;
+    return toProfileOutput(row, row);
   }
 
   async findAll(params: {
@@ -117,7 +134,7 @@ export class ProfileRepository {
     search?: string;
     relationshipType?: string;
     userId: number;
-  }): Promise<{ profiles: ProfileOutput[]; total: number }> {
+  }): Promise<{ profiles: ProfileSummary[]; total: number }> {
     const { page, limit, search, relationshipType, userId } = params;
 
     const conditions = [eq(profiles.userId, userId)];
@@ -128,17 +145,19 @@ export class ProfileRepository {
     const [totalRow] = await this.db.select({ count: sqlCount() }).from(profiles).where(where);
     const total = Number(totalRow?.count ?? 0);
 
-    const offset = (page - 1) * limit;
-    const rows = await this.db
-      .select()
-      .from(profiles)
-      .where(where)
-      .orderBy(profiles.id)
-      .offset(offset)
-      .limit(limit);
+    // The list/search surfaces only render name, relationship, zodiac and tags,
+    // so project just those columns plus the tags relation — the other nine
+    // child collections are never fetched.
+    const rows = await this.db.query.profiles.findMany({
+      columns: { id: true, fullName: true, relationshipType: true, zodiacSign: true },
+      with: { tags: true },
+      where,
+      orderBy: profiles.id,
+      offset: (page - 1) * limit,
+      limit,
+    });
 
-    const hydrated = await this.hydrate(rows);
-    return { profiles: hydrated, total };
+    return { profiles: rows.map(toProfileSummary), total };
   }
 
   async update(
@@ -239,52 +258,15 @@ export class ProfileRepository {
 
   /** Loads a fully-hydrated profile without a user guard (queue worker use). */
   async loadForEmbedding(profileId: number): Promise<ProfileOutput | null> {
-    const [row] = await this.db.select().from(profiles).where(eq(profiles.id, profileId)).limit(1);
+    const row = await this.db.query.profiles.findFirst({
+      where: eq(profiles.id, profileId),
+      with: FULL_PROFILE_WITH,
+    });
     if (!row) return null;
-    const [hydrated] = await this.hydrate([row]);
-    return hydrated ?? null;
+    return toProfileOutput(row, row);
   }
 
   async delete(id: number, userId: number): Promise<void> {
     await this.db.delete(profiles).where(and(eq(profiles.id, id), eq(profiles.userId, userId)));
-  }
-
-  /** Batch-loads all child associations for the given parent rows (no N+1). */
-  private async hydrate(rows: ProfileRow[]): Promise<ProfileOutput[]> {
-    if (rows.length === 0) return [];
-    const ids = rows.map((r) => r.id);
-
-    const [tagRows, pvRows, frRows, mgRows, bgRows, hpRows, quoteRows, fmRows, tsRows, asRows] =
-      await Promise.all([
-        this.db.select().from(tags).where(inArray(tags.profileId, ids)),
-        this.db.select().from(politicalViews).where(inArray(politicalViews.profileId, ids)),
-        this.db.select().from(foodRestrictions).where(inArray(foodRestrictions.profileId, ids)),
-        this.db.select().from(movieGenres).where(inArray(movieGenres.profileId, ids)),
-        this.db.select().from(bookGenres).where(inArray(bookGenres.profileId, ids)),
-        this.db.select().from(hangoutPlaces).where(inArray(hangoutPlaces.profileId, ids)),
-        this.db.select().from(quotes).where(inArray(quotes.profileId, ids)),
-        this.db.select().from(favoriteMemories).where(inArray(favoriteMemories.profileId, ids)),
-        this.db.select().from(topSongs).where(inArray(topSongs.profileId, ids)),
-        this.db.select().from(associatedSongs).where(inArray(associatedSongs.profileId, ids)),
-      ]);
-
-    const childrenById = new Map<number, ProfileChildren>();
-    for (const id of ids) childrenById.set(id, emptyChildren());
-
-    for (const r of tagRows) childrenById.get(r.profileId)?.tags.push(r);
-    for (const r of pvRows) childrenById.get(r.profileId)?.politicalViews.push(r);
-    for (const r of frRows) childrenById.get(r.profileId)?.foodRestrictions.push(r);
-    for (const r of mgRows) childrenById.get(r.profileId)?.movieGenres.push(r);
-    for (const r of bgRows) childrenById.get(r.profileId)?.bookGenres.push(r);
-    for (const r of hpRows) childrenById.get(r.profileId)?.hangoutPlaces.push(r);
-    for (const r of quoteRows) childrenById.get(r.profileId)?.quotes.push(r);
-    for (const r of fmRows) childrenById.get(r.profileId)?.favoriteMemories.push(r);
-    for (const r of tsRows) childrenById.get(r.profileId)?.topSongs.push(r);
-    for (const r of asRows) {
-      const bucket = childrenById.get(r.profileId);
-      if (bucket) bucket.associatedSong = r;
-    }
-
-    return rows.map((row) => toProfileOutput(row, childrenById.get(row.id) ?? emptyChildren()));
   }
 }

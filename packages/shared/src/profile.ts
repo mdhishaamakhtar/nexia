@@ -140,8 +140,22 @@ export const profileOutputSchema = z.object({
     .nullish(),
 });
 
+/**
+ * Lean projection used by list/search surfaces (slambook grid, chat result
+ * cards). Holds only the fields those cards render, so the list query never
+ * hydrates the nine child collections it would otherwise throw away. A full
+ * `ProfileOutput` is structurally a valid `ProfileSummary`.
+ */
+export const profileSummarySchema = z.object({
+  id: z.number(),
+  full_name: z.string(),
+  relationship_type: relationshipTypeSchema,
+  zodiac_sign: zodiacSignSchema.nullish(),
+  tags: z.array(z.object({ id: z.number(), profile_id: z.number(), tag: z.string() })),
+});
+
 export const profileListResponseSchema = z.object({
-  data: z.array(profileOutputSchema),
+  data: z.array(profileSummarySchema),
   total: z.number(),
   page: z.number(),
   limit: z.number(),
@@ -170,6 +184,7 @@ export type TopSong = z.infer<typeof topSongSchema>;
 export type AssociatedSong = z.infer<typeof associatedSongSchema>;
 export type ProfileInput = z.infer<typeof profileInputSchema>;
 export type ProfileOutput = z.infer<typeof profileOutputSchema>;
+export type ProfileSummary = z.infer<typeof profileSummarySchema>;
 export type ProfileListResponse = z.infer<typeof profileListResponseSchema>;
 export type CreateProfileResponse = z.infer<typeof createProfileResponseSchema>;
 export type ListProfilesQuery = z.infer<typeof listProfilesQuerySchema>;

@@ -1,5 +1,5 @@
 import type { Logger } from "../logging/logger";
-import type { ProfileInput, ProfileOutput } from "@nexia/shared";
+import type { ProfileInput, ProfileOutput, ProfileSummary } from "@nexia/shared";
 import { errValidation } from "./errors";
 import { applyDerivedZodiac } from "./zodiac";
 
@@ -26,7 +26,7 @@ export interface ProfileRepo {
     search?: string;
     relationshipType?: string;
     userId: number;
-  }): Promise<{ profiles: ProfileOutput[]; total: number }>;
+  }): Promise<{ profiles: ProfileSummary[]; total: number }>;
   update(
     profileId: number,
     userId: number,
@@ -72,7 +72,7 @@ export class ProfileService {
     search: string | undefined,
     relationshipType: string | undefined,
     userId: number
-  ): Promise<{ profiles: ProfileOutput[]; total: number }> {
+  ): Promise<{ profiles: ProfileSummary[]; total: number }> {
     if (page < 1) page = 1;
     if (limit < 1) limit = 10;
     if (limit > 100) limit = 100;
