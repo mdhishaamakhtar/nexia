@@ -6,5 +6,4 @@ CREATE TABLE "favorite_memories" (
 --> statement-breakpoint
 ALTER TABLE "favorite_memories" ADD CONSTRAINT "favorite_memories_profile_id_profiles_id_fk" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_favorite_memories_profile_id" ON "favorite_memories" USING btree ("profile_id");--> statement-breakpoint
-INSERT INTO "favorite_memories" ("profile_id", "memory") SELECT "id", "favorite_memory" FROM "profiles" WHERE "favorite_memory" IS NOT NULL AND btrim("favorite_memory") <> '';--> statement-breakpoint
 ALTER TABLE "profiles" DROP COLUMN "favorite_memory";
