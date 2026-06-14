@@ -35,9 +35,13 @@ export const listProfilesInputSchema = z.object({
 
 export const createProfileToolInputSchema = profileInputSchema;
 
+// Updates are PATCH-style: the agent sends only the fields it wants to change.
+// `.partial()` makes every profile field optional so the model never has to
+// restate `full_name`/`relationship_type` just to edit one detail. Omitted
+// fields mean "leave unchanged" — see mapProfileToRepoUpdate in profile-service.
 export const updateProfileToolInputSchema = z.object({
   id: z.number(),
-  profile: profileInputSchema,
+  profile: profileInputSchema.partial(),
 });
 
 export type RagSearchInput = z.infer<typeof ragSearchInputSchema>;

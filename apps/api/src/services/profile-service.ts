@@ -88,7 +88,12 @@ export class ProfileService {
       throw errValidation("cannot have more than 3 top songs");
     }
 
-    applyDerivedZodiac(profile);
+    // Only (re)derive the zodiac when the caller actually supplied a birthday.
+    // applyDerivedZodiac can't tell "field omitted" from "explicitly null", so
+    // on a partial update without birthday we must leave the existing zodiac be.
+    if ("birthday" in profile) {
+      applyDerivedZodiac(profile);
+    }
 
     const updated = await this.repo.update(id, userId, mapProfileToRepoUpdate(profile));
     await this.enqueueEmbedding(id);
@@ -141,20 +146,28 @@ function mapProfileToRepoInput(p: ProfileInput, userId: number) {
 }
 
 function mapProfileToRepoUpdate(p: Partial<ProfileInput>) {
+  // PATCH semantics: every scalar is a straight passthrough — when a field is
+  // omitted it stays `undefined`, and Drizzle's `.set()` skips undefined keys,
+  // leaving the stored value untouched. birthday/zodiac are special: a missing
+  // birthday must NOT clear the existing one, so we only include them when the
+  // caller actually sent a birthday (see updateProfile above).
+  const profile: Record<string, unknown> = {
+    fullName: p.full_name,
+    relationshipType: p.relationship_type,
+    bio: p.bio,
+    profession: p.profession,
+    longTermGoals: p.long_term_goals,
+    musicPreference: p.music_preference,
+    favoriteMovie: p.favorite_movie,
+    favoriteBook: p.favorite_book,
+    notes: p.notes,
+  };
+  if ("birthday" in p) {
+    profile.birthday = p.birthday ?? null;
+    profile.zodiacSign = p.zodiac_sign ?? null;
+  }
   return {
-    profile: {
-      fullName: p.full_name,
-      relationshipType: p.relationship_type,
-      bio: p.bio,
-      profession: p.profession,
-      longTermGoals: p.long_term_goals,
-      birthday: p.birthday ?? null,
-      zodiacSign: p.zodiac_sign ?? null,
-      musicPreference: p.music_preference,
-      favoriteMovie: p.favorite_movie,
-      favoriteBook: p.favorite_book,
-      notes: p.notes,
-    },
+    profile,
     ...mapChildren(p),
   };
 }

@@ -167,6 +167,52 @@ describe("ProfileService", () => {
     expect(queue.deleted).toEqual([10]);
   });
 
+  test("partial update preserves omitted birthday/zodiac", async () => {
+    const repo = new FakeProfileRepo();
+    repo.updateResp = profileOutput({ id: 10 });
+    const svc = new ProfileService(repo, new FakeEmbeddingQueue(), logger);
+
+    // Agent patches just the profession — no birthday in the payload.
+    await svc.updateProfile(10, { profession: "Doctor" }, 3);
+
+    const sent = repo.updatedProfiles[0]!.input as {
+      profile: Record<string, unknown>;
+    };
+    // birthday/zodiac must be absent so Drizzle leaves the stored values intact;
+    // sending them would null out the existing date (the bug this guards).
+    expect("birthday" in sent.profile).toBe(false);
+    expect("zodiacSign" in sent.profile).toBe(false);
+    expect(sent.profile.profession).toBe("Doctor");
+  });
+
+  test("update with birthday re-derives zodiac", async () => {
+    const repo = new FakeProfileRepo();
+    repo.updateResp = profileOutput({ id: 11 });
+    const svc = new ProfileService(repo, new FakeEmbeddingQueue(), logger);
+
+    await svc.updateProfile(11, { birthday: "2001-03-22" }, 3);
+
+    const sent = repo.updatedProfiles[0]!.input as {
+      profile: Record<string, unknown>;
+    };
+    expect(sent.profile.birthday).toBe("2001-03-22");
+    expect(sent.profile.zodiacSign).toBe("Aries");
+  });
+
+  test("update clearing birthday nulls zodiac", async () => {
+    const repo = new FakeProfileRepo();
+    repo.updateResp = profileOutput({ id: 12 });
+    const svc = new ProfileService(repo, new FakeEmbeddingQueue(), logger);
+
+    await svc.updateProfile(12, { birthday: null }, 3);
+
+    const sent = repo.updatedProfiles[0]!.input as {
+      profile: Record<string, unknown>;
+    };
+    expect(sent.profile.birthday).toBe(null);
+    expect(sent.profile.zodiacSign).toBe(null);
+  });
+
   test("repo errors propagate", async () => {
     const repo = new FakeProfileRepo();
     repo.err = new Error("repo failed");
