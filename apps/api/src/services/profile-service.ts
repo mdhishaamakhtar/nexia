@@ -12,6 +12,7 @@ interface ProfileChildInput {
   bookGenres?: Array<{ genre: string }>;
   hangoutPlaces?: Array<{ place: string }>;
   quotes?: Array<{ quote: string }>;
+  favoriteMemories?: Array<{ memory: string }>;
   topSongs?: Array<{ name: string; artist: string }>;
   associatedSong?: { name: string; artist: string } | null;
 }
@@ -133,7 +134,6 @@ function mapProfileToRepoInput(p: ProfileInput, userId: number) {
       musicPreference: p.music_preference ?? "",
       favoriteMovie: p.favorite_movie ?? "",
       favoriteBook: p.favorite_book ?? "",
-      favoriteMemory: p.favorite_memory ?? "",
       notes: p.notes ?? "",
     },
     ...mapChildren(p),
@@ -153,7 +153,6 @@ function mapProfileToRepoUpdate(p: Partial<ProfileInput>) {
       musicPreference: p.music_preference,
       favoriteMovie: p.favorite_movie,
       favoriteBook: p.favorite_book,
-      favoriteMemory: p.favorite_memory,
       notes: p.notes,
     },
     ...mapChildren(p),
@@ -170,6 +169,7 @@ function mapChildren(p: Partial<ProfileInput>) {
     bookGenres: p.book_genres?.map((g) => ({ genre: g.genre })),
     hangoutPlaces: p.hangout_places?.map((hp) => ({ place: hp.place })),
     quotes: p.quotes?.map((q) => ({ quote: q.quote })),
+    favoriteMemories: p.favorite_memories?.map((m) => ({ memory: m.memory })),
     topSongs: p.top_songs?.map((s) => ({ name: s.name, artist: s.artist })),
     associatedSong: p.associated_song
       ? { name: p.associated_song.name, artist: p.associated_song.artist }

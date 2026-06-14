@@ -184,7 +184,6 @@ describe("profile schemas", () => {
       music_preference: "Pop",
       favorite_movie: "Inception",
       favorite_book: "Dune",
-      favorite_memory: "Road trip",
       notes: "Awesome person",
       tags: [{ tag: "kind" }, { tag: "funny" }],
       political_views: [{ view: "moderate" }],
@@ -193,6 +192,7 @@ describe("profile schemas", () => {
       book_genres: [{ genre: "fiction" }],
       hangout_places: [{ place: "coffee shop" }],
       quotes: [{ quote: "Be yourself" }],
+      favorite_memories: [{ memory: "Road trip" }, { memory: "Beach day" }],
       top_songs: [
         { name: "Song 1", artist: "Artist 1" },
         { name: "Song 2", artist: "Artist 2" },
@@ -202,6 +202,7 @@ describe("profile schemas", () => {
     };
     const result = profileInputSchema.parse(full);
     expect(result.tags?.length).toBe(2);
+    expect(result.favorite_memories?.length).toBe(2);
     expect(result.top_songs?.length).toBe(3);
     expect(result.associated_song?.name).toBe("Anthem");
   });
@@ -241,7 +242,6 @@ describe("profile schemas", () => {
       music_preference: "",
       favorite_movie: "",
       favorite_book: "",
-      favorite_memory: "",
       notes: "",
       created_at: "2025-01-01T00:00:00Z",
       updated_at: "2025-01-01T00:00:00Z",
@@ -252,6 +252,7 @@ describe("profile schemas", () => {
       book_genres: [],
       hangout_places: [],
       quotes: [],
+      favorite_memories: [],
       top_songs: [],
       associated_song: null,
     };

@@ -4,7 +4,15 @@ import { X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
 
-export default function QuoteModal({ quote, onClose }: { quote: string; onClose: () => void }) {
+export default function QuoteModal({
+  quote,
+  onClose,
+  title = "words they said",
+}: {
+  quote: string;
+  onClose: () => void;
+  title?: string;
+}) {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -26,7 +34,7 @@ export default function QuoteModal({ quote, onClose }: { quote: string; onClose:
       <motion.div
         role="dialog"
         aria-modal="true"
-        aria-label="Quote"
+        aria-label={title}
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -44,11 +52,11 @@ export default function QuoteModal({ quote, onClose }: { quote: string; onClose:
             className="text-[11px] font-bold uppercase tracking-[0.2em]"
             style={{ color: "var(--text-3)" }}
           >
-            words they said
+            {title}
           </h3>
           <button
             onClick={onClose}
-            aria-label="Close quote"
+            aria-label="Close"
             className="-mt-1 -mr-1 rounded-lg p-1.5 transition hover:scale-110 hover:bg-[var(--border)] hover:text-(--text-1)"
             style={{ color: "var(--text-3)" }}
           >

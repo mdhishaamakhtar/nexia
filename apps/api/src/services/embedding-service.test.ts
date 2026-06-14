@@ -63,7 +63,6 @@ describe("EmbeddingService", () => {
           music_preference: "Pop",
           favorite_movie: "Inception",
           favorite_book: "Dune",
-          favorite_memory: "Road trip",
           notes: "Awesome",
           created_at: "2026-01-01T00:00:00.000Z",
           updated_at: "2026-01-01T00:00:00.000Z",
@@ -77,6 +76,7 @@ describe("EmbeddingService", () => {
           book_genres: [{ id: 1, profile_id: 7, genre: "fiction" }],
           hangout_places: [{ id: 1, profile_id: 7, place: "coffee shop" }],
           quotes: [{ id: 1, profile_id: 7, quote: "Be yourself" }],
+          favorite_memories: [{ id: 1, profile_id: 7, memory: "Road trip" }],
           top_songs: [{ id: 1, profile_id: 7, name: "Song 1", artist: "Artist 1" }],
           associated_song: { profile_id: 7, name: "Anthem", artist: "Band" },
         };
@@ -105,6 +105,7 @@ describe("EmbeddingService", () => {
     expect(generator.generatedText).toContain("Profile of Alice");
     expect(generator.generatedText).toContain("March 22, 2001");
     expect(generator.generatedText).toContain('"Be yourself"');
+    expect(generator.generatedText).toContain("Favorite Memories: Road trip");
   });
 
   test("embed profile not found", async () => {

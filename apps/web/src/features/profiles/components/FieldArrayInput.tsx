@@ -12,6 +12,7 @@ import type { ProfileFormValues } from "@/shared/types/profile";
 type ArrayFieldName =
   | "tags"
   | "quotes"
+  | "favorite_memories"
   | "movie_genres"
   | "book_genres"
   | "hangout_places"

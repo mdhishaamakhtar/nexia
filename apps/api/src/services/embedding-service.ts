@@ -99,7 +99,6 @@ export function buildEmbeddingText(p: ProfileOutput): string {
   lines.push(`Music Preference: ${p.music_preference}`);
   lines.push(`Favorite Movie: ${p.favorite_movie}`);
   lines.push(`Favorite Book: ${p.favorite_book}`);
-  lines.push(`Favorite Memory: ${p.favorite_memory}`);
   lines.push(`Notes: ${p.notes}`);
 
   if (p.tags.length) lines.push(`Interests/Tags: ${p.tags.map((t) => t.tag).join(", ")}`);
@@ -126,6 +125,9 @@ export function buildEmbeddingText(p: ProfileOutput): string {
   }
   if (p.quotes.length) {
     lines.push(`Quotes: ${p.quotes.map((q) => `"${q.quote}"`).join(", ")}`);
+  }
+  if (p.favorite_memories.length) {
+    lines.push(`Favorite Memories: ${p.favorite_memories.map((m) => m.memory).join("; ")}`);
   }
 
   return lines.join("\n");

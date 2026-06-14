@@ -216,6 +216,7 @@ export default function ProfileDetailPage() {
   const id = params?.id;
   const queryClient = useQueryClient();
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
+  const [selectedMemory, setSelectedMemory] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -267,6 +268,7 @@ export default function ProfileDetailPage() {
   );
   const politicalViews = compactStrings(profile.political_views?.map((view) => view.view) ?? []);
   const quotes = (profile.quotes ?? []).filter((quote) => hasText(quote.quote));
+  const favoriteMemories = (profile.favorite_memories ?? []).filter((m) => hasText(m.memory));
   const topSongs = (profile.top_songs ?? []).filter(
     (song) => hasText(song.name) || hasText(song.artist)
   );
@@ -291,7 +293,7 @@ export default function ProfileDetailPage() {
     hangoutPlaces.length > 0 || foodRestrictions.length > 0 || politicalViews.length > 0;
   const hasDeep =
     hasText(profile.long_term_goals) ||
-    hasText(profile.favorite_memory) ||
+    favoriteMemories.length > 0 ||
     hasText(profile.notes) ||
     quotes.length > 0;
 
@@ -578,18 +580,18 @@ export default function ProfileDetailPage() {
                 </div>
               )}
 
-              {profile.favorite_memory && (
-                <div
-                  className="rounded-2xl border p-5"
-                  style={{ background: "var(--fill)", borderColor: "var(--border)" }}
-                >
-                  <SubLabel icon={Heart}>Favorite Memory</SubLabel>
-                  <p
-                    className="whitespace-pre-line text-sm leading-relaxed"
-                    style={{ color: "var(--text-1)" }}
-                  >
-                    {profile.favorite_memory}
-                  </p>
+              {favoriteMemories.length > 0 && (
+                <div>
+                  <SubLabel icon={Heart}>Favorite Memories</SubLabel>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {favoriteMemories.map((m) => (
+                      <QuoteCard
+                        key={m.id ?? m.memory}
+                        quote={m.memory}
+                        onOpen={() => setSelectedMemory(m.memory)}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -627,6 +629,13 @@ export default function ProfileDetailPage() {
       <AnimatePresence>
         {selectedQuote && (
           <QuoteModal quote={selectedQuote} onClose={() => setSelectedQuote(null)} />
+        )}
+        {selectedMemory && (
+          <QuoteModal
+            quote={selectedMemory}
+            title="a memory worth keeping"
+            onClose={() => setSelectedMemory(null)}
+          />
         )}
       </AnimatePresence>
       <ConfirmDialog
