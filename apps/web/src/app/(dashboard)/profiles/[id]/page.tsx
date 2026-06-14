@@ -372,11 +372,19 @@ export default function ProfileDetailPage() {
 
             <div className="min-w-0 flex-1">
               <h1
-                className="mb-2.5 break-words text-3xl font-bold leading-tight sm:text-[2.5rem]"
+                className="mb-1 break-words text-3xl font-bold leading-tight sm:text-[2.5rem]"
                 style={{ color: "var(--text-1)" }}
               >
                 {profile.full_name}
               </h1>
+              {profile.pronouns && (
+                <p
+                  className="mb-2.5 text-sm font-medium lowercase tracking-wide"
+                  style={{ color: "var(--text-3)" }}
+                >
+                  {profile.pronouns}
+                </p>
+              )}
               <div
                 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs"
                 style={{ color: "var(--text-3)" }}

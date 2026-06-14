@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "pronouns" varchar(100);

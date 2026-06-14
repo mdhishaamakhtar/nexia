@@ -37,6 +37,7 @@ export async function deleteProfile(id: string | number) {
 function toProfilePayload(values: ProfileFormValues) {
   return {
     full_name: values.full_name,
+    pronouns: values.pronouns,
     relationship_type: values.relationship_type,
     bio: values.bio,
     profession: values.profession,
@@ -67,6 +68,7 @@ function toProfilePayload(values: ProfileFormValues) {
 export function toProfileFormValues(profile?: Profile): ProfileFormValues {
   return {
     full_name: profile?.full_name ?? "",
+    pronouns: profile?.pronouns ?? "",
     relationship_type: profile?.relationship_type ?? "Friend",
     bio: profile?.bio ?? "",
     profession: profile?.profession ?? "",

@@ -233,6 +233,7 @@ describe("profile schemas", () => {
       id: 1,
       user_id: 42,
       full_name: "Asha Kumar",
+      pronouns: "she/her",
       relationship_type: "Friend",
       bio: "",
       profession: "",

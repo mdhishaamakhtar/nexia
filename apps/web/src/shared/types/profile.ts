@@ -35,6 +35,7 @@ type FormTopSong = { id?: number; profile_id?: number; name: string; artist: str
 
 export type ProfileFormValues = {
   full_name: string;
+  pronouns: string;
   relationship_type: RelationshipType;
   bio: string;
   profession: string;

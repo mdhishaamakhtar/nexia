@@ -69,6 +69,7 @@ export const associatedSongSchema = z.object({
 
 export const profileInputSchema = z.object({
   full_name: z.string().min(1).max(150),
+  pronouns: z.string().max(100).optional(),
   relationship_type: relationshipTypeSchema,
   bio: z.string().optional(),
   profession: z.string().optional(),
@@ -95,6 +96,7 @@ export const profileOutputSchema = z.object({
   id: z.number(),
   user_id: z.number(),
   full_name: z.string(),
+  pronouns: z.string(),
   relationship_type: relationshipTypeSchema,
   bio: z.string(),
   profession: z.string(),
@@ -149,6 +151,7 @@ export const profileOutputSchema = z.object({
 export const profileSummarySchema = z.object({
   id: z.number(),
   full_name: z.string(),
+  pronouns: z.string(),
   relationship_type: relationshipTypeSchema,
   zodiac_sign: zodiacSignSchema.nullish(),
   tags: z.array(z.object({ id: z.number(), profile_id: z.number(), tag: z.string() })),

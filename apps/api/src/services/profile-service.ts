@@ -130,6 +130,7 @@ function mapProfileToRepoInput(p: ProfileInput, userId: number) {
     profile: {
       userId,
       fullName: p.full_name,
+      pronouns: p.pronouns ?? "",
       relationshipType: p.relationship_type,
       bio: p.bio ?? "",
       profession: p.profession ?? "",
@@ -153,6 +154,7 @@ function mapProfileToRepoUpdate(p: Partial<ProfileInput>) {
   // caller actually sent a birthday (see updateProfile above).
   const profile: Record<string, unknown> = {
     fullName: p.full_name,
+    pronouns: p.pronouns,
     relationshipType: p.relationship_type,
     bio: p.bio,
     profession: p.profession,

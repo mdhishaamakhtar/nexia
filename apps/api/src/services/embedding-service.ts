@@ -90,6 +90,7 @@ function formatDate(dateStr: string): string {
 export function buildEmbeddingText(p: ProfileOutput): string {
   const lines: string[] = [];
   lines.push(`Profile of ${p.full_name}`);
+  if (p.pronouns) lines.push(`Pronouns: ${p.pronouns}`);
   lines.push(`Bio: ${p.bio}`);
   lines.push(`Profession: ${p.profession}`);
   lines.push(`Relationship Type: ${p.relationship_type}`);
