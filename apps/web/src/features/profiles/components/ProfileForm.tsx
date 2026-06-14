@@ -24,6 +24,7 @@ import FieldArrayInput from "./FieldArrayInput";
 
 const schema = z.object({
   full_name: z.string().min(1, "Full name is required"),
+  pronouns: z.string(),
   relationship_type: z.enum([
     "Friend",
     "Family",
@@ -153,6 +154,8 @@ export default function ProfileForm({
       <ProfileFormSection id="basic" title="Basic Information" icon={User} index={0}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Input label="Full Name" {...register("full_name")} error={errors.full_name?.message} />
+
+          <Input label="Pronouns" placeholder="e.g. she/her, they/them" {...register("pronouns")} />
 
           <div>
             <label

@@ -35,6 +35,7 @@ export const profiles = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     fullName: varchar("full_name", { length: 150 }).notNull(),
+    pronouns: varchar("pronouns", { length: 100 }),
     bio: text("bio"),
     profession: varchar("profession", { length: 150 }),
     longTermGoals: text("long_term_goals"),

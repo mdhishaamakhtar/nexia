@@ -12,6 +12,7 @@ function profileOutput(overrides: Partial<ProfileOutput> = {}): ProfileOutput {
     id: 100,
     user_id: 77,
     full_name: "Alice",
+    pronouns: "",
     relationship_type: "Friend",
     bio: "",
     profession: "",

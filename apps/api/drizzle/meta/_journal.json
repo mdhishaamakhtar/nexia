@@ -15,6 +15,13 @@
       "when": 1781432288267,
       "tag": "0001_red_albert_cleary",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781471225607,
+      "tag": "0002_complex_polaris",
+      "breakpoints": true
     }
   ]
 }

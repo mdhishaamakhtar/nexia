@@ -45,6 +45,7 @@ export interface ProfileSummaryRow {
   relationshipType: string;
   zodiacSign: string | null;
   fullName: string;
+  pronouns: string | null;
   tags: TagRow[];
 }
 
@@ -53,6 +54,7 @@ export function toProfileSummary(row: ProfileSummaryRow): ProfileSummary {
   return {
     id: row.id,
     full_name: row.fullName,
+    pronouns: row.pronouns ?? "",
     relationship_type: row.relationshipType as RelationshipType,
     zodiac_sign: (row.zodiacSign as ZodiacSign | null) ?? null,
     tags: row.tags.map((t) => ({
@@ -89,6 +91,7 @@ export function toProfileOutput(row: ProfileRow, children: ProfileChildren): Pro
     id: row.id,
     user_id: row.userId,
     full_name: row.fullName,
+    pronouns: row.pronouns ?? "",
     relationship_type: row.relationshipType as RelationshipType,
     bio: row.bio ?? "",
     profession: row.profession ?? "",

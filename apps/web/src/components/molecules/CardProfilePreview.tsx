@@ -61,6 +61,14 @@ export default function CardProfilePreview({ profile, href, index = 0 }: CardPro
               style={{ color: "var(--text-1)" }}
             >
               {profile.full_name}
+              {profile.pronouns && (
+                <span
+                  className="ml-1.5 text-[11px] font-medium lowercase tracking-wide"
+                  style={{ color: "var(--text-3)" }}
+                >
+                  {profile.pronouns}
+                </span>
+              )}
             </h3>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span

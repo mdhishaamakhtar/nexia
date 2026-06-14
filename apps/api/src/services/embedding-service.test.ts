@@ -54,6 +54,7 @@ describe("EmbeddingService", () => {
           id: 7,
           user_id: 42,
           full_name: "Alice",
+          pronouns: "she/her",
           relationship_type: "Friend",
           bio: "A great friend",
           profession: "Engineer",
@@ -103,6 +104,7 @@ describe("EmbeddingService", () => {
     expect(repo.upserted[0]!.profileId).toBe(7);
     expect(repo.upserted[0]!.userId).toBe(42);
     expect(generator.generatedText).toContain("Profile of Alice");
+    expect(generator.generatedText).toContain("Pronouns: she/her");
     expect(generator.generatedText).toContain("March 22, 2001");
     expect(generator.generatedText).toContain('"Be yourself"');
     expect(generator.generatedText).toContain("Favorite Memories: Road trip");

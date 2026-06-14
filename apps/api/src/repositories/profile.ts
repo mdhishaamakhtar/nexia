@@ -145,11 +145,17 @@ export class ProfileRepository {
     const [totalRow] = await this.db.select({ count: sqlCount() }).from(profiles).where(where);
     const total = Number(totalRow?.count ?? 0);
 
-    // The list/search surfaces only render name, relationship, zodiac and tags,
-    // so project just those columns plus the tags relation — the other nine
-    // child collections are never fetched.
+    // The list/search surfaces only render name, pronouns, relationship, zodiac
+    // and tags, so project just those columns plus the tags relation — the other
+    // nine child collections are never fetched.
     const rows = await this.db.query.profiles.findMany({
-      columns: { id: true, fullName: true, relationshipType: true, zodiacSign: true },
+      columns: {
+        id: true,
+        fullName: true,
+        pronouns: true,
+        relationshipType: true,
+        zodiacSign: true,
+      },
       with: { tags: true },
       where,
       orderBy: profiles.id,

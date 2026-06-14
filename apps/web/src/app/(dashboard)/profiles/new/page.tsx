@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const initialValues: ProfileFormValues = {
   full_name: "",
+  pronouns: "",
   relationship_type: "Friend",
   bio: "",
   profession: "",

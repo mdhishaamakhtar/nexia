@@ -514,7 +514,12 @@ function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | nul
   const heroBottom = Math.max(ctx.y + avatarSize, textBottom);
   ctx.y = heroBottom + 22;
 
-  const meta = compactStrings([profile.relationship_type, birthdayShort, profile.zodiac_sign]);
+  const meta = compactStrings([
+    profile.pronouns,
+    profile.relationship_type,
+    birthdayShort,
+    profile.zodiac_sign,
+  ]);
   if (meta.length > 0) {
     drawPills(ctx, meta);
   }
