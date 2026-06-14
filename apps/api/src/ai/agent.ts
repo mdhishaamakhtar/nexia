@@ -4,7 +4,7 @@ import type { ProfileService } from "../services/profile-service";
 import type { EmbeddingRepository } from "../repositories/embedding";
 import type { EmbeddingGenerator } from "./embeddings";
 import { buildAgentTools } from "./tools";
-import { AGENT_RULES } from "./system-prompt";
+import { buildSystemPrompt } from "./system-prompt";
 import { errAIUnavailable } from "../services/errors";
 
 export class ChatAgent {
@@ -35,7 +35,7 @@ export class ChatAgent {
 
     const result = streamText({
       model: this.model,
-      system: AGENT_RULES,
+      system: buildSystemPrompt(),
       messages: modelMessages,
       tools,
       stopWhen: stepCountIs(10),
