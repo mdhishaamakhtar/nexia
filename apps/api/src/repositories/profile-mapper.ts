@@ -1,4 +1,4 @@
-import type { ProfileOutput, RelationshipType, ZodiacSign } from "@nexia/shared";
+import type { ProfileOutput, ProfileSummary, RelationshipType, ZodiacSign } from "@nexia/shared";
 import type {
   profiles,
   tags,
@@ -37,6 +37,30 @@ export interface ProfileChildren {
   favoriteMemories: FavoriteMemoryRow[];
   topSongs: TopSongRow[];
   associatedSong: AssociatedSongRow | null;
+}
+
+/** The lean profile + tags projection backing list/search surfaces. */
+export interface ProfileSummaryRow {
+  id: number;
+  relationshipType: string;
+  zodiacSign: string | null;
+  fullName: string;
+  tags: TagRow[];
+}
+
+/** Maps the lean relational projection into the snake_case `ProfileSummary`. */
+export function toProfileSummary(row: ProfileSummaryRow): ProfileSummary {
+  return {
+    id: row.id,
+    full_name: row.fullName,
+    relationship_type: row.relationshipType as RelationshipType,
+    zodiac_sign: (row.zodiacSign as ZodiacSign | null) ?? null,
+    tags: row.tags.map((t) => ({
+      id: t.id,
+      profile_id: t.profileId,
+      tag: t.tag ?? "",
+    })),
+  };
 }
 
 export function emptyChildren(): ProfileChildren {

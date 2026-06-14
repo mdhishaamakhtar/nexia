@@ -7,7 +7,7 @@ import {
   ragSearchOutputSchema,
   toolErrorOutputSchema,
   writeProfileToolOutputSchema,
-  type ProfileOutput,
+  type ProfileSummary,
 } from "@nexia/shared";
 
 export type ToolPart = ToolUIPart | DynamicToolUIPart;
@@ -88,7 +88,7 @@ export function extractToolError(output: unknown): string | null {
 }
 
 /** Pulls the profiles a read tool returned, per the tool's output contract. */
-export function extractProfilesFromOutput(toolName: string, output: unknown): ProfileOutput[] {
+export function extractProfilesFromOutput(toolName: string, output: unknown): ProfileSummary[] {
   switch (toolName) {
     case "ragSearch": {
       const parsed = ragSearchOutputSchema.safeParse(output);

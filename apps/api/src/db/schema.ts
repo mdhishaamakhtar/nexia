@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   pgTable,
   bigserial,
@@ -198,6 +199,66 @@ export const passwordResetTokens = pgTable(
   },
   (t) => [index("idx_password_reset_tokens_token").on(t.token)]
 );
+
+/**
+ * Relations let the repository hydrate a profile and all of its child
+ * collections in a single relational query. Drizzle compiles `with: { ... }`
+ * into lateral json-aggregation, so each child collection collapses to one
+ * JSON array per profile — no cartesian row explosion from joining many
+ * one-to-many tables in a flat query.
+ */
+export const profilesRelations = relations(profiles, ({ many, one }) => ({
+  tags: many(tags),
+  politicalViews: many(politicalViews),
+  foodRestrictions: many(foodRestrictions),
+  movieGenres: many(movieGenres),
+  bookGenres: many(bookGenres),
+  hangoutPlaces: many(hangoutPlaces),
+  quotes: many(quotes),
+  favoriteMemories: many(favoriteMemories),
+  topSongs: many(topSongs),
+  associatedSong: one(associatedSongs),
+}));
+
+export const tagsRelations = relations(tags, ({ one }) => ({
+  profile: one(profiles, { fields: [tags.profileId], references: [profiles.id] }),
+}));
+
+export const politicalViewsRelations = relations(politicalViews, ({ one }) => ({
+  profile: one(profiles, { fields: [politicalViews.profileId], references: [profiles.id] }),
+}));
+
+export const foodRestrictionsRelations = relations(foodRestrictions, ({ one }) => ({
+  profile: one(profiles, { fields: [foodRestrictions.profileId], references: [profiles.id] }),
+}));
+
+export const movieGenresRelations = relations(movieGenres, ({ one }) => ({
+  profile: one(profiles, { fields: [movieGenres.profileId], references: [profiles.id] }),
+}));
+
+export const bookGenresRelations = relations(bookGenres, ({ one }) => ({
+  profile: one(profiles, { fields: [bookGenres.profileId], references: [profiles.id] }),
+}));
+
+export const hangoutPlacesRelations = relations(hangoutPlaces, ({ one }) => ({
+  profile: one(profiles, { fields: [hangoutPlaces.profileId], references: [profiles.id] }),
+}));
+
+export const quotesRelations = relations(quotes, ({ one }) => ({
+  profile: one(profiles, { fields: [quotes.profileId], references: [profiles.id] }),
+}));
+
+export const favoriteMemoriesRelations = relations(favoriteMemories, ({ one }) => ({
+  profile: one(profiles, { fields: [favoriteMemories.profileId], references: [profiles.id] }),
+}));
+
+export const topSongsRelations = relations(topSongs, ({ one }) => ({
+  profile: one(profiles, { fields: [topSongs.profileId], references: [profiles.id] }),
+}));
+
+export const associatedSongsRelations = relations(associatedSongs, ({ one }) => ({
+  profile: one(profiles, { fields: [associatedSongs.profileId], references: [profiles.id] }),
+}));
 
 export const emailVerificationTokens = pgTable(
   "email_verification_tokens",

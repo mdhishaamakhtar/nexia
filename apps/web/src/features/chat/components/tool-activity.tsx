@@ -2,7 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Check, ChevronDown, Loader2, TriangleAlert } from "lucide-react";
-import type { ProfileOutput } from "@nexia/shared";
+import type { ProfileSummary } from "@nexia/shared";
 import {
   extractProfilesFromOutput,
   extractToolError,
@@ -125,7 +125,7 @@ function ProfileDisclosure({
   label,
   count,
 }: {
-  profiles: ProfileOutput[];
+  profiles: ProfileSummary[];
   label: string;
   count: number;
 }) {

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Heart, Tag } from "lucide-react";
 import ZodiacIcon from "@/features/profiles/components/ZodiacIcon";
 import { motion } from "framer-motion";
-import type { Profile } from "@/shared/types/profile";
+import type { ProfileSummary } from "@/shared/types/profile";
 
 interface CardProfilePreviewProps {
-  profile: Profile;
+  profile: ProfileSummary;
   href: string;
   index?: number;
 }

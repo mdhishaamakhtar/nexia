@@ -1,5 +1,6 @@
 import type {
   ProfileOutput,
+  ProfileSummary,
   ProfileListResponse,
   CreateProfileResponse,
   RelationshipType,
@@ -8,7 +9,13 @@ import type {
 export { RELATIONSHIP_TYPES } from "@nexia/shared";
 
 export type Profile = ProfileOutput;
-export type { ProfileOutput, ProfileListResponse, CreateProfileResponse, RelationshipType };
+export type {
+  ProfileOutput,
+  ProfileSummary,
+  ProfileListResponse,
+  CreateProfileResponse,
+  RelationshipType,
+};
 
 export type AssociatedSongForm = {
   associated_song_name: string;

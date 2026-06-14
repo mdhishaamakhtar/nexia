@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import CardProfilePreview from "@/components/molecules/CardProfilePreview";
 import { listProfiles } from "@/features/profiles/api";
-import type { Profile } from "@/shared/types/profile";
+import type { ProfileSummary } from "@/shared/types/profile";
 
 const RELATIONSHIP_TYPES = [
   "Friend",
@@ -40,7 +40,7 @@ export default function ProfilesPage() {
         relationship_type: relationshipFilter,
       }),
   });
-  const profiles: Profile[] = data?.data ?? [];
+  const profiles: ProfileSummary[] = data?.data ?? [];
 
   return (
     <div className="min-h-screen">

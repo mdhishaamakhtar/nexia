@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { profileInputSchema, profileOutputSchema } from "./profile";
+import { profileInputSchema, profileOutputSchema, profileSummarySchema } from "./profile";
 
 export const CHAT_TOOL_NAMES = [
   "ragSearch",
@@ -62,9 +62,13 @@ export const ragSearchResultSchema = profileOutputSchema.extend({
 });
 export const ragSearchOutputSchema = z.array(ragSearchResultSchema);
 
-/** `searchProfiles` and `listProfiles` both return a page of full profiles. */
+/**
+ * `searchProfiles` and `listProfiles` return a page of lean profile summaries —
+ * enough for the agent to identify a person and for the chat UI to render result
+ * cards. The agent calls `getProfile` / `ragSearch` when it needs full details.
+ */
 export const profileListToolOutputSchema = z.object({
-  profiles: z.array(profileOutputSchema),
+  profiles: z.array(profileSummarySchema),
   total: z.number(),
 });
 
