@@ -13,10 +13,10 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.0",
-    "@ai-sdk/openai-compatible": "^2.0.0",
+    "@ai-sdk/google": "^4.0.11",
+    "@ai-sdk/openai-compatible": "^3.0.7",
     "@nexia/shared": "workspace:*",
-    "ai": "^6.0.0",
+    "ai": "^7.0.19",
     "bullmq": "^5.56.10",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.10.10",

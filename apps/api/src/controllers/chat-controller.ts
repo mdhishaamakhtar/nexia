@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { toUIMessageStream, createUIMessageStreamResponse } from "ai";
 import type { UIMessage } from "ai";
 import type { ChatAgent } from "../ai/agent";
 import { respondWithServiceError, respondError } from "../utils/http";
@@ -24,7 +25,9 @@ export function createChatController(agent: ChatAgent) {
 
     try {
       const result = await agent.respond({ userId, messages: body.messages as UIMessage[] });
-      return result.toUIMessageStreamResponse();
+      return createUIMessageStreamResponse({
+        stream: toUIMessageStream({ stream: result.stream }),
+      });
     } catch (err) {
       return respondWithServiceError(c, err);
     }

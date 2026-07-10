@@ -1,4 +1,4 @@
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGoogle } from "@ai-sdk/google";
 import { embed } from "ai";
 import { errAIUnavailable } from "../services/errors";
 
@@ -7,7 +7,7 @@ export type EmbeddingGenerator = {
 };
 
 export function createEmbeddingGenerator(apiKey: string): EmbeddingGenerator {
-  const google = createGoogleGenerativeAI({ apiKey });
+  const google = createGoogle({ apiKey });
   const model = google.embedding("gemini-embedding-001");
 
   return {

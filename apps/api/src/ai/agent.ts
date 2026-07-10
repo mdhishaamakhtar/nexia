@@ -1,4 +1,4 @@
-import { streamText, stepCountIs, convertToModelMessages, type UIMessage } from "ai";
+import { streamText, isStepCount, convertToModelMessages, type UIMessage } from "ai";
 import type { LanguageModel } from "ai";
 import type { ProfileService } from "../services/profile-service";
 import type { EmbeddingRepository } from "../repositories/embedding";
@@ -35,10 +35,10 @@ export class ChatAgent {
 
     const result = streamText({
       model: this.model,
-      system: buildSystemPrompt(),
+      instructions: buildSystemPrompt(),
       messages: modelMessages,
       tools,
-      stopWhen: stepCountIs(10),
+      stopWhen: isStepCount(10),
     });
 
     return result;
