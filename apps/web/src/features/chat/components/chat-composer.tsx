@@ -88,9 +88,9 @@ export function ChatComposer({
           }
         }}
         // 16px prevents iOS Safari from zooming the viewport on focus. The
-        // global :focus-visible ring is inset so it tracks the card's rounded
-        // edge from the inside instead of poking past it.
-        className="block w-full resize-none rounded-2xl bg-transparent px-4 pt-3.5 text-[16px] leading-[1.5] outline-offset-[-2px] placeholder:text-(--text-3)"
+        // focus ring itself is handled in globals.css (#chat-input), inset so
+        // it tracks the field's rounded edge instead of poking past the card.
+        className="block w-full resize-none rounded-2xl bg-transparent px-4 pt-3.5 text-[16px] leading-[1.5] placeholder:text-(--text-3)"
         style={{ color: "var(--text-1)", maxHeight: MAX_TEXTAREA_HEIGHT }}
       />
 

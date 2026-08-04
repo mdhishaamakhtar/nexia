@@ -121,6 +121,15 @@ body {
   border-radius: 2px;
 }
 
+/* The chat composer keeps the ring, but inset: the textarea fills the card,
+   so an outset ring pokes past the card's border and the 2px radius above
+   squares it off. Inset it and let it follow the field's own rounding.
+   (Utilities can't do this — this rule is unlayered and beats @layer.) */
+#chat-input:focus-visible {
+  outline-offset: -2px;
+  border-radius: 1rem;
+}
+
 /* Prevent form elements from overflowing their containers on iOS */
 input,
 textarea,
