@@ -64,11 +64,11 @@ export function ChatComposer({
         e.preventDefault();
         submit();
       }}
-      className="rounded-2xl border transition-colors duration-200"
-      style={{
-        background: "var(--surface)",
-        borderColor: "var(--border)",
-      }}
+      // The border colour lives on `.composer` in globals.css, not inline: an
+      // inline value would outrank the focus rule and the ring could never
+      // recolour the edge.
+      className="composer rounded-2xl border transition-colors duration-200"
+      style={{ background: "var(--surface)" }}
     >
       <label htmlFor="chat-input" className="sr-only">
         Ask Nexia about your people
@@ -88,9 +88,9 @@ export function ChatComposer({
           }
         }}
         // 16px prevents iOS Safari from zooming the viewport on focus. The
-        // focus ring itself is handled in globals.css (#chat-input), inset so
-        // it tracks the field's rounded edge instead of poking past the card.
-        className="block w-full resize-none rounded-2xl bg-transparent px-4 pt-3.5 text-[16px] leading-[1.5] placeholder:text-(--text-3)"
+        // focus ring lives on the .composer card in globals.css — this textarea
+        // fills the card, so the ring wraps the whole box, not the field.
+        className="block w-full resize-none bg-transparent px-4 pt-3.5 text-[16px] leading-[1.5] placeholder:text-(--text-3)"
         style={{ color: "var(--text-1)", maxHeight: MAX_TEXTAREA_HEIGHT }}
       />
 

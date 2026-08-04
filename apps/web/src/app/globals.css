@@ -121,13 +121,30 @@ body {
   border-radius: 2px;
 }
 
-/* The chat composer keeps the ring, but inset: the textarea fills the card,
-   so an outset ring pokes past the card's border and the 2px radius above
-   squares it off. Inset it and let it follow the field's own rounding.
-   (Utilities can't do this — this rule is unlayered and beats @layer.) */
+/* Chat composer: the whole card — textarea plus the send row — is one field.
+   The textarea fills the card edge to edge, so its own ring pokes past the
+   border and the 2px radius above squares the corners off. Move the ring to
+   the card: it wraps the whole box and follows the card's own rounding.
+   (These rules are unlayered, so they beat the utilities.) */
+.composer {
+  border-color: var(--border);
+}
+
+/* Flush against the card's edge, exactly like `.field` above: the inset ring
+   sits on top of the hairline instead of floating outside it, so the card
+   gains one crisp blue edge rather than a border with a halo around it. */
+.composer:has(#chat-input:focus) {
+  border-color: var(--focus);
+  outline: 2px solid var(--focus);
+  outline-offset: -1px;
+}
 #chat-input:focus-visible {
-  outline-offset: -2px;
-  border-radius: 1rem;
+  outline: none;
+}
+/* The send/stop button still rings on its own — it's a separate target — but
+   the base rule's 2px radius would square off a round button. */
+.composer button:focus-visible {
+  border-radius: 9999px;
 }
 
 /* Prevent form elements from overflowing their containers on iOS */
