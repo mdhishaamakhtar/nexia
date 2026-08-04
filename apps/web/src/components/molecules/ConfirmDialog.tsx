@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import Button from "@/components/atoms/Button";
 
 interface ConfirmDialogProps {
@@ -26,14 +26,46 @@ export default function ConfirmDialog({
   isConfirming = false,
 }: ConfirmDialogProps) {
   const titleId = useId();
+  const descId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !isConfirming) onCancel();
+
+    // Move focus into the dialog so keyboard and screen-reader users land here
+    // rather than continuing behind the scrim, and restore it on close.
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    dialogRef.current?.querySelector<HTMLElement>("button")?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isConfirming) {
+        onCancel();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      // Keep Tab inside the dialog while it is open.
+      const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
+      );
+      if (!focusables?.length) return;
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previouslyFocused?.focus();
+    };
   }, [isOpen, isConfirming, onCancel]);
 
   return (
@@ -43,43 +75,39 @@ export default function ConfirmDialog({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-[2px]"
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-5"
           style={{ background: "var(--overlay)" }}
           onClick={onCancel}
         >
           <motion.div
+            ref={dialogRef}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            initial={{ opacity: 0, scale: 0.9, rotate: -2, y: 20 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0.5, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, rotate: -2, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="w-full max-w-sm rounded-4xl p-8 relative glass-panel scrapbook-card"
-            style={{
-              borderColor: "var(--border-mid)",
-            }}
+            aria-describedby={descId}
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="paper relative w-full max-w-sm rounded-3xl p-7"
+            style={{ borderColor: "var(--border-mid)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Scrapbook Tape */}
-            <div
-              className="washi-tape-accent w-24 h-6 -top-2.5!"
-              style={{ background: "var(--peach)", opacity: 0.9 }}
+            <span
+              className="washi-tape"
+              style={{ width: 88, height: 22, background: "var(--peach)" }}
               aria-hidden="true"
             />
 
-            <h3
-              id={titleId}
-              className="text-xl font-bold tracking-tight mb-3"
-              style={{ color: "var(--text-1)" }}
-            >
+            <h2 id={titleId} className="t-section-title mb-2" style={{ color: "var(--text-1)" }}>
               {title}
-            </h3>
-            <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
+            </h2>
+            <p id={descId} className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
               {description}
             </p>
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-6 flex justify-end gap-2">
               <Button variant="ghost" onClick={onCancel} disabled={isConfirming}>
                 {cancelLabel}
               </Button>

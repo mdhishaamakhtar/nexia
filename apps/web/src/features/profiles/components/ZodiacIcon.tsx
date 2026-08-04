@@ -140,7 +140,7 @@ export default function ZodiacIcon({ sign, size = 16, className }: ZodiacIconPro
       className={className}
     >
       {/* Doodle background/sticker effect */}
-      <circle cx="12" cy="12" r="10" fill="var(--fill)" opacity="0.3" />
+      <circle cx="12" cy="12" r="10" fill="var(--surface-2)" opacity="0.3" />
       {icon}
     </svg>
   );

@@ -76,10 +76,10 @@ function MessageSignature({ text }: { text: string }) {
       <button
         onClick={copy}
         aria-label={copied ? "Copied" : "Copy response"}
-        className="flex h-6 w-6 items-center justify-center rounded-lg opacity-60 transition-all hover:bg-(--fill) hover:opacity-100 sm:opacity-0 sm:group-hover/msg:opacity-100"
+        className="flex h-6 w-6 items-center justify-center rounded-lg opacity-60 transition-all hover:bg-(--surface-2) hover:opacity-100 sm:opacity-0 sm:group-hover/msg:opacity-100"
         style={{ color: "var(--text-3)" }}
       >
-        {copied ? <Check size={13} style={{ color: "var(--green)" }} /> : <Copy size={13} />}
+        {copied ? <Check size={13} style={{ color: "var(--green-ink)" }} /> : <Copy size={13} />}
       </button>
     </div>
   );
@@ -99,7 +99,7 @@ function UserMessage({ message }: { message: UIMessage }) {
         className="max-w-[78%] rounded-[20px] rounded-br-md px-4 py-2.5 text-[15px] leading-[1.6]"
         style={{
           background: "var(--peach)",
-          color: "var(--peach-text)",
+          color: "var(--peach-ink)",
           boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.35)",
         }}
       >

@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { BookOpen, MessageCircle, Search, Sparkles } from "lucide-react";
+import { BookOpen, MessageCircle, Music, Search } from "lucide-react";
 import type { Metadata } from "next";
 import { AuthRedirect } from "@/components/atoms/AuthRedirect";
+import PageShell from "@/components/layout/PageShell";
 
 export const metadata: Metadata = {
   title: "Nexia — Your Digital Slambook",
@@ -9,407 +10,303 @@ export const metadata: Metadata = {
     "Capture the people who matter most. Store rich profiles for your friends, family, and connections — then ask AI anything about them.",
 };
 
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-  accent,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  accent: string;
-}) {
-  return (
-    <div className="glass-panel rounded-2xl p-6 relative group overflow-hidden">
-      <div
-        className="washi-tape-accent w-16 opacity-20 group-hover:opacity-60 transition-opacity duration-300"
-        style={{ background: accent }}
-      />
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center mb-4"
-        style={{ background: "var(--fill-hover)", color: "var(--text-2)" }}
-      >
-        <Icon className="w-5 h-5" />
-      </div>
-      <h3 className="text-sm font-bold mb-2" style={{ color: "var(--text-1)" }}>
-        {title}
-      </h3>
-      <p className="text-xs leading-relaxed" style={{ color: "var(--text-3)" }}>
-        {description}
-      </p>
-    </div>
-  );
-}
+const FEATURES = [
+  {
+    icon: BookOpen,
+    title: "Rich profiles",
+    description:
+      "Birthdays, zodiac signs, top songs, favourite films, food quirks, quotes, memories — every detail that makes them them.",
+    tape: "var(--lavender)",
+  },
+  {
+    icon: MessageCircle,
+    title: "Ask Nexia",
+    description:
+      "It reads your slambook, so you can ask who loves jazz, who has a nut allergy, or whose birthday is next week.",
+    tape: "var(--peach)",
+  },
+  {
+    icon: Search,
+    title: "Always find them",
+    description:
+      "Search by name, filter by how you know them. Your whole circle, organised and instantly searchable.",
+    tape: "var(--blue)",
+  },
+] as const;
+
+// Sample cards for the hero. Fictional people, shaped exactly like a real
+// profile card so the page shows the product rather than describing it.
+const SAMPLES = [
+  {
+    initial: "A",
+    name: "Alex Chen",
+    meta: "Gemini · Friend",
+    tags: ["coffee-lover", "bookworm"],
+    song: { name: "Yellow", artist: "Coldplay" },
+    tint: { bg: "var(--lavender)", ink: "var(--lavender-ink)" },
+    tape: "var(--peach)",
+    tilt: "-0.8deg",
+  },
+  {
+    initial: "S",
+    name: "Sana Mirza",
+    meta: "Pisces · Best friend",
+    tags: ["artist", "overthinker", "cat-person"],
+    song: { name: "Liability", artist: "Lorde" },
+    tint: { bg: "var(--peach)", ink: "var(--peach-ink)" },
+    tape: "var(--lavender)",
+    tilt: "0.4deg",
+  },
+  {
+    initial: "R",
+    name: "Rohan Verma",
+    meta: "Leo · Classmate",
+    tags: ["gym-rat", "foodie"],
+    song: { name: "HUMBLE.", artist: "Kendrick Lamar" },
+    tint: { bg: "var(--blue)", ink: "var(--blue-ink)" },
+    tape: "var(--blue)",
+    tilt: "-0.5deg",
+  },
+] as const;
+
+const STORABLE = [
+  "Birthday & zodiac",
+  "Top songs",
+  "Favourite films",
+  "Favourite books",
+  "Personality tags",
+  "Quotes",
+  "Food restrictions",
+  "Hangout places",
+  "Long-term goals",
+  "Favourite memories",
+  "Their song",
+  "Political views",
+  "Music taste",
+  "How you know them",
+];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen" style={{ color: "var(--text-1)" }}>
+    <>
       <AuthRedirect />
-      {/* Nav */}
+
       <nav
-        className="sticky top-0 z-40 glass-panel border-b"
-        style={{ borderColor: "var(--border)" }}
+        className="sticky top-0 z-40 border-b"
+        style={{
+          height: "var(--navbar-h)",
+          background: "var(--surface)",
+          borderColor: "var(--border)",
+        }}
       >
-        <div className="max-w-5xl mx-auto px-6 h-12 flex items-center justify-between">
-          <span className="text-sm font-bold tracking-tight" style={{ color: "var(--text-1)" }}>
+        <PageShell width="wide" className="flex h-full items-center justify-between">
+          <span
+            className="text-base font-extrabold tracking-tight"
+            style={{ color: "var(--text-1)" }}
+          >
             Nexia
           </span>
           <Link
             href="/login"
-            className="text-xs font-semibold px-4 py-1.5 rounded-lg transition-opacity hover:opacity-80"
-            style={{ background: "var(--peach)", color: "var(--text-1)" }}
+            className="inline-flex min-h-11 items-center rounded-xl border px-4 text-sm font-semibold transition-[filter] hover:brightness-[0.97]"
+            style={{
+              background: "var(--peach)",
+              color: "var(--peach-ink)",
+              borderColor: "var(--lavender-border)",
+            }}
           >
             Sign in
           </Link>
-        </div>
+        </PageShell>
       </nav>
 
-      {/* Hero */}
-      <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
-        <div
-          className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest mb-8 px-4 py-2 rounded-full border"
-          style={{
-            color: "var(--text-3)",
-            borderColor: "var(--border)",
-            background: "var(--fill)",
-          }}
-        >
-          <Sparkles className="w-3 h-3" />
-          your personal slambook
-        </div>
+      <main>
+        <PageShell width="wide" as="section" className="pb-14 pt-16 text-center sm:pt-24">
+          <h1 className="t-display mx-auto max-w-3xl" style={{ color: "var(--text-1)" }}>
+            Capture the people
+            <br />
+            <span style={{ color: "var(--text-3)" }}>who matter most.</span>
+          </h1>
 
-        <h1
-          className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-6"
-          style={{ color: "var(--text-1)" }}
-        >
-          Capture the people
-          <br />
-          <span style={{ color: "var(--text-3)", fontWeight: 600 }}>who matter most.</span>
-        </h1>
-
-        <p
-          className="text-base sm:text-lg max-w-lg mx-auto mb-10 leading-relaxed"
-          style={{ color: "var(--text-2)" }}
-        >
-          Store rich profiles for your friends, family, and connections — their songs, quirks,
-          memories, and everything in between. Then ask AI anything.
-        </p>
-
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 text-sm font-bold px-8 py-3.5 rounded-2xl transition-opacity hover:opacity-90 active:scale-[0.98]"
-          style={{ background: "var(--peach)", color: "var(--text-1)" }}
-        >
-          Start your slambook
-        </Link>
-      </section>
-
-      {/* Decorative profile cards */}
-      <section className="max-w-5xl mx-auto px-6 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 [&>*:not(:first-child)]:hidden md:[&>*:not(:first-child)]:block">
-          {/* Card 1 */}
-          <div
-            className="glass-panel rounded-2xl p-6 text-left relative scrapbook-card"
-            style={{ transform: "rotate(-0.8deg)" }}
+          <p
+            className="mx-auto mt-6 max-w-lg text-base leading-relaxed sm:text-lg"
+            style={{ color: "var(--text-2)" }}
           >
-            <div
-              className="washi-tape-accent w-20"
-              style={{ opacity: 0.6, background: "var(--peach)" }}
-            />
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center text-lg font-bold shrink-0"
-                style={{ background: "var(--lavender)", color: "var(--text-1)" }}
-              >
-                A
-              </div>
-              <div>
-                <div className="font-bold text-sm" style={{ color: "var(--text-1)" }}>
-                  Alex Chen
-                </div>
-                <div className="text-xs" style={{ color: "var(--text-3)" }}>
-                  ♊ Gemini · Friend
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {["#coffee-lover", "#bookworm"].map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2.5 py-1 rounded-full border"
-                  style={{
-                    background: "var(--fill)",
-                    borderColor: "var(--border)",
-                    color: "var(--text-3)",
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div
-              className="flex items-center gap-2.5 rounded-xl p-3 border"
-              style={{ background: "var(--fill)", borderColor: "var(--border)" }}
-            >
-              <span className="text-sm" style={{ color: "var(--text-3)" }}>
-                ♪
-              </span>
-              <div>
-                <div className="text-xs font-semibold" style={{ color: "var(--text-2)" }}>
-                  Yellow
-                </div>
-                <div className="text-[11px]" style={{ color: "var(--text-3)" }}>
-                  Coldplay
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div
-            className="glass-panel rounded-2xl p-6 text-left relative scrapbook-card"
-            style={{ transform: "rotate(0.4deg)" }}
-          >
-            <div
-              className="washi-tape-accent w-24"
-              style={{ opacity: 0.7, background: "var(--lavender)" }}
-            />
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center text-lg font-bold shrink-0"
-                style={{ background: "var(--peach)", color: "var(--text-1)" }}
-              >
-                S
-              </div>
-              <div>
-                <div className="font-bold text-sm" style={{ color: "var(--text-1)" }}>
-                  Sana Mirza
-                </div>
-                <div className="text-xs" style={{ color: "var(--text-3)" }}>
-                  ♓ Pisces · Best Friend
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {["#artist", "#overthinker", "#cat-person"].map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2.5 py-1 rounded-full border"
-                  style={{
-                    background: "var(--fill)",
-                    borderColor: "var(--border)",
-                    color: "var(--text-3)",
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div
-              className="flex items-center gap-2.5 rounded-xl p-3 border"
-              style={{ background: "var(--fill)", borderColor: "var(--border)" }}
-            >
-              <span className="text-sm" style={{ color: "var(--text-3)" }}>
-                ♪
-              </span>
-              <div>
-                <div className="text-xs font-semibold" style={{ color: "var(--text-2)" }}>
-                  Liability
-                </div>
-                <div className="text-[11px]" style={{ color: "var(--text-3)" }}>
-                  Lorde
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div
-            className="glass-panel rounded-2xl p-6 text-left relative scrapbook-card"
-            style={{ transform: "rotate(-0.5deg)" }}
-          >
-            <div
-              className="washi-tape-accent w-20"
-              style={{ opacity: 0.6, background: "var(--blue)" }}
-            />
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center text-lg font-bold shrink-0"
-                style={{ background: "var(--fill-hover)", color: "var(--text-1)" }}
-              >
-                R
-              </div>
-              <div>
-                <div className="font-bold text-sm" style={{ color: "var(--text-1)" }}>
-                  Rohan Verma
-                </div>
-                <div className="text-xs" style={{ color: "var(--text-3)" }}>
-                  ♌ Leo · Classmate
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {["#gym-rat", "#foodie"].map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2.5 py-1 rounded-full border"
-                  style={{
-                    background: "var(--fill)",
-                    borderColor: "var(--border)",
-                    color: "var(--text-3)",
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div
-              className="flex items-center gap-2.5 rounded-xl p-3 border"
-              style={{ background: "var(--fill)", borderColor: "var(--border)" }}
-            >
-              <span className="text-sm" style={{ color: "var(--text-3)" }}>
-                ♪
-              </span>
-              <div>
-                <div className="text-xs font-semibold" style={{ color: "var(--text-2)" }}>
-                  HUMBLE.
-                </div>
-                <div className="text-[11px]" style={{ color: "var(--text-3)" }}>
-                  Kendrick Lamar
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="max-w-5xl mx-auto px-6 pb-20">
-        <div
-          className="text-[11px] font-bold uppercase tracking-[0.14em] text-center mb-8"
-          style={{ color: "var(--text-3)" }}
-        >
-          Everything you need
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FeatureCard
-            icon={BookOpen}
-            title="Rich profiles"
-            description="Birthdays, zodiac signs, top songs, favorite movies, food quirks, quotes, memories — every detail that makes them them."
-            accent="var(--lavender)"
-          />
-          <FeatureCard
-            icon={MessageCircle}
-            title="Ask Nexia AI"
-            description="Powered by Gemini and your profiles. Ask anything — who loves jazz, who has a nut allergy, whose birthday is next week."
-            accent="var(--peach)"
-          />
-          <FeatureCard
-            icon={Search}
-            title="Always find them"
-            description="Search by name, filter by relationship type. Your whole network, organized and instantly searchable."
-            accent="var(--blue)"
-          />
-        </div>
-      </section>
-
-      {/* What you can store */}
-      <section className="max-w-5xl mx-auto px-6 pb-20">
-        <div className="glass-panel rounded-3xl p-8 sm:p-10 relative overflow-hidden">
-          <div
-            className="washi-tape-accent w-32 h-8"
-            style={{ opacity: 0.5, background: "var(--lavender)" }}
-          />
-          <div
-            className="text-[11px] font-bold uppercase tracking-[0.14em] mb-3"
-            style={{ color: "var(--text-3)" }}
-          >
-            Capture every detail
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6" style={{ color: "var(--text-1)" }}>
-            Everything that makes them{" "}
-            <span style={{ color: "var(--text-3)", fontStyle: "italic" }}>them.</span>
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {[
-              "Birthday & Zodiac",
-              "Top Songs",
-              "Favorite Movies",
-              "Favorite Books",
-              "Personality Tags",
-              "Quotes",
-              "Food Restrictions",
-              "Hangout Places",
-              "Long-term Goals",
-              "Favorite Memory",
-              "Associated Song",
-              "Political Views",
-              "Music Preference",
-              "Relationship Type",
-            ].map((item) => (
-              <span
-                key={item}
-                className="text-xs px-3 py-1.5 rounded-full border font-medium"
-                style={{
-                  background: "var(--fill)",
-                  borderColor: "var(--border)",
-                  color: "var(--text-2)",
-                }}
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="max-w-5xl mx-auto px-6 pb-24 text-center">
-        <div className="glass-panel rounded-3xl p-12 relative overflow-hidden">
-          <div
-            className="washi-tape-accent w-40 h-8"
-            style={{ opacity: 0.4, background: "var(--peach)" }}
-          />
-          <h2
-            className="text-3xl sm:text-4xl font-bold mb-4 tracking-tight"
-            style={{ color: "var(--text-1)" }}
-          >
-            Start your slambook today.
-          </h2>
-          <p className="text-sm mb-8 max-w-sm mx-auto" style={{ color: "var(--text-3)" }}>
-            Free to use. No credit card required. Your people, beautifully captured.
+            Keep the small things you&apos;d hate to forget — their songs, their quirks, the
+            stories. Then just ask when you need them.
           </p>
+
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 text-sm font-bold px-8 py-3.5 rounded-2xl transition-opacity hover:opacity-90"
-            style={{ background: "var(--peach)", color: "var(--text-1)" }}
+            className="mt-9 inline-flex min-h-12 items-center rounded-2xl border px-8 text-sm font-bold transition-[filter] hover:brightness-[0.97]"
+            style={{
+              background: "var(--peach)",
+              color: "var(--peach-ink)",
+              borderColor: "var(--lavender-border)",
+            }}
           >
-            Create your account
+            Start your slambook
           </Link>
-        </div>
-      </section>
+        </PageShell>
 
-      {/* Footer */}
+        {/* Sample cards. One column on mobile — three tilted cards stacked
+            vertically would read as a mistake rather than a scrapbook. */}
+        <PageShell width="wide" as="section" className="pb-20">
+          <h2 className="sr-only">What a profile looks like</h2>
+          <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {SAMPLES.map((sample, i) => (
+              <li
+                key={sample.name}
+                className={`paper relative rounded-2xl p-6 text-left ${i > 0 ? "hidden md:block" : ""}`}
+                style={{ transform: `rotate(${sample.tilt})` }}
+              >
+                <span
+                  className="washi-tape"
+                  style={{ width: 80, background: sample.tape }}
+                  aria-hidden="true"
+                />
+
+                <div className="mb-4 flex items-center gap-3">
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-extrabold"
+                    style={{ background: sample.tint.bg, color: sample.tint.ink }}
+                    aria-hidden="true"
+                  >
+                    {sample.initial}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>
+                      {sample.name}
+                    </p>
+                    <p className="text-xs" style={{ color: "var(--text-3)" }}>
+                      {sample.meta}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-4 flex flex-wrap gap-1.5">
+                  {sample.tags.map((tag) => (
+                    <span key={tag} className="sticker-tag px-2.5 py-1 text-xs font-semibold">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="paper-sunk flex items-center gap-3 rounded-xl p-3">
+                  <span
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                    style={{ background: "var(--surface-3)", color: "var(--text-2)" }}
+                    aria-hidden="true"
+                  >
+                    <Music className="h-3.5 w-3.5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold" style={{ color: "var(--text-2)" }}>
+                      {sample.song.name}
+                    </p>
+                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
+                      {sample.song.artist}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </PageShell>
+
+        <PageShell width="wide" as="section" className="pb-20">
+          <h2 className="t-section-title mb-7 text-center" style={{ color: "var(--text-1)" }}>
+            Everything you need
+          </h2>
+          <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {FEATURES.map(({ icon: Icon, title, description, tape }) => (
+              <li key={title} className="paper group relative rounded-2xl p-6">
+                <span
+                  className="washi-tape opacity-40 transition-opacity duration-200 group-hover:opacity-80"
+                  style={{ width: 64, background: tape }}
+                  aria-hidden="true"
+                />
+                <span
+                  className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ background: "var(--surface-2)", color: "var(--text-2)" }}
+                  aria-hidden="true"
+                >
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mb-2 text-sm font-bold" style={{ color: "var(--text-1)" }}>
+                  {title}
+                </h3>
+                <p className="text-xs leading-relaxed" style={{ color: "var(--text-3)" }}>
+                  {description}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </PageShell>
+
+        <PageShell width="wide" as="section" className="pb-20">
+          <div className="paper relative overflow-hidden rounded-3xl p-7 sm:p-10">
+            <h2 className="t-section-title mb-5" style={{ color: "var(--text-1)" }}>
+              Everything that makes them{" "}
+              <span style={{ color: "var(--text-3)", fontStyle: "italic" }}>them.</span>
+            </h2>
+            <ul className="flex flex-wrap gap-2">
+              {STORABLE.map((item) => (
+                <li key={item} className="sticker-chip px-3 py-1.5 text-xs font-semibold">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </PageShell>
+
+        <PageShell width="wide" as="section" className="pb-24">
+          <div className="paper relative rounded-3xl p-10 text-center sm:p-12">
+            <span
+              className="washi-tape"
+              style={{ width: 128, height: 26, background: "var(--peach)" }}
+              aria-hidden="true"
+            />
+            <h2 className="t-page-title" style={{ color: "var(--text-1)" }}>
+              Start your slambook today.
+            </h2>
+            <p className="mx-auto mt-3 max-w-sm text-sm" style={{ color: "var(--text-3)" }}>
+              Free to use. No credit card. Your people, beautifully kept.
+            </p>
+            <Link
+              href="/login"
+              className="mt-8 inline-flex min-h-12 items-center rounded-2xl border px-8 text-sm font-bold transition-[filter] hover:brightness-[0.97]"
+              style={{
+                background: "var(--peach)",
+                color: "var(--peach-ink)",
+                borderColor: "var(--lavender-border)",
+              }}
+            >
+              Create your account
+            </Link>
+          </div>
+        </PageShell>
+      </main>
+
       <footer className="border-t" style={{ borderColor: "var(--border)" }}>
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-xs font-bold" style={{ color: "var(--text-1)" }}>
+        <PageShell width="wide" className="flex h-16 items-center justify-between text-xs">
+          <span className="font-bold" style={{ color: "var(--text-1)" }}>
             Nexia
           </span>
-          <span className="text-xs" style={{ color: "var(--text-3)" }}>
+          <span style={{ color: "var(--text-3)" }}>
             Made by{" "}
             <a
               href="https://hishaam.dev"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:underline"
+              className="font-semibold hover:underline"
               style={{ color: "var(--text-2)" }}
             >
               Hishaam Akhtar
             </a>
           </span>
-        </div>
+        </PageShell>
       </footer>
-    </div>
+    </>
   );
 }

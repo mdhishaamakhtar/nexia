@@ -22,9 +22,9 @@ export function ToolActivity({ part }: { part: ToolPart }) {
     return (
       <span
         className="inline-flex w-fit items-center gap-1.5 rounded-full py-1 pr-3 pl-2.5 text-[12.5px] font-medium"
-        style={{ background: "var(--fill)", color: "var(--text-3)" }}
+        style={{ background: "var(--surface-2)", color: "var(--text-3)" }}
       >
-        <Loader2 size={12} className="animate-spin" style={{ color: "var(--blue)" }} />
+        <Loader2 size={12} className="animate-spin" style={{ color: "var(--blue-ink)" }} />
         {meta.active}
         <span className="tool-ellipsis">…</span>
       </span>
@@ -46,14 +46,14 @@ export function ToolActivity({ part }: { part: ToolPart }) {
           <Link
             href={`/profiles/${write.id}`}
             prefetch
-            className="group/write inline-flex w-fit max-w-full items-center gap-2.5 rounded-xl border px-3 py-2 transition-colors hover:bg-(--fill-hover)"
+            className="group/write inline-flex w-fit max-w-full items-center gap-2.5 rounded-xl border px-3 py-2 transition-colors hover:bg-(--surface-3)"
             style={{ borderColor: "rgba(34,197,94,0.28)", background: "rgba(34,197,94,0.06)" }}
           >
             <span
               className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg"
               style={{ background: "rgba(34,197,94,0.14)" }}
             >
-              <Check size={13} style={{ color: "var(--green)" }} />
+              <Check size={13} style={{ color: "var(--green-ink)" }} />
             </span>
             <span
               className="min-w-0 truncate text-[13.5px] font-semibold"
@@ -114,7 +114,7 @@ function ToolCaption({ icon: Icon, label }: { icon: typeof Check; label: string 
       className="mb-1.5 inline-flex items-center gap-1.5 pl-0.5 text-[11px] font-semibold"
       style={{ color: "var(--text-3)" }}
     >
-      <Icon size={11} style={{ color: "var(--blue)" }} />
+      <Icon size={11} style={{ color: "var(--blue-ink)" }} />
       {label}
     </span>
   );
@@ -135,20 +135,20 @@ function ProfileDisclosure({
     <div className="w-full max-w-md">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="group/disc inline-flex items-center gap-2 rounded-full py-1 pr-2 pl-1 text-left transition-colors hover:bg-(--fill)"
+        className="group/disc inline-flex items-center gap-2 rounded-full py-1 pr-2 pl-1 text-left transition-colors hover:bg-(--surface-2)"
       >
         <span
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
           style={{ background: "rgba(147,197,253,0.16)" }}
         >
-          <Check size={12} style={{ color: "var(--blue)" }} />
+          <Check size={12} style={{ color: "var(--blue-ink)" }} />
         </span>
         <span className="text-[12.5px] font-semibold" style={{ color: "var(--text-2)" }}>
           {label}
         </span>
         <span
           className="rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums"
-          style={{ background: "var(--fill-hover)", color: "var(--text-3)" }}
+          style={{ background: "var(--surface-3)", color: "var(--text-3)" }}
         >
           {count}
         </span>
@@ -184,7 +184,11 @@ function ErrorLine({ text }: { text: string }) {
   return (
     <span
       className="inline-flex w-fit max-w-full items-start gap-2 rounded-xl border px-3 py-2 text-[13px] font-medium leading-snug"
-      style={{ background: "var(--red-bg)", borderColor: "var(--red-border)", color: "var(--red)" }}
+      style={{
+        background: "var(--red-bg)",
+        borderColor: "var(--red-border)",
+        color: "var(--red-ink)",
+      }}
     >
       <TriangleAlert size={14} className="mt-0.5 shrink-0" />
       {text}

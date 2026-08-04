@@ -16,7 +16,7 @@ export default function Error({
 
   return (
     <div className="min-h-screen p-6 flex items-center justify-center">
-      <div className="glass-panel w-full max-w-lg rounded-2xl p-7">
+      <div className="paper w-full max-w-lg rounded-2xl p-7">
         <h2 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
           Something went wrong
         </h2>

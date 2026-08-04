@@ -27,7 +27,7 @@ export default function QuoteModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.12 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center p-5"
       style={{ background: "var(--overlay)" }}
       onClick={onClose}
     >
@@ -39,32 +39,23 @@ export default function QuoteModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ type: "spring", stiffness: 520, damping: 34 }}
-        className="flex max-h-[80vh] w-full max-w-xl flex-col rounded-2xl border"
-        style={{
-          background: "var(--bg-raised)",
-          borderColor: "var(--border-mid)",
-          boxShadow: "0 12px 32px rgba(15, 23, 42, 0.16)",
-        }}
+        className="paper flex max-h-[80dvh] w-full max-w-xl flex-col rounded-3xl"
+        style={{ borderColor: "var(--border-mid)" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-start px-8 pt-8 pb-4">
-          <h3
-            className="text-[11px] font-bold uppercase tracking-[0.2em]"
-            style={{ color: "var(--text-3)" }}
-          >
-            {title}
-          </h3>
+        <div className="flex items-start justify-between gap-3 px-6 pb-4 pt-6 sm:px-8 sm:pt-8">
+          <h2 className="t-label">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="-mt-1 -mr-1 rounded-lg p-1.5 transition hover:scale-110 hover:bg-[var(--border)] hover:text-(--text-1)"
+            className="-mr-2 -mt-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-(--surface-2) hover:text-(--text-1)"
             style={{ color: "var(--text-3)" }}
           >
-            <X className="w-4 h-4" aria-hidden="true" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 
-        <div className="min-h-0 overflow-y-auto px-8 pb-8 pt-2">
+        <div className="min-h-0 overflow-y-auto px-6 pb-6 pt-1 sm:px-8 sm:pb-8">
           <p
             className="text-xl leading-relaxed break-words sm:text-2xl"
             style={{ color: "var(--text-1)" }}

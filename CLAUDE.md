@@ -293,13 +293,13 @@ Never edit existing migration files.
 
 ### Route Groups
 
-The app is split into three route groups. Groups are organisational only — they
-do **not** change URLs.
+Only the authenticated area uses a route group. Groups are organisational only —
+they do **not** change URLs.
 
-| Group | Layout | Purpose |
+| Path | Layout | Purpose |
 |---|---|---|
-| `app/(marketing)/` | none (inherits root) | SSR landing page — Server Component, no auth |
-| `app/(auth)/` | none (inherits root) | Login, signup, verify-email, forgot/reset password |
+| `app/page.tsx` | none (inherits root) | SSR landing page — Server Component, no auth |
+| `app/login/`, `app/verify-email/`, `app/forgot-password/`, `app/reset-password/` | none (inherits root) | Unauthenticated pages, all built on `AuthCard` |
 | `app/(dashboard)/` | `layout.tsx` (client) | All authenticated pages — auth guard + Navbar live here |
 
 The `(dashboard)/layout.tsx` is a `"use client"` component that:
@@ -315,40 +315,66 @@ redundant auth checks, no Navbar flicker.
 | Route | File | SSR? | Purpose |
 |---|---|---|---|
 | `/` | `app/page.tsx` | Yes | Static landing page (Server Component) |
-| `/login` | `app/(auth)/login/page.tsx` | No | Auth form (login + signup) |
-| `/verify-email` | `app/(auth)/verify-email/page.tsx` | No | Post-signup info |
-| `/forgot-password` | `app/(auth)/forgot-password/page.tsx` | No | Forgot password form |
-| `/reset-password` | `app/(auth)/reset-password/page.tsx` | No | Reset password form |
+| `/login` | `app/login/page.tsx` | No | Auth form (login + signup) |
+| `/verify-email` | `app/verify-email/page.tsx` | Yes | Post-signup info (Server Component) |
+| `/verify-email/confirm` | `app/verify-email/confirm/page.tsx` | No | Token verification result |
+| `/forgot-password` | `app/forgot-password/page.tsx` | No | Forgot password form |
+| `/reset-password` | `app/reset-password/page.tsx` | No | Reset password form |
 | `/profiles` | `app/(dashboard)/profiles/page.tsx` | No | Profile list (scrapbook view) |
 | `/profiles/new` | `app/(dashboard)/profiles/new/page.tsx` | No | Create profile form |
 | `/profiles/[id]` | `app/(dashboard)/profiles/[id]/page.tsx` | No | Profile detail view |
 | `/profiles/[id]/edit` | `app/(dashboard)/profiles/[id]/edit/page.tsx` | No | Edit profile form |
 | `/chat` | `app/(dashboard)/chat/page.tsx` | No | AI chat interface |
 
+### Layout & Design System
+
+Read **`DESIGN.md`** at the repo root before changing any UI. The short version:
+
+- **`PageShell`** (`components/layout/PageShell.tsx`) is the only container.
+  Two widths — `wide` (72rem) for browse grids, the landing page, and the navbar;
+  `reading` (48rem) for detail, forms, and chat. Never set `max-width` or
+  horizontal padding on a page directly.
+- **Material is flat opaque paper.** `.paper` / `.paper-sunk` plus a warm
+  hairline. There is **no `backdrop-filter` and no `box-shadow` anywhere** —
+  neither should be added. Form fields are white, not tinted.
+- **Type comes from five classes** in `globals.css`: `.t-display`,
+  `.t-page-title`, `.t-section-title`, `.t-body`, `.t-label`.
+- **Soft accents are surface tints, never foregrounds.** Text and icons use the
+  `-ink` variants (`peach-ink`, `blue-ink`, `red-ink`, …), which clear WCAG AA.
+- Dashboard pages use `.page-body`, not `min-h-screen` (which overshoots by the
+  navbar height and forces a scrollbar).
+
 ### Component Hierarchy
 
 ```
 components/
-  ai-elements/  — AI chat components (conversation, message, prompt-input)
-  atoms/        — Primitive UI: Button, Input, Chip
-  molecules/    — Composed UI: Navbar, CardProfilePreview, ConfirmDialog, QuoteModal, SectionWrapper
-  ui/           — shadcn/ui primitives (button, input-group, tooltip, etc.)
+  ai-elements/  — Vendored chat pieces, trimmed to what Nexia uses:
+                  conversation.tsx, message.tsx (MessageResponse only)
+  atoms/        — Button, Field, Input, Textarea, Select, BackButton, AuthRedirect
+  layout/       — PageShell (container), AuthCard (unauthenticated page shell)
+  molecules/    — Navbar, CardProfilePreview, ConfirmDialog, QuoteModal
 
 features/
   auth/api.ts         — Auth API calls
   chat/api.ts         — Chat API calls (DefaultChatTransport)
-  chat/components/    — ChatHeader, ChatMessage, ChatEmptyState, ToolActivity
+  chat/components/    — ChatHeader, ChatMessage, ChatEmptyState, ChatComposer,
+                        ToolActivity, ChatProfileCard
   chat/hooks/         — useNexiaChat (wraps useChat with cache invalidation)
-  chat/lib/           — Tool metadata registry
-  profiles/api.ts     — Profile CRUD API calls
-  profiles/components — ProfileForm, FieldArrayInput, ProfileFormSection, ZodiacIcon
+  chat/lib/           — Tool metadata registry, markdown component overrides
+  profiles/api.ts     — Profile CRUD calls + form-value mapping
+  profiles/components — ProfileForm, FormActionBar, FieldArrayInput,
+                        ProfileFormSection, ZodiacIcon
 
 shared/
   api/client.ts       — ky instance (base URL + credentials + CSRF/401 hooks)
   types/              — TypeScript types: Profile, API response shapes
-  providers/          — React Query QueryClientProvider wrapper
-  ui/                 — Toast, AIIcons (NexiaIcon, StickerSparkle)
+  providers/          — React Query + MotionConfig wrapper
+  ui/                 — Toast, AIIcons (NexiaIcon, NexiaAvatar)
 ```
+
+There is no `components/ui/` directory. The shadcn primitives were removed along
+with the vendored `ai-elements/prompt-input.tsx` that was their only consumer;
+the chat composer is now `features/chat/components/chat-composer.tsx`.
 
 ### Data Fetching
 

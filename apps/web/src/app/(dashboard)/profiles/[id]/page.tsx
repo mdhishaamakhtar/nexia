@@ -28,6 +28,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ConfirmDialog from "@/components/molecules/ConfirmDialog";
 import Button from "@/components/atoms/Button";
 import BackButton from "@/components/atoms/BackButton";
+import PageShell from "@/components/layout/PageShell";
 import QuoteModal from "@/components/molecules/QuoteModal";
 import ZodiacIcon from "@/features/profiles/components/ZodiacIcon";
 import { deleteProfile, getProfile } from "@/features/profiles/api";
@@ -35,6 +36,14 @@ import { exportProfilePdf } from "@/features/profiles/exportProfilePdf";
 import type { Profile } from "@/shared/types/profile";
 import { useToast } from "@/shared/ui/toast";
 import { getErrorMessage } from "@/shared/api/client";
+
+const HERO_TAPES = [
+  "var(--peach)",
+  "var(--lavender)",
+  "var(--blue)",
+  "var(--lavender)",
+  "var(--peach)",
+];
 
 function Section({
   id,
@@ -51,29 +60,25 @@ function Section({
 }) {
   return (
     <motion.section
-      initial={{ opacity: 0, y: 14 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 150, damping: 22, delay: 0.08 + index * 0.07 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.06 + index * 0.06 }}
       id={id}
-      className="scroll-mt-24"
+      aria-labelledby={`${id}-heading`}
+      className="paper scroll-mt-24 rounded-3xl p-5 sm:p-7"
     >
-      <div className="glass-panel rounded-3xl p-6 sm:p-7">
-        <header className="mb-5 flex items-center gap-2.5">
-          <span
-            className="flex h-7 w-7 items-center justify-center rounded-lg"
-            style={{ background: "var(--fill)", color: "var(--text-2)" }}
-          >
-            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-          </span>
-          <h2
-            className="text-[11px] font-bold uppercase tracking-[0.16em]"
-            style={{ color: "var(--text-3)" }}
-          >
-            {title}
-          </h2>
-        </header>
-        <div className="space-y-6">{children}</div>
-      </div>
+      <header className="mb-5 flex items-center gap-2.5">
+        <span
+          className="flex h-7 w-7 items-center justify-center rounded-lg"
+          style={{ background: "var(--surface-2)", color: "var(--text-2)" }}
+        >
+          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+        </span>
+        <h2 id={`${id}-heading`} className="t-label">
+          {title}
+        </h2>
+      </header>
+      <div className="space-y-6">{children}</div>
     </motion.section>
   );
 }
@@ -90,10 +95,7 @@ function Fact({
   if (!hasText(value)) return null;
   return (
     <div className="min-w-0">
-      <dt
-        className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
-        style={{ color: "var(--text-3)" }}
-      >
+      <dt className="t-label mb-1 flex items-center gap-1.5">
         {Icon ? <Icon className="h-3 w-3" aria-hidden="true" /> : null}
         {label}
       </dt>
@@ -112,10 +114,7 @@ function SubLabel({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className="mb-2.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
-      style={{ color: "var(--text-3)" }}
-    >
+    <div className="t-label mb-2.5 flex items-center gap-1.5">
       {Icon ? <Icon className="h-3 w-3" aria-hidden="true" /> : null}
       {children}
     </div>
@@ -129,12 +128,7 @@ function ChipGroup({ items, prefix = "" }: { items: string[]; prefix?: string })
       {items.map((item, index) => (
         <span
           key={`${item}-${index}`}
-          className="max-w-full break-words rounded-full border px-3 py-1 text-xs font-medium"
-          style={{
-            background: "var(--fill)",
-            borderColor: "var(--border)",
-            color: "var(--text-2)",
-          }}
+          className="sticker-chip max-w-full break-words px-3 py-1 text-xs font-semibold"
         >
           {prefix}
           {item}
@@ -162,12 +156,8 @@ function QuoteCard({ quote, onOpen }: { quote: string; onOpen: () => void }) {
     <button
       onClick={onOpen}
       title="Read full quote"
-      className="flex h-full flex-col rounded-2xl border p-4 text-left text-sm leading-relaxed transition-all duration-200 hover:scale-[1.01]"
-      style={{
-        background: "var(--fill)",
-        borderColor: "var(--border)",
-        color: "var(--text-2)",
-      }}
+      className="paper-sunk flex h-full flex-col rounded-2xl p-4 text-left text-sm leading-relaxed transition-colors duration-150 hover:bg-(--surface-3)"
+      style={{ color: "var(--text-2)" }}
     >
       <span ref={textRef} className="line-clamp-3 break-words">
         {quote}
@@ -246,10 +236,13 @@ export default function ProfileDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-12 sm:px-6 lg:px-8">
-        <div className="shimmer h-48 rounded-3xl" />
-        <div className="shimmer h-32 rounded-3xl" />
-        <div className="shimmer h-32 rounded-3xl" />
+      // Same shell and padding as the loaded state, so nothing shifts on arrival.
+      <div className="page-body">
+        <PageShell width="reading" className="space-y-4 py-8 sm:py-10">
+          <div className="shimmer h-14 rounded-2xl" />
+          <div className="shimmer h-48 rounded-3xl" />
+          <div className="shimmer h-32 rounded-3xl" />
+        </PageShell>
       </div>
     );
   }
@@ -311,91 +304,98 @@ export default function ProfileDetailPage() {
   };
 
   return (
-    <div className="profile-detail-page min-h-screen">
-      <div className="profile-screen-root mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+    <div className="profile-detail-page page-body">
+      <PageShell width="reading" as="main" className="profile-screen-root py-8 sm:py-10">
         {/* Back + Actions */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="mb-6 flex items-center justify-between gap-3"
         >
           <BackButton href="/profiles" label="Back" />
 
           <div className="flex items-center gap-2">
             <Link href={`/profiles/${id}/edit`} prefetch>
-              <Button variant="secondary" className="px-3.5 py-2 text-xs">
-                <Edit className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Edit
+              <Button variant="secondary" size="sm">
+                <Edit className="h-3.5 w-3.5" aria-hidden="true" /> Edit
               </Button>
             </Link>
             <Button
               onClick={handleExportPdf}
               variant="secondary"
-              className="px-2.5 py-2"
+              size="sm"
+              className="w-11 px-0"
               aria-label="Export profile as PDF"
               title="Export PDF"
               disabled={isExporting}
             >
               {isExporting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                <Download className="h-4 w-4" aria-hidden="true" />
               )}
             </Button>
             <Button
               onClick={() => setIsDeleteDialogOpen(true)}
               variant="destructive"
-              className="px-2.5 py-2"
+              size="sm"
+              className="w-11 px-0"
               aria-label="Delete profile"
               title="Delete profile"
             >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         </motion.div>
 
-        {/* Hero / Cover */}
+        {/* Hero. The one washi-tape moment on the page — the sections below stay
+            plain so the decoration reads as emphasis rather than wallpaper. */}
         <motion.header
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 150, damping: 22 }}
-          className="glass-panel relative mb-5 rounded-[28px] p-7 sm:p-9"
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="paper relative mb-5 rounded-[28px] p-6 sm:p-9"
         >
-          <div className="washi-tape-accent h-7 w-28" style={{ opacity: 0.7 }} aria-hidden="true" />
+          {/* Same id-keyed tape as this person's card in the grid, so the
+              profile you tapped is the profile you land on. */}
+          <span
+            className="washi-tape h-7 w-28"
+            style={{
+              background: HERO_TAPES[Number(id) % HERO_TAPES.length],
+              transform: `translateX(-50%) rotate(${(Number(id) % 2 ? 1.6 : -1.8).toFixed(1)}deg)`,
+            }}
+            aria-hidden="true"
+          />
 
           <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-6">
-            <div
-              className="flex h-20 w-20 shrink-0 -rotate-3 items-center justify-center rounded-2xl text-4xl font-bold sm:h-24 sm:w-24"
-              style={{ background: "var(--lavender)", color: "var(--text-1)" }}
+            <span
+              className="flex h-20 w-20 shrink-0 -rotate-3 items-center justify-center rounded-2xl text-4xl font-extrabold sm:h-24 sm:w-24"
+              style={{ background: "var(--lavender)", color: "var(--lavender-ink)" }}
+              aria-hidden="true"
             >
               {initial}
-            </div>
+            </span>
 
             <div className="min-w-0 flex-1">
-              <h1
-                className="mb-1 break-words text-3xl font-bold leading-tight sm:text-[2.5rem]"
-                style={{ color: "var(--text-1)" }}
-              >
+              <h1 className="t-page-title mb-1 break-words" style={{ color: "var(--text-1)" }}>
                 {profile.full_name}
               </h1>
               {profile.pronouns && (
                 <p
-                  className="mb-2.5 text-sm font-medium lowercase tracking-wide"
+                  className="mb-2.5 text-sm font-semibold lowercase"
                   style={{ color: "var(--text-3)" }}
                 >
                   {profile.pronouns}
                 </p>
               )}
               <div
-                className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs"
+                className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-semibold"
                 style={{ color: "var(--text-3)" }}
               >
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold"
-                  style={{
-                    color: "var(--text-2)",
-                    background: "var(--fill)",
-                    borderColor: "var(--border)",
-                  }}
+                  className="sticker-chip inline-flex items-center gap-1.5 px-2.5 py-1"
+                  style={{ color: "var(--text-2)" }}
                 >
                   <Heart className="h-3 w-3" aria-hidden="true" />
                   {profile.relationship_type}
@@ -408,7 +408,11 @@ export default function ProfileDetailPage() {
                 )}
                 {profile.zodiac_sign && (
                   <span className="inline-flex items-center gap-1.5">
-                    <ZodiacIcon sign={profile.zodiac_sign} size={12} className="text-(--blue)" />
+                    <ZodiacIcon
+                      sign={profile.zodiac_sign}
+                      size={12}
+                      className="text-(--blue-ink)"
+                    />
                     {profile.zodiac_sign}
                   </span>
                 )}
@@ -418,10 +422,7 @@ export default function ProfileDetailPage() {
 
           {profile.bio && (
             <div className="mt-6 border-t pt-5" style={{ borderColor: "var(--border)" }}>
-              <p
-                className="whitespace-pre-line text-[15px] leading-relaxed"
-                style={{ color: "var(--text-2)" }}
-              >
+              <p className="t-body whitespace-pre-line" style={{ color: "var(--text-2)" }}>
                 {profile.bio}
               </p>
             </div>
@@ -439,7 +440,11 @@ export default function ProfileDetailPage() {
                   label="Zodiac"
                   value={profile.zodiac_sign}
                   icon={() => (
-                    <ZodiacIcon sign={profile.zodiac_sign!} size={12} className="text-(--blue)" />
+                    <ZodiacIcon
+                      sign={profile.zodiac_sign!}
+                      size={12}
+                      className="text-(--blue-ink)"
+                    />
                   )}
                 />
               </dl>
@@ -465,23 +470,15 @@ export default function ProfileDetailPage() {
               )}
 
               {associatedSong && (
-                <div
-                  className="flex items-center gap-4 rounded-2xl border p-4"
-                  style={{ background: "var(--fill)", borderColor: "var(--border)" }}
-                >
+                <div className="paper-sunk flex items-center gap-4 rounded-2xl p-4">
                   <div
                     className="shrink-0 rounded-full p-2.5"
-                    style={{ background: "var(--fill-hover)", color: "var(--text-2)" }}
+                    style={{ background: "var(--surface-3)", color: "var(--text-2)" }}
                   >
                     <Music className="h-4 w-4" aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
-                    <div
-                      className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
-                      style={{ color: "var(--text-3)" }}
-                    >
-                      Associated Song
-                    </div>
+                    <div className="t-label mb-0.5">Associated song</div>
                     {hasText(associatedSong.name) && (
                       <div
                         className="break-words text-sm font-semibold"
@@ -506,12 +503,11 @@ export default function ProfileDetailPage() {
                     {topSongs.map((song, i) => (
                       <div
                         key={song.id ?? i}
-                        className="flex items-center gap-3 rounded-2xl border p-3"
-                        style={{ background: "var(--fill)", borderColor: "var(--border)" }}
+                        className="paper-sunk flex items-center gap-3 rounded-2xl p-3"
                       >
                         <div
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-                          style={{ background: "var(--fill-hover)", color: "var(--text-3)" }}
+                          style={{ background: "var(--surface-3)", color: "var(--text-2)" }}
                         >
                           {i + 1}
                         </div>
@@ -632,7 +628,7 @@ export default function ProfileDetailPage() {
             </Section>
           )}
         </div>
-      </div>
+      </PageShell>
 
       <AnimatePresence>
         {selectedQuote && (
