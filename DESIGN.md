@@ -82,8 +82,15 @@ typography:
     fontWeight: 700
     lineHeight: 1.2
     letterSpacing: "0.12em"
+  code:
+    fontFamily: "ui-monospace, SF Mono, SFMono-Regular, Menlo, monospace"
+    fontSize: "0.85em"
+    fontWeight: 500
+    lineHeight: 1.55
+    letterSpacing: "normal"
 rounded:
   focus: "2px"
+  xs: "4px"
   sm: "8px"
   md: "12px"
   lg: "16px"
@@ -240,7 +247,12 @@ stops feeling kept and starts feeling noisy.
 ## 4. Typography
 
 **Family:** Nunito, with `-apple-system`, `BlinkMacSystemFont`, `Segoe UI`,
-`system-ui`, `sans-serif` fallback. Monospace only inside markdown code.
+`system-ui`, `sans-serif` fallback.
+
+**The one exception** is `--font-mono` (`ui-monospace, "SF Mono",
+SFMono-Regular, Menlo, monospace`), used *only* for inline code and code fences
+inside chat markdown. It is the sole non-Nunito face in the product and must not
+spread to labels, data, or anything styled to look "technical".
 
 ### The ramp
 
@@ -253,6 +265,11 @@ Five named classes in `globals.css` carry the hierarchy. Nothing outside them.
 | `.t-section-title` | `1.25rem` | 700 | Modal titles, empty-state headings |
 | `.t-body` | `0.9375rem` (15px) | 500 | Profile prose, chat text, card names |
 | `.t-label` | `0.6875rem` (11px) | 700 | Every section header and field label |
+
+The two display steps are fluid: `.t-display` is
+`clamp(2.5rem, 1.6rem + 4vw, 4.25rem)` and `.t-page-title` is
+`clamp(1.75rem, 1.3rem + 1.8vw, 2.5rem)`. The frontmatter above records each
+step's maximum; the clamp minimum is part of the same step, not a new one.
 
 Supporting steps for controls and metadata: **16px** (form fields and the chat
 composer — smaller values make iOS Safari zoom the viewport on focus), **14px**
