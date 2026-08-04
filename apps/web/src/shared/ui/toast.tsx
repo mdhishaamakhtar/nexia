@@ -45,48 +45,55 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center gap-3 w-full max-w-[90vw] pointer-events-none">
+      <div
+        aria-live="polite"
+        aria-atomic="false"
+        className="pointer-events-none fixed left-1/2 z-100 flex w-full max-w-[92vw] -translate-x-1/2 flex-col items-center gap-2"
+        style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+      >
         <AnimatePresence mode="popLayout">
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: 20, scale: 0.9, rotate: -2 }}
-              animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10, transition: { duration: 0.2 } }}
+              initial={{ opacity: 0, y: 16, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8, transition: { duration: 0.18 } }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               layout
-              className="sticker-chip pointer-events-auto flex items-center gap-3 px-4 py-2.5 shadow-[0_4px_12px_rgba(0,0,0,0.08)] relative group overflow-hidden"
+              className="pointer-events-auto flex max-w-full items-center gap-2.5 rounded-full border py-1.5 pl-3 pr-1.5"
               style={{
-                background: "var(--bg-raised)",
-                borderColor:
-                  toast.type === "error" ? "rgba(239, 68, 68, 0.2)" : "var(--border-mid)",
+                background: "var(--surface)",
+                borderColor: toast.type === "error" ? "var(--red-border)" : "var(--border-mid)",
               }}
             >
-              {/* Glass subtle shimmer on top */}
-              <div className="absolute inset-0 bg-white/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-              <div
-                className="flex items-center justify-center w-6 h-6 rounded-full shrink-0"
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
                 style={{
-                  background:
-                    toast.type === "error" ? "rgba(239, 68, 68, 0.1)" : "rgba(147, 197, 253, 0.15)",
+                  background: toast.type === "error" ? "var(--red-bg)" : "var(--lavender-bg)",
                 }}
+                aria-hidden="true"
               >
                 {toast.type === "success" ? (
-                  <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "var(--blue)" }} />
+                  <CheckCircle2 className="h-3.5 w-3.5" style={{ color: "var(--green-ink)" }} />
                 ) : (
-                  <AlertCircle className="w-3.5 h-3.5" style={{ color: "var(--red)" }} />
+                  <AlertCircle className="h-3.5 w-3.5" style={{ color: "var(--red-ink)" }} />
                 )}
-              </div>
+              </span>
 
-              <span className="text-[11px] font-bold tracking-tight text-(--text-1) whitespace-nowrap">
+              <span
+                className="min-w-0 truncate text-xs font-bold"
+                style={{ color: "var(--text-1)" }}
+              >
                 {toast.message}
               </span>
 
               <button
                 onClick={() => remove(toast.id)}
-                className="ml-1 p-0.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer"
+                aria-label="Dismiss notification"
+                className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-(--surface-2)"
+                style={{ color: "var(--text-3)" }}
               >
-                <X className="w-3 h-3 text-(--text-3)" />
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </motion.div>
           ))}

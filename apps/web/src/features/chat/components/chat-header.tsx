@@ -31,11 +31,11 @@ export function ChatHeader({ onClear, canClear }: { onClear: () => void; canClea
           <span className="relative flex h-1.5 w-1.5">
             <span
               className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-              style={{ background: "var(--green)" }}
+              style={{ background: "var(--green-ink)" }}
             />
             <span
               className="relative inline-flex h-1.5 w-1.5 rounded-full"
-              style={{ background: "var(--green)" }}
+              style={{ background: "var(--green-ink)" }}
             />
           </span>
           knows your people
@@ -46,7 +46,7 @@ export function ChatHeader({ onClear, canClear }: { onClear: () => void; canClea
         onClick={onClear}
         disabled={!canClear}
         aria-label="Clear conversation"
-        className="ml-auto flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 enabled:hover:bg-(--fill) enabled:hover:text-(--red) disabled:opacity-0"
+        className="ml-auto flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 enabled:hover:bg-(--surface-2) enabled:hover:text-(--red-ink) disabled:opacity-0"
         style={{ color: "var(--text-3)" }}
       >
         <Trash2 size={15} />

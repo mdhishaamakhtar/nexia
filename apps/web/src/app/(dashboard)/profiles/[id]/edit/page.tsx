@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import BackButton from "@/components/atoms/BackButton";
+import PageShell from "@/components/layout/PageShell";
 import ProfileForm from "@/features/profiles/components/ProfileForm";
 import { getProfile, toProfileFormValues, updateProfile } from "@/features/profiles/api";
 import { useToast } from "@/shared/ui/toast";
@@ -34,10 +35,10 @@ export default function EditProfilePage() {
       await updateProfile(id, values);
       await queryClient.invalidateQueries({ queryKey: ["profiles"] });
       await queryClient.invalidateQueries({ queryKey: ["profile", id] });
-      success("Profile updated successfully");
+      success("Changes saved");
       router.push(`/profiles/${id}`);
     } catch (err: unknown) {
-      error(await getErrorMessage(err, "Failed to update profile"));
+      error(await getErrorMessage(err, "Couldn't save those changes"));
     } finally {
       setIsSubmitting(false);
     }
@@ -45,10 +46,13 @@ export default function EditProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4 px-4 py-10 sm:px-6 lg:px-8">
-        <div className="shimmer h-24 rounded-3xl" />
-        <div className="shimmer h-44 rounded-3xl" />
-        <div className="shimmer h-32 rounded-3xl" />
+      // Same shell and padding as the loaded state, so nothing shifts on arrival.
+      <div className="page-body">
+        <PageShell width="reading" className="space-y-4 py-8 sm:py-10">
+          <div className="shimmer h-24 rounded-3xl" />
+          <div className="shimmer h-44 rounded-3xl" />
+          <div className="shimmer h-32 rounded-3xl" />
+        </PageShell>
       </div>
     );
   }
@@ -56,16 +60,17 @@ export default function EditProfilePage() {
   if (!id || !profile) return null;
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+    <div className="page-body">
+      <PageShell width="reading" as="main" className="py-8 sm:py-10">
         <motion.header
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-7"
         >
-          <BackButton href={`/profiles/${id}`} label="Back" className="mb-5" />
-          <h1 className="text-2xl font-bold sm:text-3xl" style={{ color: "var(--text-1)" }}>
-            Edit Profile
+          <BackButton href={`/profiles/${id}`} label="Back" className=" mb-4" />
+          <h1 className="t-page-title" style={{ color: "var(--text-1)" }}>
+            Edit profile
           </h1>
           <p className="mt-1.5 text-sm" style={{ color: "var(--text-3)" }}>
             Updating {profile.full_name || "this profile"}.
@@ -76,9 +81,10 @@ export default function EditProfilePage() {
           initialValues={initialValues}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
-          submitLabel="Save Changes"
+          submitLabel="Save changes"
+          cancelHref={`/profiles/${id}`}
         />
-      </div>
+      </PageShell>
     </div>
   );
 }

@@ -17,7 +17,7 @@ type MdProps<T extends keyof React.JSX.IntrinsicElements> = ComponentProps<T> & 
 
 function Table({ node: _node, className: _className, children, ...props }: MdProps<"table">) {
   return (
-    <div className="my-3 w-full overflow-x-auto rounded-xl border border-(--border) bg-(--bg-raised)">
+    <div className="my-3 w-full overflow-x-auto rounded-xl border border-(--border) bg-(--surface)">
       <table className="w-full border-collapse text-left align-top" {...props}>
         {children}
       </table>

@@ -42,6 +42,7 @@ function toProfilePayload(values: ProfileFormValues) {
     bio: values.bio,
     profession: values.profession,
     long_term_goals: values.long_term_goals,
+    notes: values.notes,
     birthday: values.birthday || null,
     music_preference: values.music_preference,
     favorite_movie: values.favorite_movie,

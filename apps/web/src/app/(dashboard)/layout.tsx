@@ -17,12 +17,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center">
         <div
           role="status"
           aria-label="Loading"
-          className="w-6 h-6 rounded-full border-2 animate-spin"
-          style={{ borderColor: "var(--border)", borderTopColor: "var(--blue)" }}
+          className="h-6 w-6 animate-spin rounded-full border-2"
+          style={{ borderColor: "var(--border)", borderTopColor: "var(--blue-ink)" }}
         />
       </div>
     );

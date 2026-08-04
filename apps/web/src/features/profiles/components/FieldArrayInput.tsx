@@ -1,6 +1,6 @@
 import { Plus, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type {
   FieldArray,
   FieldArrayWithId,
@@ -19,6 +19,8 @@ type ArrayFieldName =
   | "food_restrictions"
   | "political_views";
 
+const SPRING = { type: "spring", stiffness: 380, damping: 30 } as const;
+
 export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
   label,
   placeholder,
@@ -26,7 +28,6 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
   items,
   append,
   remove,
-  badgeClassName,
   variant = "chip",
 }: {
   label: string;
@@ -35,12 +36,12 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
   items: FieldArrayWithId<ProfileFormValues, TFieldName, "_key">[];
   append: UseFieldArrayAppend<ProfileFormValues, TFieldName>;
   remove: UseFieldArrayRemove;
-  badgeClassName?: string; // optional; falls back to CSS-var-based styling
-  // "chip": short tokens rendered as inline pills (tags, genres, places…)
-  // "block": arbitrary-length content rendered as full-width wrapping rows (quotes)
+  // "chip":  short tokens rendered as inline pills (tags, genres, places…)
+  // "block": arbitrary-length content as full-width rows (quotes, memories)
   variant?: "chip" | "block";
 }) {
   const [value, setValue] = useState("");
+  const inputId = useId();
 
   const addValue = () => {
     const trimmed = value.trim();
@@ -51,16 +52,15 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
 
   return (
     <div>
-      <label
-        className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em]"
-        style={{ color: "var(--text-3)" }}
-      >
+      <label htmlFor={inputId} className="t-label mb-2 block">
         {label}
       </label>
 
       {items.length > 0 && (
-        <div
-          className={variant === "block" ? "mb-2 flex flex-col gap-2" : "mb-2 flex flex-wrap gap-2"}
+        <ul
+          className={
+            variant === "block" ? "mb-2.5 flex flex-col gap-2" : "mb-2.5 flex flex-wrap gap-2"
+          }
         >
           <AnimatePresence mode="popLayout" initial={false}>
             {items.map((item, index) => {
@@ -68,73 +68,64 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
 
               if (variant === "block") {
                 return (
-                  <motion.div
+                  <motion.li
                     key={item._key}
                     layout
-                    initial={{ scale: 0.96, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.96, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                    className="flex w-full items-start gap-3 rounded-xl border px-4 py-3"
-                    style={{
-                      background: "var(--fill)",
-                      borderColor: "var(--border)",
-                      color: "var(--text-2)",
-                    }}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={SPRING}
+                    className="paper-sunk flex w-full items-start gap-3 rounded-xl px-4 py-3"
                   >
-                    <span className="min-w-0 flex-1 break-words text-sm leading-relaxed">
+                    <span
+                      className="min-w-0 flex-1 break-words text-sm leading-relaxed"
+                      style={{ color: "var(--text-2)" }}
+                    >
                       {text}
                     </span>
                     <button
                       type="button"
                       onClick={() => remove(index)}
-                      aria-label="Remove"
-                      className="mt-0.5 shrink-0 rounded-full p-1 transition-colors hover:bg-(--fill-hover)"
+                      aria-label={`Remove ${text}`}
+                      className="-mr-1.5 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-(--surface-3)"
                       style={{ color: "var(--text-3)" }}
                     >
-                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      <X className="h-4 w-4" aria-hidden="true" />
                     </button>
-                  </motion.div>
+                  </motion.li>
                 );
               }
 
               return (
-                <motion.span
+                <motion.li
                   key={item._key}
                   layout
-                  initial={{ scale: 0.85, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.85, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 380, damping: 26 }}
-                  className={`sticker-chip inline-flex max-w-full items-center gap-2 rounded-full px-3 py-1 text-sm border ${badgeClassName ?? ""}`}
-                  style={
-                    !badgeClassName
-                      ? {
-                          background: "var(--fill)",
-                          borderColor: "var(--border)",
-                          color: "var(--text-2)",
-                        }
-                      : undefined
-                  }
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={SPRING}
+                  className="sticker-chip inline-flex max-w-full items-center gap-1 py-1 pl-3 pr-1 text-sm"
                 >
                   <span className="min-w-0 break-words">{text}</span>
                   <button
                     type="button"
                     onClick={() => remove(index)}
-                    aria-label="Remove"
-                    className="shrink-0 transition-transform hover:rotate-90"
+                    aria-label={`Remove ${text}`}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-(--surface-3)"
+                    style={{ color: "var(--text-3)" }}
                   >
-                    <X className="h-3 w-3" aria-hidden="true" />
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
-                </motion.span>
+                </motion.li>
               );
             })}
           </AnimatePresence>
-        </div>
+        </ul>
       )}
 
       <div className="flex gap-2">
         <input
+          id={inputId}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
@@ -144,15 +135,16 @@ export default function FieldArrayInput<TFieldName extends ArrayFieldName>({
             }
           }}
           placeholder={placeholder}
-          className="glass-input w-full rounded-xl px-4 py-3"
+          className="field min-w-0 flex-1 px-4 py-3"
         />
         <button
           type="button"
-          aria-label="Add"
+          aria-label={`Add ${label.toLowerCase()}`}
           onClick={addValue}
-          className="rounded-xl px-3 border transition-colors hover:bg-(--fill-hover) active:scale-[0.97]"
+          disabled={!value.trim()}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors hover:bg-(--surface-2) active:scale-95 disabled:opacity-40"
           style={{
-            background: "var(--fill)",
+            background: "var(--surface)",
             borderColor: "var(--border)",
             color: "var(--text-2)",
           }}

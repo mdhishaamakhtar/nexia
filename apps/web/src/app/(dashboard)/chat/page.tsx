@@ -2,25 +2,18 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  type PromptInputMessage,
-} from "@/components/ai-elements/prompt-input";
 import { useNexiaChat } from "@/features/chat/hooks/use-nexia-chat";
+import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ChatHeader } from "@/features/chat/components/chat-header";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
 import { ChatMessage } from "@/features/chat/components/chat-message";
 import { NexiaAvatar } from "@/shared/ui/AIIcons";
-import { AlertCircle } from "lucide-react";
 
 function ThinkingIndicator() {
   return (
@@ -28,15 +21,14 @@ function ThinkingIndicator() {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 28 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="flex w-full items-center gap-2 pl-0.5"
     >
       <NexiaAvatar size={18} />
-      <span className="text-[13px] font-semibold" style={{ color: "var(--text-3)" }}>
+      <span className="text-[13px] font-bold" style={{ color: "var(--text-3)" }}>
         Thinking
       </span>
-      {/* The dots are the single, purposeful loading motion. */}
-      <span className="flex items-center gap-1">
+      <span className="flex items-center gap-1" aria-hidden="true">
         <span className="streaming-dot" style={{ animationDelay: "0ms" }} />
         <span className="streaming-dot" style={{ animationDelay: "150ms" }} />
         <span className="streaming-dot" style={{ animationDelay: "300ms" }} />
@@ -52,11 +44,11 @@ export default function ChatPage() {
   const isBusy = status === "submitted" || status === "streaming";
   const lastMessage = messages.at(-1);
   const lastPart = lastMessage?.role === "assistant" ? lastMessage.parts.at(-1) : undefined;
-  // The assistant is "actively writing" only when its message currently ends in a
-  // non-empty text part. In every other busy state — before the first token, and
-  // crucially during the gaps between tool calls / steps mid-stream — show the
-  // thinking row so it never looks frozen. (No avatar duplication: the message's
-  // own signature avatar only renders once it has text, when this is hidden.)
+  // The assistant is "actively writing" only when its message currently ends in
+  // a non-empty text part. In every other busy state — before the first token,
+  // and crucially in the gaps between tool calls mid-stream — show the thinking
+  // row so it never looks frozen. No avatar duplication: the message's own
+  // signature avatar only renders once it has text, when this is hidden.
   const assistantWriting = lastPart?.type === "text" && !!lastPart.text;
   const showThinking = isBusy && !assistantWriting;
 
@@ -68,26 +60,34 @@ export default function ChatPage() {
   };
 
   return (
-    <main className="mx-auto flex h-[calc(100dvh-48px)] w-full max-w-3xl flex-col overflow-hidden px-4 pt-3 sm:px-6">
+    // Matches the `reading` shell width and gutters exactly, but can't use
+    // PageShell: this column also owns the viewport height so the composer
+    // pins to the bottom while only the transcript scrolls.
+    <main
+      className="mx-auto flex w-full flex-col overflow-hidden px-(--gutter) pt-3"
+      style={{
+        height: "calc(100dvh - var(--navbar-h))",
+        maxWidth: "calc(var(--shell-reading) + var(--gutter) * 2)",
+      }}
+    >
       <ChatHeader onClear={clear} canClear={messages.length > 0} />
 
       <div className="min-h-0 flex-1">
         <Conversation>
-          <ConversationContent className="px-0 sm:px-1">
+          <ConversationContent className="px-0">
             {messages.length === 0 ? (
               <ChatEmptyState onPrompt={submit} />
             ) : (
               // No AnimatePresence around the list: the empty state must unmount
-              // instantly when the first message arrives, otherwise its centered
-              // full-height exit animation displaces the new bubble to mid-screen
-              // before snapping it to the top. Each message still animates in on
-              // mount; messages are never removed individually.
+              // instantly when the first message arrives, or its centred
+              // full-height exit displaces the new bubble to mid-screen before
+              // snapping it to the top.
               messages.map((message) => (
                 <motion.div
                   key={message.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 28 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <ChatMessage message={message} />
                 </motion.div>
@@ -100,19 +100,20 @@ export default function ChatPage() {
 
             {status === "error" && (
               <motion.div
+                role="alert"
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-3 rounded-2xl border px-4 py-3"
                 style={{ borderColor: "var(--red-border)", background: "var(--red-bg)" }}
               >
-                <AlertCircle size={15} style={{ color: "var(--red)" }} />
-                <p className="flex-1 text-[13px] font-semibold" style={{ color: "var(--red)" }}>
+                <AlertCircle size={16} style={{ color: "var(--red-ink)" }} aria-hidden="true" />
+                <p className="flex-1 text-[13px] font-bold" style={{ color: "var(--red-ink)" }}>
                   Something went wrong
                 </p>
                 <button
                   onClick={() => regenerate()}
-                  className="rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors hover:bg-(--red-bg-hover)"
-                  style={{ color: "var(--red)" }}
+                  className="rounded-lg px-3 py-2 text-xs font-bold transition-colors hover:bg-(--red-bg-hover)"
+                  style={{ color: "var(--red-ink)" }}
                 >
                   Retry
                 </button>
@@ -123,35 +124,17 @@ export default function ChatPage() {
         </Conversation>
       </div>
 
-      <div className="shrink-0 pt-2 pb-3">
-        <PromptInput
-          onSubmit={(message: PromptInputMessage) => submit(message.text)}
-          className="w-full"
-        >
-          <PromptInputBody>
-            <PromptInputTextarea
-              value={input}
-              placeholder="Ask about your people…"
-              onChange={(e) => setInput(e.currentTarget.value)}
-              disabled={isBusy}
-              className="min-h-[44px] bg-transparent text-[16px] text-(--text-1) placeholder:text-(--text-3)"
-            />
-          </PromptInputBody>
-          <PromptInputFooter>
-            <span className="pl-1 text-[11px] font-medium" style={{ color: "var(--text-3)" }}>
-              {isBusy
-                ? status === "submitted"
-                  ? "thinking…"
-                  : "responding…"
-                : "Shift + Enter for a new line"}
-            </span>
-            <PromptInputSubmit
-              status={status}
-              onStop={stop}
-              disabled={isBusy ? false : !input.trim()}
-            />
-          </PromptInputFooter>
-        </PromptInput>
+      <div
+        className="shrink-0 pt-2"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+      >
+        <ChatComposer
+          value={input}
+          onChange={setInput}
+          onSubmit={submit}
+          onStop={stop}
+          status={status}
+        />
       </div>
     </main>
   );

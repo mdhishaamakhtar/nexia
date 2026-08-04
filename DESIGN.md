@@ -1,57 +1,80 @@
 ---
 name: "Nexia"
-description: "A cute, polished scrapbook system for personal profiles and memory lookup."
+description: "A warm paper scrapbook system for personal profiles and memory lookup."
 colors:
-  warm-page: "#fff7ed"
-  paper: "#ffffff"
-  glass: "#ffffffb8"
-  fill: "#ffffff9e"
-  fill-hover: "#ffffffe6"
-  input-bg: "#ffffffbf"
-  border-soft: "#94a3b847"
-  border-mid: "#94a3b873"
-  specular: "#fffffff2"
-  text-primary: "#1f2937"
-  text-secondary: "#374151"
-  text-muted: "#6b7280"
+  page: "#fff7ed"
+  surface: "#ffffff"
+  surface-2: "#fbf7f1"
+  surface-3: "#f4ede3"
+  text-1: "#292524"
+  text-2: "#57534e"
+  text-3: "#6f6660"
+  border: "#78624a2e"
+  border-mid: "#78624a52"
   peach: "#fdba74"
-  peach-text: "#7c2d12"
   lavender: "#c4b5fd"
-  lavender-border: "#7c3aed33"
   blue: "#93c5fd"
-  green: "#22c55e"
-  red: "#ff3b30"
-  red-bg: "#ff3b3014"
-  red-bg-hover: "#ff3b3026"
-  red-border: "#ff3b302e"
-  purple: "#5b21b6"
-  purple-bg: "#c4b5fd3d"
-  purple-border: "#7c3aed3d"
-  overlay: "#1e293b66"
+  peach-ink: "#7c2d12"
+  lavender-ink: "#5b21b6"
+  blue-ink: "#3b6fd4"
+  green-ink: "#15803d"
+  red-ink: "#c81e1e"
+  red-bg: "#c81e1e12"
+  red-bg-hover: "#c81e1e21"
+  red-border: "#c81e1e38"
+  lavender-bg: "#c4b5fd38"
+  lavender-border: "#5b21b638"
+  focus: "#3b6fd4"
+  overlay: "#2925246b"
+  nexia-mark: "#5b8def"
 typography:
   display:
     fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "3rem"
-    fontWeight: 600
-    lineHeight: 1.08
-    letterSpacing: "normal"
-  headline:
+    fontSize: "4.25rem"
+    fontWeight: 800
+    lineHeight: 1.05
+    letterSpacing: "-0.03em"
+  pageTitle:
     fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "2.25rem"
-    fontWeight: 600
-    lineHeight: 1.15
-    letterSpacing: "normal"
-  title:
+    fontSize: "2.5rem"
+    fontWeight: 800
+    lineHeight: 1.12
+    letterSpacing: "-0.02em"
+  sectionTitle:
     fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
     fontSize: "1.25rem"
     fontWeight: 700
     lineHeight: 1.25
+    letterSpacing: "-0.01em"
+  control:
+    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 500
+    lineHeight: 1.5
     letterSpacing: "normal"
   body:
+    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "0.9375rem"
+    fontWeight: 500
+    lineHeight: 1.6
+    letterSpacing: "normal"
+  bodySm:
     fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 500
     lineHeight: 1.5
+    letterSpacing: "normal"
+  meta:
+    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 600
+    lineHeight: 1.4
+    letterSpacing: "normal"
+  caption:
+    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "0.75rem"
+    fontWeight: 500
+    lineHeight: 1.4
     letterSpacing: "normal"
   label:
     fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
@@ -59,12 +82,20 @@ typography:
     fontWeight: 700
     lineHeight: 1.2
     letterSpacing: "0.12em"
+  code:
+    fontFamily: "ui-monospace, SF Mono, SFMono-Regular, Menlo, monospace"
+    fontSize: "0.85em"
+    fontWeight: 500
+    lineHeight: 1.55
+    letterSpacing: "normal"
 rounded:
-  xs: "4.8px"
+  focus: "2px"
+  xs: "4px"
   sm: "8px"
   md: "12px"
   lg: "16px"
   xl: "24px"
+  2xl: "28px"
   full: "999px"
 spacing:
   xs: "4px"
@@ -74,42 +105,50 @@ spacing:
   xl: "20px"
   2xl: "24px"
   3xl: "28px"
-  page-x: "24px"
-  page-y: "48px"
+  gutter-sm: "20px"
+  gutter-md: "24px"
+  gutter-lg: "32px"
+  navbar: "56px"
 components:
   button-primary:
     backgroundColor: "{colors.peach}"
-    textColor: "{colors.peach-text}"
-    typography: "{typography.body}"
+    textColor: "{colors.peach-ink}"
+    typography: "{typography.bodySm}"
     rounded: "{rounded.md}"
-    padding: "10px 20px"
+    padding: "0 20px"
   button-secondary:
-    backgroundColor: "{colors.fill}"
-    textColor: "{colors.text-secondary}"
-    typography: "{typography.body}"
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.text-2}"
+    typography: "{typography.bodySm}"
     rounded: "{rounded.md}"
-    padding: "10px 20px"
+    padding: "0 20px"
   button-destructive:
     backgroundColor: "{colors.red-bg}"
-    textColor: "{colors.red}"
-    typography: "{typography.body}"
+    textColor: "{colors.red-ink}"
+    typography: "{typography.bodySm}"
     rounded: "{rounded.md}"
-    padding: "10px 20px"
-  input-text:
-    backgroundColor: "{colors.input-bg}"
-    textColor: "{colors.text-primary}"
-    typography: "{typography.body}"
+    padding: "0 20px"
+  field:
+    backgroundColor: "{colors.surface-2}"
+    textColor: "{colors.text-1}"
+    typography: "{typography.control}"
     rounded: "{rounded.md}"
     padding: "12px 16px"
   sticker-chip:
-    backgroundColor: "{colors.fill-hover}"
-    textColor: "{colors.text-secondary}"
+    backgroundColor: "{colors.surface-2}"
+    textColor: "{colors.text-2}"
     typography: "{typography.label}"
     rounded: "{rounded.full}"
     padding: "4px 12px"
-  glass-card:
-    backgroundColor: "{colors.glass}"
-    textColor: "{colors.text-primary}"
+  sticker-tag:
+    backgroundColor: "{colors.lavender-bg}"
+    textColor: "{colors.lavender-ink}"
+    typography: "{typography.label}"
+    rounded: "{rounded.full}"
+    padding: "4px 12px"
+  paper:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.text-1}"
     rounded: "{rounded.lg}"
     padding: "20px"
 ---
@@ -120,153 +159,218 @@ components:
 
 **Creative North Star: "The Tidy Memory Scrapbook"**
 
-Nexia is a personal memory book, not a productivity dashboard. The interface should feel like a carefully kept slambook: warm paper, soft translucent layers, sticker chips, gentle color, and small washi-tape details that make profiles feel kept rather than stored.
+Nexia is a personal memory book, not a productivity dashboard. Screens should
+feel like a carefully kept slambook: warm paper, sticker chips, gentle colour,
+and small washi-tape details that make profiles feel *kept* rather than stored.
 
-The system is cute, polished, and controlled. Scrapbook details are allowed only when they support hierarchy. Alignment, readable type, and dependable lookup behavior come first. The app must stay light and friendly, with no drift toward a technical command center.
+**The material is paper, and paper is opaque.** An earlier version of this system
+built every surface from translucent glass (`backdrop-filter: blur(20px)`). It
+was replaced wholesale: translucency muddied every card against the warm page,
+cost a compositing layer per element, and read as a tech product rather than a
+scrapbook. Depth now comes from opaque surfaces, warm hairlines, and soft warm
+shadows.
 
-**Key Characteristics:**
+**There is no `backdrop-filter` anywhere in the app, and none should be added.**
 
-- Warm light surfaces with restrained peach, lavender, and blue accents.
-- Rounded paper-like panels with translucent fills and fine borders.
-- Small decorative tape and sticker motifs used as hierarchy, not clutter.
-- Nunito everywhere, with compact labels and calm body text.
-- Playful motion for state and entrance, never choreography that slows lookup.
+**Key characteristics:**
 
-## 2. Colors
+- Warm cream page, opaque white paper, restrained peach / lavender / blue accents.
+- Rounded panels with fine warm borders and soft warm shadows.
+- Small tape and sticker motifs used for hierarchy, never as wallpaper.
+- Nunito throughout, with compact all-caps labels and calm body text.
+- Ease-out motion that never overshoots.
 
-The palette is a warm scrapbook neutral system with three soft accent roles: peach for primary action, lavender for keepsake surfaces, and blue for discovery or AI-adjacent action.
+## 2. Layout
 
-### Primary
+Horizontal alignment is a system, not a per-page decision. Everything routes
+through `PageShell` (`src/components/layout/PageShell.tsx`), which emits the
+`.shell` class defined in `globals.css`.
 
-- **Pressed Peach** (`peach`): Used for primary actions, washi-tape accents, and moments that should feel warm and personal.
-- **Peach Ink** (`peach-text`): Used on peach surfaces when white would feel too harsh and low-contrast.
+- **`wide`** — `72rem`. Browse grids, the landing page, and the navbar.
+- **`reading`** — `48rem`. Profile detail, forms, and chat.
 
-### Secondary
+Both variants share one responsive gutter token (`--gutter`: 20 / 24 / 32px),
+and `.shell` folds the gutter into its `max-width`. That is what keeps the
+navbar's brand and sign-out glyphs landing on exactly the same pixel columns as
+the profile grid beneath them.
 
-- **Keepsake Lavender** (`lavender`): Used for avatar tiles, tape accents, profile export details, and soft memory framing.
-- **Lookup Blue** (`blue`): Used for search, floating add actions, AI touchpoints, and small navigational emphasis.
+**Named rules:**
 
-### Tertiary
+**The One Shell Rule.** No page sets its own `max-width` or horizontal padding.
+If a surface needs to span the viewport (the form action bar, the navbar), it
+goes full-bleed and puts a `PageShell` *inside* itself.
 
-- **Sticker Purple** (`purple`, `purple-bg`, `purple-border`): Used for tag chips and personality labels where scrapbook color needs a stronger identity.
-- **Success Green** (`green`): Reserved for success states only.
-- **Soft Red** (`red`, `red-bg`, `red-bg-hover`, `red-border`): Reserved for destructive states and error copy.
+**The Navbar Offset Rule.** Dashboard pages use `.page-body`
+(`min-height: calc(100dvh - var(--navbar-h))`), never `min-h-screen`. The latter
+overshoots by exactly the navbar height and forces a scrollbar on every page.
 
-### Neutral
+## 3. Colours
 
-- **Warm Page Cream** (`warm-page`): The application background. It should always keep the product in light scrapbook territory.
-- **Clean Paper** (`paper`): Used for raised paper surfaces and hard white details.
-- **Translucent Paper** (`glass`, `fill`, `fill-hover`, `input-bg`): Used for panels, buttons, inputs, hover fills, and soft layering.
-- **Graphite Ink** (`text-primary`, `text-secondary`, `text-muted`): The full text scale. Primary text is dark and calm, secondary text carries normal UI copy, muted text carries labels and metadata.
-- **Pencil Border** (`border-soft`, `border-mid`): Fine borders that define paper edges without making the UI feel boxed in.
+A warm scrapbook neutral system with three soft accent roles.
 
-### Named Rules
+### Surfaces
 
-**The Warm Light Rule.** `warm-page` is the baseline for every app surface. Dark mode is forbidden.
+- **Warm Page Cream** (`page`): the application background. Always light.
+- **Clean Paper** (`surface`): cards, panels, bars, the navbar.
+- **Sunk Paper** (`surface-2`): inputs, nested rows, wells, chip fills.
+- **Pressed Paper** (`surface-3`): hover fills and active nav states.
 
-**The Accent Ration Rule.** Peach, lavender, and blue must stay deliberate. If every card uses all three, the scrapbook stops feeling kept and starts feeling noisy.
+### Ink
 
-**The Paper Before Chrome Rule.** Use translucent paper, fine borders, and tinted fills before reaching for heavy shadows or saturated UI chrome.
+`text-1` / `text-2` / `text-3` is a **warm** neutral ramp (14.3:1 / 7.2:1 /
+5.3:1 on the page). Cool slate greys were replaced because they read as a subtle
+mismatch against warm cream, and the old tertiary sat right on the 4.5:1 line.
 
-## 3. Typography
+### Accents
 
-**Display Font:** Nunito with `-apple-system`, `BlinkMacSystemFont`, `Segoe UI`, `system-ui`, `sans-serif` fallback.
-**Body Font:** Nunito with the same fallback stack.
-**Label/Mono Font:** Nunito for labels; `ui-monospace`, `SF Mono`, `monospace` only inside markdown code.
+- **Pressed Peach** (`peach`): primary actions, tape, the FAB, chat send.
+- **Keepsake Lavender** (`lavender`): avatar tiles, tape, tag chips.
+- **Lookup Blue** (`blue`): AI touchpoints and small navigational emphasis.
 
-**Character:** The type is rounded, open, and personal. It should read like a polished journal interface: friendly headings, compact labels, and calm body copy.
+### Named rules
 
-### Hierarchy
+**The Ink Rule (non-negotiable).** `peach`, `lavender`, and `blue` are *surface
+tints only*. They are never a text or icon colour — all three fail contrast as a
+foreground on paper (blue on white measures 1.8:1). Every accent has an `-ink`
+variant that clears WCAG AA: `peach-ink`, `lavender-ink`, `blue-ink`,
+`green-ink`, `red-ink`. Use those for anything a person has to read.
 
-- **Display** (600, `3rem`, `1.08`): Used for major page titles such as the slambook index.
-- **Headline** (600, `2.25rem`, `1.15`): Used for profile names and large authenticated-page headings.
-- **Title** (700, `1.25rem`, `1.25`): Used for modal titles, feature titles, and important empty-state copy.
-- **Body** (500, `0.875rem`, `1.5`): Used for app copy, form fields, buttons, profile details, and chat text. Prose should stay under 65 to 75 characters per line.
-- **Label** (700, `0.6875rem`, `0.12em`, uppercase): Used for section labels, field labels, metadata, and small scrapbook captions.
+**The Warm Light Rule.** `page` is the baseline for every surface. Dark mode is
+forbidden — PRODUCT.md specifies light theme only.
 
-### Named Rules
+**The Accent Ration Rule.** If every card uses all three accents, the scrapbook
+stops feeling kept and starts feeling noisy.
 
-**The One Family Rule.** Nunito carries the product. Do not introduce display fonts for app labels, buttons, forms, or profile detail content.
+**The Focus Rule.** One focus treatment, set globally on `:focus-visible`: a 2px
+`focus` outline at 2px offset. Components must not remove it.
 
-**The Compact Label Rule.** Labels are uppercase, small, and widely tracked. They should guide scanning without sounding corporate.
+## 4. Typography
 
-## 4. Elevation
+**Family:** Nunito, with `-apple-system`, `BlinkMacSystemFont`, `Segoe UI`,
+`system-ui`, `sans-serif` fallback.
 
-Nexia uses tonal layering more than shadow. Depth comes from translucent paper, fine borders, inset specular highlights, and occasional paper-scrap offsets. Shadows are nearly absent at rest, because heavy drop shadows would make the app feel like a generic SaaS dashboard.
+**The one exception** is `--font-mono` (`ui-monospace, "SF Mono",
+SFMono-Regular, Menlo, monospace`), used *only* for inline code and code fences
+inside chat markdown. It is the sole non-Nunito face in the product and must not
+spread to labels, data, or anything styled to look "technical".
 
-### Shadow Vocabulary
+### The ramp
 
-- **Glass Specular** (`box-shadow: inset 0 1px 0 var(--specular)`): Used on `.glass-panel` and `.glass-card` to create a subtle paper sheen.
-- **Paper Scrap Offset** (`box-shadow: 2px 2px 0px var(--border-mid)`): Used only for deliberate paper-scrap moments.
-- **Print Paper Flatness** (`box-shadow: none`): Used in PDF export so the exported page feels like a clean printable keepsake.
+Five named classes in `globals.css` carry the hierarchy. Nothing outside them.
 
-### Named Rules
+| Class | Size | Weight | Used for |
+|---|---|---|---|
+| `.t-display` | `clamp(2.5rem → 4.25rem)` | 800 | Landing hero only |
+| `.t-page-title` | `clamp(1.75rem → 2.5rem)` | 800 | Every authenticated page `h1` |
+| `.t-section-title` | `1.25rem` | 700 | Modal titles, empty-state headings |
+| `.t-body` | `0.9375rem` (15px) | 500 | Profile prose, chat text, card names |
+| `.t-label` | `0.6875rem` (11px) | 700 | Every section header and field label |
 
-**The Flat Keepsake Rule.** Surfaces are flat by default. Create depth through paper layering, translucent fills, and borders before using shadow.
+The two display steps are fluid: `.t-display` is
+`clamp(2.5rem, 1.6rem + 4vw, 4.25rem)` and `.t-page-title` is
+`clamp(1.75rem, 1.3rem + 1.8vw, 2.5rem)`. The frontmatter above records each
+step's maximum; the clamp minimum is part of the same step, not a new one.
 
-**The No Heavy Glass Rule.** Blur can support translucent paper panels, but decorative glassmorphism is prohibited.
+Supporting steps for controls and metadata: **16px** (form fields and the chat
+composer — smaller values make iOS Safari zoom the viewport on focus), **14px**
+(buttons, body-small), **13px** (compact buttons, status text), **12px**
+(captions, chips).
 
-## 5. Components
+### Named rules
 
-Components should feel tactile and familiar. Standard controls stay standard; the personality comes from material, radius, spacing, and small scrapbook accents.
+**The One Family Rule.** Nunito carries the product. No display face for app
+labels, buttons, forms, or profile content.
 
-### Buttons
+**The One Label Rule.** `.t-label` is the *only* all-caps metadata style. A
+second, smaller 10px label size existed on the detail page and was removed —
+11px is the floor for tracked uppercase text.
 
-- **Shape:** Rounded rectangles with soft corners (`12px`) and full-pill chips where content is metadata.
-- **Primary:** Pressed peach background with peach ink text (`peach`, `peach-text`), medium body text, `10px 20px` padding, and a fine lavender border.
-- **Hover / Focus:** Small scale feedback from Framer Motion (`1.015` hover, `0.985` tap). Focus should keep the border visible and avoid loud rings.
-- **Secondary / Ghost / Destructive:** Secondary uses translucent fill and graphite text. Ghost removes the fill until hover. Destructive uses red tint, red border, and red text.
+**The 16px Field Rule.** Form controls never go below 16px on mobile.
 
-### Chips
+## 5. Elevation
 
-- **Style:** Sticker chips use white translucent fills, rounded full corners, fine borders, compact type, and optional tiny Lucide icons.
-- **State:** Hover may strengthen the border or fill. Chips should not become saturated blocks unless they represent a meaningful tag category.
+**There is no elevation, because there are no shadows.** Not on cards, buttons,
+modals, bars, the FAB, the composer, or toasts. Nexia is a flat product.
 
-### Cards / Containers
+Separation comes from exactly three things:
 
-- **Corner Style:** Profile cards and panels use soft rounded corners (`16px` to `24px`), with profile cards usually at `16px`.
-- **Background:** Glass cards use translucent paper (`glass`) over the warm page.
-- **Shadow Strategy:** Use inset specular highlight and border. Do not add generic large shadows.
-- **Border:** Use `border-soft` for normal panels and `border-mid` for active or modal emphasis.
-- **Internal Padding:** Compact cards use `20px`; form and detail sections use `24px` to `28px`.
+1. White paper sitting on the warm cream page.
+2. A single warm hairline (`border` / `border-mid`).
+3. Spacing.
 
-### Inputs / Fields
+Because borders carry all the separation, they are set slightly stronger than a
+decorative border would be. If a surface doesn't read clearly, fix its contrast
+or its spacing — do not reach for a shadow.
 
-- **Style:** Inputs use `input-bg`, `12px` corners, `12px 16px` padding, `border-soft`, and Nunito body text.
-- **Focus:** Border shifts to lavender and the background becomes `glass`.
-- **Error / Disabled:** Errors use red text and red border tint. Disabled controls use reduced opacity and keep the same shape.
+**Named rules:**
 
-### Navigation
+**The Flat Rule.** No `box-shadow` anywhere. Hover states that used to lift with
+a shadow (profile cards) now darken their border and rise a few pixels instead.
 
-- **Style:** The top nav is sticky, compact (`48px` high), translucent, and border-bottom only. Links use `14px` to `15px` Nunito with rounded hover fills.
-- **Mobile Treatment:** Secondary labels can hide on small screens, but icons remain visible and familiar.
+**The No Nested Paper Rule.** `.paper` inside `.paper` is never correct. Nested
+groups use `.paper-sunk` (a bordered `surface-2` well).
 
-### Profile Cards
+## 6. Components
 
-Profile cards are the signature browse component. They use a glass card, a slightly rotated colored avatar square, relationship chips, optional zodiac and tags, and a tiny washi-tape accent that appears on hover. The card may rotate by less than one degree at rest, then settle on hover.
+- **Buttons** — one component, `atoms/Button.tsx`, four variants (`primary`,
+  `secondary`, `destructive`, `ghost`) and two sizes. Both sizes clear 44px.
+  Nothing hand-rolls a button.
+- **Fields** — `atoms/Input`, `atoms/Textarea`, `atoms/Select`, all built on
+  `atoms/Field` for the shared label / error / `aria-describedby` wiring.
+  Fields are **white**, not tinted: a cream-tinted input on a white card reads
+  as muddy, and a field should look like a hole punched in the paper rather
+  than a slightly different shade of it. Definition comes from `border-mid`.
+  The `.field` class deliberately sets **no width** — it is unlayered CSS and
+  would otherwise beat every Tailwind sizing utility on the same element. Size
+  a field from its wrapper, not the control.
+- **Back button** — `atoms/BackButton`. Its hover pill aligns to the content
+  column; it is never pulled left with a negative margin to align the arrow
+  glyph, because the fill then spills past the card edge on hover.
+- **Chips** — `.sticker-chip` for neutral metadata, `.sticker-tag` for
+  personality tags.
+- **Cards** — `.paper` with `16px`–`28px` radii. Profile cards lift on hover
+  (translate + shadow); they carry no CSS `transition` on `transform`, because
+  Framer Motion owns that property and the two smear each other frame by frame.
+- **Washi tape** — `.washi-tape`, centred, one per surface. Colour, width, and
+  angle vary per person, keyed off the **profile id** rather than the grid
+  index, so someone keeps the same tape however the list is filtered. The
+  profile detail page uses tape on the hero only.
+- **Form action bar** — `features/profiles/components/FormActionBar.tsx`. A
+  viewport-anchored bar, not a floating pill: it reports dirty state, disables
+  save until something actually changed, and guards against navigating away with
+  unsaved edits.
 
-### Profile PDF Export
+## 7. Motion
 
-The export surface is a generated keepsake PDF, not a browser print view. It uses full-page warm paper, subtle grid texture, washi tape, pill metadata, and free-flowing profile sections that only render when data exists. The exported file should have no browser headers, footers, URLs, dates, page numbers, page border, or print-dialog chrome.
+One easing curve: `--ease-out` (`cubic-bezier(0.22, 1, 0.36, 1)`). Entrances
+fade and rise a few pixels. Nothing overshoots — the old
+`cubic-bezier(0.175, 0.885, 0.32, 1.275)` back-out was removed.
 
-## 6. Do's and Don'ts
+Framer Motion respects the OS setting through `<MotionConfig reducedMotion="user">`
+in `shared/providers/query-provider.tsx`; the CSS side is handled by the
+`prefers-reduced-motion` block in `globals.css`.
 
-### Do:
+## 8. Do's and Don'ts
 
-- **Do** keep the product light and warm, with `warm-page` as the default surface.
-- **Do** use peach, lavender, and blue with restraint so the product stays cute and controlled.
-- **Do** center washi-tape details and keep them tidy, deliberate, and subordinate to content.
-- **Do** use rounded, soft-edged shapes consistently across cards, buttons, inputs, chips, and modals.
-- **Do** make lookup easy: search, profile cards, forms, and chat responses must stay readable before decorative.
-- **Do** hide empty profile sections and avoid placeholders that make a profile feel unfinished.
-- **Do** preserve standard affordances for buttons, inputs, navigation, dialogs, and print export.
+### Do
 
-### Don't:
+- **Do** route every page through `PageShell`.
+- **Do** use an `-ink` colour for anything readable.
+- **Do** keep touch targets at 44px or larger.
+- **Do** hide empty profile sections rather than showing placeholders.
+- **Do** keep 16px on form controls at mobile widths.
+- **Do** let the loading skeleton use the loaded state's shell and padding, so
+  nothing shifts when data arrives.
 
-- **Don't** add dark mode. PRODUCT.md says light theme only.
-- **Don't** make Nexia feel like a tech product.
-- **Don't** use dashboards, sterile SaaS patterns, terminal aesthetics, heavy data UI, or anything infrastructural.
-- **Don't** let scrapbook details become messy, novelty-first, loud, childish, or cluttered.
-- **Don't** use colored side-stripe borders, gradient text, decorative glassmorphism, hero-metric templates, or repeated identical card grids.
-- **Don't** use full-saturation accents on inactive states.
-- **Don't** invent custom controls where a standard input, select, button, or link would be clearer.
+### Don't
+
+- **Don't** add a `box-shadow`. Anywhere.
+- **Don't** add `backdrop-filter`, glass, or blur as decoration.
+- **Don't** tint a form field — fields are white.
+- **Don't** add dark mode.
+- **Don't** put text or icons in `peach`, `lavender`, or `blue`.
+- **Don't** use `min-h-screen` on a page that sits under the navbar.
+- **Don't** hand-roll a button, field label, or container width.
+- **Don't** nest `.paper` inside `.paper`.
+- **Don't** animate the same property in both CSS and Framer Motion.
+- **Don't** use emoji as an icon system — the app uses Lucide.

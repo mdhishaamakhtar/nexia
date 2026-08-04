@@ -15,10 +15,10 @@ export function ChatProfileCard({ profile, index = 0 }: ChatProfileCardProps) {
   return (
     <Link href={`/profiles/${profile.id}`} prefetch className="block">
       <div
-        className="group/card flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all hover:bg-(--fill) active:scale-[0.99]"
+        className="group/card flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-all hover:bg-(--surface-2) active:scale-[0.99]"
         style={{
           borderColor: "var(--border)",
-          background: "var(--fill)",
+          background: "var(--surface-2)",
         }}
       >
         <div
@@ -26,7 +26,7 @@ export function ChatProfileCard({ profile, index = 0 }: ChatProfileCardProps) {
           style={{
             background: accent,
             color:
-              index % 3 === 1 ? "white" : index % 3 === 2 ? "var(--peach-text)" : "var(--text-1)",
+              index % 3 === 1 ? "white" : index % 3 === 2 ? "var(--peach-ink)" : "var(--text-1)",
             transform: `rotate(${[-2, 2, -1][index % 3]}deg)`,
           }}
         >
@@ -59,7 +59,7 @@ export function ChatProfileCard({ profile, index = 0 }: ChatProfileCardProps) {
                   className="inline-flex items-center gap-1 text-[11px] font-medium"
                   style={{ color: "var(--text-3)" }}
                 >
-                  <ZodiacIcon sign={profile.zodiac_sign} size={11} className="text-(--blue)" />
+                  <ZodiacIcon sign={profile.zodiac_sign} size={11} className="text-(--blue-ink)" />
                   {profile.zodiac_sign}
                 </span>
               </>

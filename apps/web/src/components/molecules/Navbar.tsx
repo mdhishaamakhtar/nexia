@@ -1,60 +1,63 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogOut, Sparkles } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { motion } from "framer-motion";
+import PageShell from "@/components/layout/PageShell";
 
 export default function Navbar() {
   const { logout } = useAuth();
-
-  const handleLogout = async () => {
-    await logout();
-  };
+  const pathname = usePathname();
+  const onChat = pathname === "/chat";
 
   return (
-    <motion.nav
-      initial={{ y: -12, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 200, damping: 24 }}
-      className="sticky top-0 z-50 w-full glass-panel border-b bg-white/80"
-      style={{ borderColor: "var(--border)" }}
+    <nav
+      className="sticky top-0 z-50 w-full border-b"
+      style={{
+        height: "var(--navbar-h)",
+        background: "var(--surface)",
+        borderColor: "var(--border)",
+      }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-12">
+      <PageShell width="wide" className="flex h-full items-center justify-between">
+        <Link
+          href="/profiles"
+          className="-ml-2 inline-flex h-11 items-center rounded-xl px-2 text-base font-extrabold tracking-tight transition-colors hover:bg-(--surface-2)"
+          style={{ color: "var(--text-1)" }}
+        >
+          Nexia
+        </Link>
+
+        <div className="flex items-center gap-1">
           <Link
-            href="/profiles"
-            className="text-[15px] font-semibold tracking-tight"
-            style={{ color: "var(--text-1)" }}
+            href="/chat"
+            aria-current={onChat ? "page" : undefined}
+            className="inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors hover:bg-(--surface-2)"
+            style={{
+              color: onChat ? "var(--blue-ink)" : "var(--text-2)",
+              background: onChat ? "var(--surface-3)" : undefined,
+            }}
           >
-            Nexia
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Ask AI</span>
+            <span className="sr-only sm:hidden">Ask AI</span>
           </Link>
 
-          <div className="flex items-center gap-1">
-            <Link
-              href="/chat"
-              aria-label="Ask AI"
-              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill) cursor-pointer active:scale-95"
-              style={{ color: "var(--text-2)" }}
-            >
-              <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Ask AI</span>
-            </Link>
-
-            <motion.button
-              onClick={handleLogout}
-              aria-label="Sign out"
-              whileTap={{ scale: 0.93 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl transition-all duration-150 hover:bg-(--fill) cursor-pointer"
-              style={{ color: "var(--text-2)" }}
-            >
-              <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </motion.button>
-          </div>
+          {/* -mr-3 cancels px-3 exactly, so the "Sign out" glyph lands on the
+              shell's right edge — the same line the last card ends on. The
+              brand link does the same with -ml-2/px-2 on the left. */}
+          <button
+            onClick={() => void logout()}
+            className="-mr-3 inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold transition-colors hover:bg-(--surface-2) active:scale-[0.97]"
+            style={{ color: "var(--text-2)" }}
+          >
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Sign out</span>
+            <span className="sr-only sm:hidden">Sign out</span>
+          </button>
         </div>
-      </div>
-    </motion.nav>
+      </PageShell>
+    </nav>
   );
 }
