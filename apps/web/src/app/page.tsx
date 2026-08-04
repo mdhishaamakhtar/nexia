@@ -108,7 +108,7 @@ export default function LandingPage() {
           </span>
           <Link
             href="/login"
-            className="inline-flex min-h-11 items-center rounded-xl border px-4 text-sm font-semibold transition-[filter] hover:brightness-[0.97]"
+            className="inline-flex min-h-9 items-center rounded-xl border px-3.5 text-sm font-semibold transition-[filter] hover:brightness-[0.97]"
             style={{
               background: "var(--peach)",
               color: "var(--peach-ink)",

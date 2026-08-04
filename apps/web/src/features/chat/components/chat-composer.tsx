@@ -64,7 +64,7 @@ export function ChatComposer({
         e.preventDefault();
         submit();
       }}
-      className="rounded-2xl border transition-colors duration-200 focus-within:border-(--focus)"
+      className="rounded-2xl border transition-colors duration-200"
       style={{
         background: "var(--surface)",
         borderColor: "var(--border)",
@@ -87,8 +87,10 @@ export function ChatComposer({
             submit();
           }
         }}
-        // 16px prevents iOS Safari from zooming the viewport on focus.
-        className="block w-full resize-none bg-transparent px-4 pt-3.5 text-[16px] leading-[1.5] outline-none placeholder:text-(--text-3)"
+        // 16px prevents iOS Safari from zooming the viewport on focus. The
+        // global :focus-visible ring is inset so it tracks the card's rounded
+        // edge from the inside instead of poking past it.
+        className="block w-full resize-none rounded-2xl bg-transparent px-4 pt-3.5 text-[16px] leading-[1.5] outline-offset-[-2px] placeholder:text-(--text-3)"
         style={{ color: "var(--text-1)", maxHeight: MAX_TEXTAREA_HEIGHT }}
       />
 

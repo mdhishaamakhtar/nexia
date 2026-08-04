@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { HTTPError } from "ky";
 import { useAuth } from "@/context/AuthContext";
 import Input from "@/components/atoms/Input";
@@ -73,14 +74,23 @@ export default function LoginPage() {
         </>
       }
     >
-      {/* Segmented control. The active segment is peach with peach ink — the
-          old white-on-light-blue slider sat at 1.8:1. */}
+      {/* Segmented control with a sliding thumb. The thumb is the dark blue
+          ink with white text (4.8:1) — the old pale-blue thumb with white text
+          sat at 1.8:1. */}
       <div
-        className="mb-7 grid grid-cols-2 gap-1 rounded-xl border p-1"
+        className="relative mb-7 flex rounded-xl border p-1"
         role="tablist"
         aria-label="Authentication mode"
         style={{ background: "var(--surface-2)", borderColor: "var(--border)" }}
       >
+        <motion.div
+          className="absolute top-1 bottom-1 left-1 z-0 w-[calc(50%-4px)] rounded-lg"
+          style={{ background: "var(--blue-ink)" }}
+          initial={false}
+          animate={{ x: mode === "login" ? "0%" : "100%" }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          aria-hidden="true"
+        />
         {(["login", "signup"] as const).map((m) => {
           const active = mode === m;
           return (
@@ -90,11 +100,8 @@ export default function LoginPage() {
               role="tab"
               aria-selected={active}
               onClick={() => setMode(m)}
-              className="cursor-pointer rounded-lg px-3 py-2.5 text-xs font-bold transition-colors duration-150"
-              style={{
-                background: active ? "var(--peach)" : "transparent",
-                color: active ? "var(--peach-ink)" : "var(--text-3)",
-              }}
+              className="relative z-10 flex-1 cursor-pointer rounded-lg px-3 py-2.5 text-xs font-bold transition-colors duration-150"
+              style={{ color: active ? "var(--surface)" : "var(--text-3)" }}
             >
               {m === "login" ? "Sign in" : "Create account"}
             </button>
