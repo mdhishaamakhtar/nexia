@@ -11,11 +11,13 @@ export function ChatHeader({ onClear, canClear }: { onClear: () => void; canClea
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 280, damping: 28 }}
-      className="flex shrink-0 items-center gap-3 pb-3"
+      // Tighter on a phone: every row of chrome here is a row the transcript
+      // does not get, and the navbar above already says where you are.
+      className="flex shrink-0 items-center gap-2.5 pb-2.5 sm:gap-3 sm:pb-3"
     >
       <BackButton href="/profiles" className="-ml-1" />
 
-      <NexiaAvatar size={34} tilt={-3} />
+      <NexiaAvatar size={30} tilt={-3} />
 
       <div className="flex min-w-0 flex-col">
         <span

@@ -50,7 +50,13 @@ export function NexiaAvatar({
         height: size,
         borderRadius: Math.round(size * 0.32),
         background: "var(--nexia-mark)",
-        boxShadow: "0 0 0 1.5px #ffffff",
+        // A white keyline that lifts the mark off cream and peach surfaces.
+        // It was written as `box-shadow: 0 0 0 1.5px` — zero offset, zero blur,
+        // pure spread — which is a ring wearing a shadow's syntax and reads as a
+        // Flat Rule violation to anyone grepping for one. `outline` draws the
+        // same pixels outside the box without touching layout. The element is
+        // not focusable, so this never competes with the global focus ring.
+        outline: "1.5px solid #ffffff",
         transform: tilt ? `rotate(${tilt}deg)` : undefined,
       }}
     >

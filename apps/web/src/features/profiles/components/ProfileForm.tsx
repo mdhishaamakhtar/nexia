@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Coffee, Heart, MessageSquare, Plus, Star, Trash2, User } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useRef } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -10,7 +10,8 @@ import Input from "@/components/atoms/Input";
 import Select from "@/components/atoms/Select";
 import Textarea from "@/components/atoms/Textarea";
 import type { ProfileFormValues } from "@/shared/types/profile";
-import ProfileFormSection from "./ProfileFormSection";
+import { PROFILE_SECTIONS, RANK_TINTS } from "../sections";
+import SheetSection from "./SheetSection";
 import FieldArrayInput from "./FieldArrayInput";
 import FormActionBar from "./FormActionBar";
 
@@ -103,10 +104,14 @@ export default function ProfileForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
-      {/* Bottom padding clears the fixed action bar so the last field is reachable. */}
-      <div className="space-y-4 pb-28">
-        <ProfileFormSection id="basic" title="Basic information" icon={User} index={0}>
+    // Bottom padding clears the fixed action bar so the last field is reachable.
+    // It sits outside the sheet — the sheet ends where the content ends.
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="pb-28">
+      {/* Editing is the same sheet of paper the profile is read on: same tape,
+          same colours, same section order. A profile form that looked like a
+          settings screen made writing someone down feel like filing them. */}
+      <div className="paper rounded-[28px] px-5 py-7 sm:px-9 sm:py-9">
+        <SheetSection section={PROFILE_SECTIONS.overview} index={0}>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <Input label="Full name" {...register("full_name")} error={errors.full_name?.message} />
             <Input
@@ -134,26 +139,30 @@ export default function ProfileForm({
                 items={tagsField.fields}
                 append={tagsField.append}
                 remove={tagsField.remove}
+                chip="tag"
               />
             </div>
           </div>
-        </ProfileFormSection>
+        </SheetSection>
 
-        <ProfileFormSection id="interests" title="Interests & favorites" icon={Star} index={1}>
+        <SheetSection section={PROFILE_SECTIONS.interests} index={1}>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <Input label="Music preference" {...register("music_preference")} />
             <Input label="Favorite movie" {...register("favorite_movie")} />
             <Input label="Favorite book" {...register("favorite_book")} />
 
-            <div className="paper-sunk rounded-xl p-4 md:col-span-2">
-              <h3
-                className="mb-4 flex items-center gap-2 text-sm font-bold"
-                style={{ color: "var(--text-2)" }}
-              >
-                <Heart className="h-4 w-4" style={{ color: "var(--text-3)" }} aria-hidden="true" />
+            {/* The peach well from the detail page, in its editable state — so
+                you can see what you are filling in before you save. The fields
+                inside stay white: a tinted field on a tinted well would read as
+                muddy paper rather than a hole punched in it. */}
+            <div
+              className="rounded-2xl border px-4 pb-4 pt-4 md:col-span-2"
+              style={{ background: "var(--peach-soft)", borderColor: "var(--peach-line)" }}
+            >
+              <h3 className="t-label mb-3" style={{ color: "var(--peach-ink)" }}>
                 Their song
               </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <Input
                   placeholder="Song name"
                   aria-label="Associated song name"
@@ -171,35 +180,47 @@ export default function ProfileForm({
               <span className="t-label mb-2 block">Top songs</span>
 
               {songsField.fields.length > 0 && (
-                <ul className="mb-2.5 space-y-2">
-                  {songsField.fields.map((field, index) => (
-                    <li
-                      key={field._key}
-                      className="paper-sunk flex items-center justify-between gap-3 rounded-xl px-4 py-2.5"
-                    >
-                      <div className="min-w-0">
-                        <p
-                          className="truncate text-sm font-semibold"
-                          style={{ color: "var(--text-1)" }}
+                <ol className="mb-3 space-y-2.5">
+                  {songsField.fields.map((field, index) => {
+                    const tint = RANK_TINTS[index % RANK_TINTS.length]!;
+                    return (
+                      <li key={field._key} className="flex items-center gap-3.5">
+                        {/* Same ranked badges the profile shows, so the order
+                            you set here is the order you will recognise. */}
+                        <span
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border text-sm font-extrabold"
+                          style={{
+                            background: tint.wash,
+                            borderColor: tint.line,
+                            color: tint.ink,
+                          }}
                         >
-                          {songs[index]?.name || "Untitled"}
-                        </p>
-                        <p className="truncate text-xs" style={{ color: "var(--text-3)" }}>
-                          {songs[index]?.artist}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => songsField.remove(index)}
-                        aria-label={`Remove ${songs[index]?.name || "song"}`}
-                        className="-mr-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-(--red-bg)"
-                        style={{ color: "var(--red-ink)" }}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className="truncate text-sm font-semibold"
+                            style={{ color: "var(--text-1)" }}
+                          >
+                            {songs[index]?.name || "Untitled"}
+                          </p>
+                          <p className="truncate text-xs" style={{ color: "var(--text-2)" }}>
+                            {songs[index]?.artist}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => songsField.remove(index)}
+                          aria-label={`Remove ${songs[index]?.name || "song"}`}
+                          className="-mr-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-(--red-bg)"
+                          style={{ color: "var(--red-ink)" }}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
               )}
 
               {errors.top_songs?.message && (
@@ -242,14 +263,19 @@ export default function ProfileForm({
                     }}
                     className="field min-w-0 flex-1 px-4 py-3"
                   />
+                  {/* Height comes from the row, not a hard `h-11`: `.field` is
+                      min-height 44px *plus* its padding and line box, so a
+                      fixed 44px button sat about a pixel short of the inputs
+                      beside it. Stretching matches whatever the field computes
+                      to at any font size. */}
                   <button
                     type="button"
                     onClick={addTopSong}
                     aria-label="Add top song"
-                    className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors hover:bg-(--surface-2) active:scale-95 sm:w-11 sm:px-0"
+                    className="flex min-h-11 shrink-0 items-center justify-center gap-2 self-stretch rounded-xl border px-4 text-sm font-semibold transition-colors hover:bg-(--surface-2) active:scale-95 sm:w-11 sm:px-0"
                     style={{
                       background: "var(--surface)",
-                      borderColor: "var(--border)",
+                      borderColor: "var(--border-mid)",
                       color: "var(--text-2)",
                     }}
                   >
@@ -260,9 +286,9 @@ export default function ProfileForm({
               )}
             </div>
           </div>
-        </ProfileFormSection>
+        </SheetSection>
 
-        <ProfileFormSection id="lifestyle" title="Lifestyle" icon={Coffee} index={2}>
+        <SheetSection section={PROFILE_SECTIONS.lifestyle} index={2}>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <FieldArrayInput
               label="Hangout places"
@@ -297,9 +323,9 @@ export default function ProfileForm({
               remove={bookGenresField.remove}
             />
           </div>
-        </ProfileFormSection>
+        </SheetSection>
 
-        <ProfileFormSection id="deep" title="Deep dive" icon={MessageSquare} index={3}>
+        <SheetSection section={PROFILE_SECTIONS.deep} index={3}>
           <div className="space-y-5">
             <Textarea label="Long term goals" rows={3} {...register("long_term_goals")} />
 
@@ -328,6 +354,7 @@ export default function ProfileForm({
               append={quotesField.append}
               remove={quotesField.remove}
               variant="block"
+              chip="quote"
             />
             <FieldArrayInput
               label="Political views"
@@ -338,7 +365,7 @@ export default function ProfileForm({
               remove={politicsField.remove}
             />
           </div>
-        </ProfileFormSection>
+        </SheetSection>
       </div>
 
       <FormActionBar

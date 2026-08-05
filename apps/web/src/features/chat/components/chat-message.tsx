@@ -97,11 +97,10 @@ function UserMessage({ message }: { message: UIMessage }) {
     <div className="flex w-full justify-end pl-10">
       <div
         className="max-w-[78%] rounded-[20px] rounded-br-md px-4 py-2.5 text-[15px] leading-[1.6]"
-        style={{
-          background: "var(--peach)",
-          color: "var(--peach-ink)",
-          boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.35)",
-        }}
+        // No inset highlight. The white top-edge gloss this used to carry was a
+        // leftover from the glass era, and The Flat Rule has no "but it's only
+        // an inset one" clause — the peach fill is the whole treatment.
+        style={{ background: "var(--peach)", color: "var(--peach-ink)" }}
       >
         <div className="chat-markdown">
           <MessageResponse controls={false}>{text}</MessageResponse>

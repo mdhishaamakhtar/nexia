@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 import {
@@ -41,6 +41,18 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const { messages, status, sendMessage, regenerate, stop, clear } = useNexiaChat();
 
+  // Chat is the one screen that owns the viewport. Sizing this column to
+  // `100dvh` was not enough on a phone: the document still had a scroller of
+  // its own, so a flick that ran past either end of the transcript chained
+  // into the page and dragged the browser's URL bar with it — two scrolls
+  // fighting over one gesture, and the composer sliding out from under your
+  // thumb. Removing the document scroller for as long as chat is mounted
+  // leaves exactly one thing on screen that scrolls.
+  useEffect(() => {
+    document.documentElement.classList.add("app-screen");
+    return () => document.documentElement.classList.remove("app-screen");
+  }, []);
+
   const isBusy = status === "submitted" || status === "streaming";
   const lastMessage = messages.at(-1);
   const lastPart = lastMessage?.role === "assistant" ? lastMessage.parts.at(-1) : undefined;
@@ -64,7 +76,7 @@ export default function ChatPage() {
     // PageShell: this column also owns the viewport height so the composer
     // pins to the bottom while only the transcript scrolls.
     <main
-      className="mx-auto flex w-full flex-col overflow-hidden px-(--gutter) pt-3"
+      className="mx-auto flex w-full flex-col overflow-hidden px-(--gutter) pt-2 sm:pt-3"
       style={{
         height: "calc(100dvh - var(--navbar-h))",
         maxWidth: "calc(var(--shell-reading) + var(--gutter) * 2)",
@@ -125,8 +137,8 @@ export default function ChatPage() {
       </div>
 
       <div
-        className="shrink-0 pt-2"
-        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+        className="shrink-0 pt-1.5 sm:pt-2"
+        style={{ paddingBottom: "calc(0.625rem + env(safe-area-inset-bottom))" }}
       >
         <ChatComposer
           value={input}
