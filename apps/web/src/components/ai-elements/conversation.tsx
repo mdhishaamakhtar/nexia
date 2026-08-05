@@ -27,8 +27,15 @@ export const ConversationContent = ({
   <StickToBottom.Content
     // min-h-full lets a lone child (the empty state) stretch and centre itself;
     // once there are messages the content simply grows past it.
-    className={cn("flex min-h-full flex-col gap-6 py-4 sm:gap-7", className)}
-    scrollClassName={cn("h-full w-full overflow-auto scroll-smooth", scrollClassName)}
+    className={cn("flex min-h-full flex-col gap-5 py-3 sm:gap-7 sm:py-4", className)}
+    // `overscroll-contain` stops a flick that reaches the top or bottom of the
+    // transcript from handing the rest of the gesture to whatever is behind it.
+    // Paired with the document-scroll lock the chat page applies, a phone has
+    // exactly one scrollable surface instead of two competing ones.
+    scrollClassName={cn(
+      "h-full w-full overflow-auto overscroll-contain scroll-smooth",
+      scrollClassName
+    )}
     {...props}
   />
 );

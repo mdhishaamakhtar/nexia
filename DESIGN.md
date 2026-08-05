@@ -14,9 +14,18 @@ colors:
   peach: "#fdba74"
   lavender: "#c4b5fd"
   blue: "#93c5fd"
+  peach-soft: "#ffedd5"
+  lavender-soft: "#ede9fe"
+  blue-soft: "#dbeafe"
+  peach-line: "#7c2d123d"
+  lavender-line: "#5b21b63d"
+  blue-line: "#1e40af3d"
+  line-float: "#78624a8c"
+  lavender-line-float: "#5b21b68c"
   peach-ink: "#7c2d12"
   lavender-ink: "#5b21b6"
   blue-ink: "#3b6fd4"
+  blue-ink-deep: "#1e40af"
   green-ink: "#15803d"
   red-ink: "#c81e1e"
   red-bg: "#c81e1e12"
@@ -25,7 +34,7 @@ colors:
   lavender-bg: "#c4b5fd38"
   lavender-border: "#5b21b638"
   focus: "#3b6fd4"
-  overlay: "#2925246b"
+  overlay: "#2925248c"
   nexia-mark: "#5b8def"
 typography:
   display:
@@ -167,15 +176,15 @@ and small washi-tape details that make profiles feel *kept* rather than stored.
 built every surface from translucent glass (`backdrop-filter: blur(20px)`). It
 was replaced wholesale: translucency muddied every card against the warm page,
 cost a compositing layer per element, and read as a tech product rather than a
-scrapbook. Depth now comes from opaque surfaces, warm hairlines, and soft warm
-shadows.
+scrapbook. Depth now comes from opaque surfaces, warm hairlines, and spacing —
+and from nothing else. See §5: the product is flat and carries no shadows at all.
 
 **There is no `backdrop-filter` anywhere in the app, and none should be added.**
 
 **Key characteristics:**
 
 - Warm cream page, opaque white paper, restrained peach / lavender / blue accents.
-- Rounded panels with fine warm borders and soft warm shadows.
+- Rounded panels separated by fine warm borders, never by a shadow.
 - Small tape and sticker motifs used for hierarchy, never as wallpaper.
 - Nunito throughout, with compact all-caps labels and calm body text.
 - Ease-out motion that never overshoots.
@@ -204,6 +213,25 @@ goes full-bleed and puts a `PageShell` *inside* itself.
 (`min-height: calc(100dvh - var(--navbar-h))`), never `min-h-screen`. The latter
 overshoots by exactly the navbar height and forces a scrollbar on every page.
 
+**The One Sheet Rule.** A profile is one sheet of paper — a single `.paper`
+article that runs from the hero to the last quote — on both the detail page and
+the edit form. It is not a stack of section cards. The earlier version gave
+every section its own white panel with a grey icon tile and an 11px caps label;
+four of those in a column is a settings screen wearing a scrapbook's colours,
+and it left section headings and field labels sharing one type size, so the
+page had no hierarchy to read. Sections are divided by a heading and a hairline,
+never by a new card. The same rule is why the form uses the same sheet: editing
+a profile and reading one are the same document in two states.
+
+**The App Screen Lock.** Chat is the only screen that owns the viewport, and it
+adds `.app-screen` to `<html>` while mounted, which removes the document
+scroller entirely. Sizing the column to `100dvh` is not sufficient on a phone:
+the document keeps a scroller of its own, so a flick past either end of the
+transcript chains into the page and drags the browser chrome — two scrollers
+competing for one gesture. The transcript additionally sets
+`overscroll-behavior: contain`. Any future full-height screen uses the same
+class; nothing else should.
+
 ## 3. Colours
 
 A warm scrapbook neutral system with three soft accent roles.
@@ -227,6 +255,11 @@ mismatch against warm cream, and the old tertiary sat right on the 4.5:1 line.
 - **Keepsake Lavender** (`lavender`): avatar tiles, tape, tag chips.
 - **Lookup Blue** (`blue`): AI touchpoints and small navigational emphasis.
 
+Each accent also has a **wash** — `peach-soft`, `lavender-soft`, `blue-soft` —
+the pale opaque paper behind a tinted well, chip, or badge, plus a matching
+`-line` hairline. Washes are opaque rather than alpha so they read identically
+on `surface` and on `page`.
+
 ### Named rules
 
 **The Ink Rule (non-negotiable).** `peach`, `lavender`, and `blue` are *surface
@@ -235,11 +268,27 @@ foreground on paper (blue on white measures 1.8:1). Every accent has an `-ink`
 variant that clears WCAG AA: `peach-ink`, `lavender-ink`, `blue-ink`,
 `green-ink`, `red-ink`. Use those for anything a person has to read.
 
-**The Warm Light Rule.** `page` is the baseline for every surface. Dark mode is
-forbidden — PRODUCT.md specifies light theme only.
+**The Two Blues Rule.** `blue-ink` is tuned for white paper (4.8:1). On
+`blue-soft` it falls to 3.8:1 and fails, so text on the blue wash uses
+`blue-ink-deep` (7.0:1) instead. The two are not interchangeable; peach and
+lavender need no equivalent because their inks already clear AA on their own
+washes (8.0:1 and 7.5:1).
+
+**The Content Colour Rule.** Colour is assigned by *what a thing is*, never by
+where it lands in a loop. A tag is lavender on the profile grid, on the detail
+sheet, in the form, and in the PDF export. The song someone is bound to is the
+one peach well. Ranked songs cycle lavender / peach / blue because rank is the
+information — and they carry their number too, so colour is never the only
+code. Everything else — genres, places, food, politics — stays a neutral paper
+chip, which is what lets the coloured things mean something. An index-modulo
+accent applied to whatever happens to render next is the failure mode this rule
+exists to prevent.
 
 **The Accent Ration Rule.** If every card uses all three accents, the scrapbook
 stops feeling kept and starts feeling noisy.
+
+**The Warm Light Rule.** `page` is the baseline for every surface. Dark mode is
+forbidden — PRODUCT.md specifies light theme only.
 
 **The Focus Rule.** One focus treatment, set globally on `:focus-visible`: a 2px
 `focus` outline at 2px offset. Components must not remove it.
@@ -262,7 +311,7 @@ Five named classes in `globals.css` carry the hierarchy. Nothing outside them.
 |---|---|---|---|
 | `.t-display` | `clamp(2.5rem → 4.25rem)` | 800 | Landing hero only |
 | `.t-page-title` | `clamp(1.75rem → 2.5rem)` | 800 | Every authenticated page `h1` |
-| `.t-section-title` | `1.25rem` | 700 | Modal titles, empty-state headings |
+| `.t-section-title` | `1.25rem` | 700 | Profile sheet sections, modal titles, empty-state headings |
 | `.t-body` | `0.9375rem` (15px) | 500 | Profile prose, chat text, card names |
 | `.t-label` | `0.6875rem` (11px) | 700 | Every section header and field label |
 
@@ -310,6 +359,18 @@ a shadow (profile cards) now darken their border and rise a few pixels instead.
 **The No Nested Paper Rule.** `.paper` inside `.paper` is never correct. Nested
 groups use `.paper-sunk` (a bordered `surface-2` well).
 
+**The Float Line Rule.** A hairline is only visible when it is darker than
+**both** surfaces it divides. On the page that happens for free — a card's line
+is darker than its own fill and darker than the cream behind it. On the overlay
+it does not: the scrim composites to a mid tone, so a normal 1px card border
+ends up *lighter* than the scrim and dissolves into the card's silhouette. A
+dialog that simply reuses its card's border therefore looks like it has no
+border at all. Surfaces floating on the scrim use `line-float` /
+`lavender-line-float` at **2px** instead — the one place in the product where a
+border is not 1px, because it is the one place a border has to out-contrast a
+mid grey. `overlay` itself is `0.55`, not `0.42`; the lighter scrim sat too
+close to the paper it was meant to be pushing back.
+
 ## 6. Components
 
 - **Buttons** — one component, `atoms/Button.tsx`, four variants (`primary`,
@@ -322,19 +383,39 @@ groups use `.paper-sunk` (a bordered `surface-2` well).
   than a slightly different shade of it. Definition comes from `border-mid`.
   The `.field` class deliberately sets **no width** — it is unlayered CSS and
   would otherwise beat every Tailwind sizing utility on the same element. Size
-  a field from its wrapper, not the control.
+  a field from its wrapper, not the control. A button sitting **beside** a field
+  takes its height from the row (`self-stretch` plus `min-h-11`), never a hard
+  `h-11`: `.field` is a 44px *minimum* plus its own padding and line box, so it
+  computes taller than 44px, and every fixed-height add button in the profile
+  form sat a pixel short of the input next to it.
 - **Back button** — `atoms/BackButton`. Its hover pill aligns to the content
   column; it is never pulled left with a negative margin to align the arrow
   glyph, because the fill then spills past the card edge on hover.
 - **Chips** — `.sticker-chip` for neutral metadata, `.sticker-tag` for
   personality tags.
 - **Cards** — `.paper` with `16px`–`28px` radii. Profile cards lift on hover
-  (translate + shadow); they carry no CSS `transition` on `transform`, because
-  Framer Motion owns that property and the two smear each other frame by frame.
-- **Washi tape** — `.washi-tape`, centred, one per surface. Colour, width, and
-  angle vary per person, keyed off the **profile id** rather than the grid
-  index, so someone keeps the same tape however the list is filtered. The
-  profile detail page uses tape on the hero only.
+  (translate + a darkened border, never a shadow); they carry no CSS
+  `transition` on `transform`, because Framer Motion owns that property and the
+  two smear each other frame by frame.
+- **Washi tape** — one material, two placements, sharing a torn-end silhouette.
+  `.washi-tape` **pins**: rotated, pasted across the top edge of a surface, one
+  per surface. Colour, width, and angle vary per person, keyed off the **profile
+  id** rather than the grid index, so someone keeps the same tape however the
+  list is filtered. The profile sheet pins exactly one, at the top of the sheet.
+  `.tape-mark` **marks**: the same strip laid flat in a heading row to open a
+  section, in the text flow rather than over an edge, at full strength because
+  26px of 70%-opacity peach on cream is not a colour. Tape never decorates a
+  surface that is already tinted — a peach strip on a peach well reads as a
+  blob, and it costs the hero its claim to the only pinned tape on the page.
+- **Profile sheet section** — `features/profiles/components/SheetSection.tsx`,
+  shared by the detail page and the form. Tape mark, `.t-section-title`, then a
+  hairline running out to the sheet's edge; more air above the heading than
+  below it. Section titles and tape colours live in
+  `features/profiles/sections.ts` so read, edit, and export cannot drift.
+- **Quote bubble** — a `lavender-soft` card with the quotation mark hung in its
+  left gutter at `.t-page-title` scale. Reserved for things the person actually
+  **said**: it is the one device meaning "their words, not yours", which is why
+  memories, notes, and the bio are plain wells and prose instead.
 - **Form action bar** — `features/profiles/components/FormActionBar.tsx`. A
   viewport-anchored bar, not a floating pill: it reports dirty state, disables
   save until something actually changed, and guards against navigating away with
@@ -372,5 +453,9 @@ in `shared/providers/query-provider.tsx`; the CSS side is handled by the
 - **Don't** use `min-h-screen` on a page that sits under the navbar.
 - **Don't** hand-roll a button, field label, or container width.
 - **Don't** nest `.paper` inside `.paper`.
+- **Don't** break a profile back into a stack of section cards.
+- **Don't** colour something by its index in a loop — colour it by what it is.
+- **Don't** paste tape on a surface that already carries a wash.
+- **Don't** give a button beside a field a fixed height.
 - **Don't** animate the same property in both CSS and Framer Motion.
 - **Don't** use emoji as an icon system — the app uses Lucide.

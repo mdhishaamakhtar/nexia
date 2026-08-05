@@ -90,8 +90,11 @@ export default function ConfirmDialog({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="paper relative w-full max-w-sm rounded-3xl p-7"
-            style={{ borderColor: "var(--border-mid)" }}
+            // Float line, not a card hairline: a dialog sits on the scrim, and
+            // a 1px `--border-mid` edge there is lighter than the scrim itself,
+            // so it disappears into the silhouette. See globals.css.
+            className="paper relative w-full max-w-sm rounded-3xl border-2 p-7"
+            style={{ borderColor: "var(--line-float)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <span

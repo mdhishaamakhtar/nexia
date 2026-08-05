@@ -6,7 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import {
   Book,
   Calendar,
-  Coffee,
   Download,
   Edit,
   Film,
@@ -14,12 +13,9 @@ import {
   ListMusic,
   Loader2,
   MapPin,
-  MessageSquare,
   Music,
   Quote,
-  Star,
   Trash2,
-  User,
   Vote,
   Utensils,
 } from "lucide-react";
@@ -31,6 +27,8 @@ import BackButton from "@/components/atoms/BackButton";
 import PageShell from "@/components/layout/PageShell";
 import QuoteModal from "@/components/molecules/QuoteModal";
 import ZodiacIcon from "@/features/profiles/components/ZodiacIcon";
+import SheetSection from "@/features/profiles/components/SheetSection";
+import { PROFILE_SECTIONS, RANK_TINTS } from "@/features/profiles/sections";
 import { deleteProfile, getProfile } from "@/features/profiles/api";
 import { exportProfilePdf } from "@/features/profiles/exportProfilePdf";
 import type { Profile } from "@/shared/types/profile";
@@ -44,44 +42,6 @@ const HERO_TAPES = [
   "var(--lavender)",
   "var(--peach)",
 ];
-
-function Section({
-  id,
-  title,
-  icon: Icon,
-  children,
-  index = 0,
-}: {
-  id: string;
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-  index?: number;
-}) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: 0.06 + index * 0.06 }}
-      id={id}
-      aria-labelledby={`${id}-heading`}
-      className="paper scroll-mt-24 rounded-3xl p-5 sm:p-7"
-    >
-      <header className="mb-5 flex items-center gap-2.5">
-        <span
-          className="flex h-7 w-7 items-center justify-center rounded-lg"
-          style={{ background: "var(--surface-2)", color: "var(--text-2)" }}
-        >
-          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-        </span>
-        <h2 id={`${id}-heading`} className="t-label">
-          {title}
-        </h2>
-      </header>
-      <div className="space-y-6">{children}</div>
-    </motion.section>
-  );
-}
 
 function Fact({
   label,
@@ -121,7 +81,10 @@ function SubLabel({
   );
 }
 
-function ChipGroup({ items, prefix = "" }: { items: string[]; prefix?: string }) {
+/** Neutral paper chips. The bulk of a profile is lists, and if the lists are
+ *  coloured too then nothing on the sheet is. These are the rest bar between
+ *  the tags, the song, and the quotes. */
+function ChipGroup({ items }: { items: string[] }) {
   if (items.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -130,7 +93,6 @@ function ChipGroup({ items, prefix = "" }: { items: string[]; prefix?: string })
           key={`${item}-${index}`}
           className="sticker-chip max-w-full break-words px-3 py-1 text-xs font-semibold"
         >
-          {prefix}
           {item}
         </span>
       ))}
@@ -138,7 +100,16 @@ function ChipGroup({ items, prefix = "" }: { items: string[]; prefix?: string })
   );
 }
 
-function QuoteCard({ quote, onOpen }: { quote: string; onOpen: () => void }) {
+/**
+ * Something the person actually said.
+ *
+ * The hanging quotation mark is reserved for real speech — it is the one
+ * device on the sheet that means "these are their words, not yours", which is
+ * why memories, notes, and the bio do not get one. Set at page-title scale off
+ * the type ramp rather than an invented size, and hung in the card's left
+ * gutter the way the export hangs it in the page margin.
+ */
+function QuoteBubble({ quote, onOpen }: { quote: string; onOpen: () => void }) {
   const textRef = useRef<HTMLSpanElement>(null);
   const [isClamped, setIsClamped] = useState(false);
 
@@ -156,11 +127,60 @@ function QuoteCard({ quote, onOpen }: { quote: string; onOpen: () => void }) {
     <button
       onClick={onOpen}
       title="Read full quote"
+      className="relative flex h-full flex-col rounded-2xl border py-4 pl-12 pr-4 text-left text-sm leading-relaxed transition-colors duration-150 hover:border-(--lavender)"
+      style={{
+        background: "var(--lavender-soft)",
+        borderColor: "var(--lavender-line)",
+        color: "var(--text-2)",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        className="t-page-title pointer-events-none absolute left-3.5 top-2 select-none leading-none"
+        style={{ color: "var(--lavender-ink)", opacity: 0.4 }}
+      >
+        &ldquo;
+      </span>
+      <span ref={textRef} className="line-clamp-3 break-words">
+        {quote}
+      </span>
+      {isClamped && (
+        <span
+          className="mt-1.5 text-xs font-semibold underline underline-offset-2"
+          style={{ color: "var(--lavender-ink)" }}
+        >
+          more
+        </span>
+      )}
+    </button>
+  );
+}
+
+/** A memory is yours, not theirs — so it stays a quiet paper well rather than
+ *  borrowing the speech bubble above. */
+function MemoryCard({ memory, onOpen }: { memory: string; onOpen: () => void }) {
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [isClamped, setIsClamped] = useState(false);
+
+  useEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+    const check = () => setIsClamped(el.scrollHeight - el.clientHeight > 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [memory]);
+
+  return (
+    <button
+      onClick={onOpen}
+      title="Read full memory"
       className="paper-sunk flex h-full flex-col rounded-2xl p-4 text-left text-sm leading-relaxed transition-colors duration-150 hover:bg-(--surface-3)"
       style={{ color: "var(--text-2)" }}
     >
       <span ref={textRef} className="line-clamp-3 break-words">
-        {quote}
+        {memory}
       </span>
       {isClamped && (
         <span
@@ -239,9 +259,8 @@ export default function ProfileDetailPage() {
       // Same shell and padding as the loaded state, so nothing shifts on arrival.
       <div className="page-body">
         <PageShell width="reading" className="space-y-4 py-8 sm:py-10">
-          <div className="shimmer h-14 rounded-2xl" />
-          <div className="shimmer h-48 rounded-3xl" />
-          <div className="shimmer h-32 rounded-3xl" />
+          <div className="shimmer h-11 w-40 rounded-xl" />
+          <div className="shimmer h-[32rem] rounded-[28px]" />
         </PageShell>
       </div>
     );
@@ -290,6 +309,11 @@ export default function ProfileDetailPage() {
     hasText(profile.notes) ||
     quotes.length > 0;
 
+  // Sections are numbered for their entrance stagger only; their identity and
+  // tape colour come from PROFILE_SECTIONS, which the form shares.
+  let sectionIndex = 0;
+  const nextIndex = () => sectionIndex++;
+
   const handleExportPdf = async () => {
     if (isExporting) return;
     setIsExporting(true);
@@ -306,12 +330,13 @@ export default function ProfileDetailPage() {
   return (
     <div className="profile-detail-page page-body">
       <PageShell width="reading" as="main" className="profile-screen-root py-8 sm:py-10">
-        {/* Back + Actions */}
+        {/* Back + Actions. These live on the cream, outside the sheet — they act
+            on the keepsake rather than being part of it. */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-6 flex items-center justify-between gap-3"
+          className="mb-5 flex items-center justify-between gap-3"
         >
           <BackButton href="/profiles" label="Back" />
 
@@ -349,16 +374,19 @@ export default function ProfileDetailPage() {
           </div>
         </motion.div>
 
-        {/* Hero. The one washi-tape moment on the page — the sections below stay
-            plain so the decoration reads as emphasis rather than wallpaper. */}
-        <motion.header
+        {/* One sheet of paper, top to bottom — the same page the PDF prints.
+            The old treatment stacked four identical white cards, each with a
+            grey icon tile and an 11px caps label, which is a settings screen
+            wearing a scrapbook's colours. Here the tape and the rules do the
+            dividing, and the sheet stays whole. */}
+        <motion.article
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="paper relative mb-5 rounded-[28px] p-6 sm:p-9"
+          className="paper relative rounded-[28px] px-5 py-7 sm:px-9 sm:py-9"
         >
-          {/* Same id-keyed tape as this person's card in the grid, so the
-              profile you tapped is the profile you land on. */}
+          {/* The one pinned strip on the page, keyed to this person's id so the
+              card you tapped in the grid is the sheet you land on. */}
           <span
             className="washi-tape h-7 w-28"
             style={{
@@ -368,7 +396,7 @@ export default function ProfileDetailPage() {
             aria-hidden="true"
           />
 
-          <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-6">
+          <header className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-6">
             <span
               className="flex h-20 w-20 shrink-0 -rotate-3 items-center justify-center rounded-2xl text-4xl font-extrabold sm:h-24 sm:w-24"
               style={{ background: "var(--lavender)", color: "var(--lavender-ink)" }}
@@ -418,216 +446,258 @@ export default function ProfileDetailPage() {
                 )}
               </div>
             </div>
-          </div>
+          </header>
 
+          {/* The opening line of the sheet: your own words about them, set as
+              lead prose. No quotation mark — that device belongs to speech. */}
           {profile.bio && (
-            <div className="mt-6 border-t pt-5" style={{ borderColor: "var(--border)" }}>
-              <p className="t-body whitespace-pre-line" style={{ color: "var(--text-2)" }}>
-                {profile.bio}
-              </p>
-            </div>
+            <p className="t-body mt-6 whitespace-pre-line" style={{ color: "var(--text-2)" }}>
+              {profile.bio}
+            </p>
           )}
-        </motion.header>
 
-        {/* Sections */}
-        <div className="space-y-5">
+          {/* Closes the hero. It sits nearer what it ends than what it opens —
+              the first section's own top padding carries the rest. */}
+          <hr className="mt-6 border-0 border-t" style={{ borderColor: "var(--border)" }} />
+
           {hasOverview && (
-            <Section id="overview" title="Overview" icon={User} index={0}>
-              <dl className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-                <Fact label="Profession" value={profile.profession} />
-                <Fact label="Birthday" value={birthdayFull} icon={Calendar} />
-                <Fact
-                  label="Zodiac"
-                  value={profile.zodiac_sign}
-                  icon={() => (
-                    <ZodiacIcon
-                      sign={profile.zodiac_sign!}
-                      size={12}
-                      className="text-(--blue-ink)"
-                    />
-                  )}
-                />
-              </dl>
-              {tags.length > 0 && (
-                <div>
-                  <SubLabel>Tags</SubLabel>
-                  <ChipGroup items={tags} prefix="#" />
-                </div>
-              )}
-            </Section>
+            <SheetSection section={PROFILE_SECTIONS.overview} index={nextIndex()}>
+              <div className="space-y-6">
+                <dl className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+                  <Fact label="Profession" value={profile.profession} />
+                  <Fact label="Birthday" value={birthdayFull} icon={Calendar} />
+                  <Fact
+                    label="Zodiac"
+                    value={profile.zodiac_sign}
+                    icon={() => (
+                      <ZodiacIcon
+                        sign={profile.zodiac_sign!}
+                        size={12}
+                        className="text-(--blue-ink)"
+                      />
+                    )}
+                  />
+                </dl>
+                {tags.length > 0 && (
+                  <div>
+                    <SubLabel>Tags</SubLabel>
+                    {/* Lavender is the product's tag colour — it is what these
+                        chips already are on the profile grid and in the export.
+                        The detail page was the one place rendering them grey. */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {tags.map((tag, index) => (
+                        <span
+                          key={`${tag}-${index}`}
+                          className="sticker-tag max-w-full break-words px-3 py-1 text-xs font-semibold"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </SheetSection>
           )}
 
           {hasFavorites && (
-            <Section id="favorites" title="Favorites & Interests" icon={Star} index={1}>
-              {(hasText(profile.favorite_movie) ||
-                hasText(profile.favorite_book) ||
-                hasText(profile.music_preference)) && (
-                <dl className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-                  <Fact label="Favorite Movie" value={profile.favorite_movie} icon={Film} />
-                  <Fact label="Favorite Book" value={profile.favorite_book} icon={Book} />
-                  <Fact label="Music Preference" value={profile.music_preference} icon={Music} />
-                </dl>
-              )}
+            <SheetSection section={PROFILE_SECTIONS.interests} index={nextIndex()}>
+              <div className="space-y-6">
+                {(hasText(profile.favorite_movie) ||
+                  hasText(profile.favorite_book) ||
+                  hasText(profile.music_preference)) && (
+                  <dl className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
+                    <Fact label="Favorite Movie" value={profile.favorite_movie} icon={Film} />
+                    <Fact label="Favorite Book" value={profile.favorite_book} icon={Book} />
+                    <Fact label="Music Preference" value={profile.music_preference} icon={Music} />
+                  </dl>
+                )}
 
-              {associatedSong && (
-                <div className="paper-sunk flex items-center gap-4 rounded-2xl p-4">
+                {/* The one tinted well on the sheet: a song someone is bound to
+                    is the most keepsake-like fact a profile holds, and the peach
+                    wash is enough to say so. An earlier pass also pasted a strip
+                    of tape on its top edge, which read as a peach blob on a
+                    peach field and broke the hero's claim to the only tape on
+                    the page. Tape pins the sheet; it does not decorate what is
+                    already coloured. */}
+                {associatedSong && (
                   <div
-                    className="shrink-0 rounded-full p-2.5"
-                    style={{ background: "var(--surface-3)", color: "var(--text-2)" }}
+                    className="flex items-center gap-4 rounded-2xl border px-4 py-4"
+                    style={{
+                      background: "var(--peach-soft)",
+                      borderColor: "var(--peach-line)",
+                    }}
                   >
-                    <Music className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="t-label mb-0.5">Associated song</div>
-                    {hasText(associatedSong.name) && (
-                      <div
-                        className="break-words text-sm font-semibold"
-                        style={{ color: "var(--text-1)" }}
-                      >
-                        {associatedSong.name}
+                    <Music
+                      className="h-5 w-5 shrink-0"
+                      style={{ color: "var(--peach-ink)" }}
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0">
+                      <div className="t-label mb-0.5" style={{ color: "var(--peach-ink)" }}>
+                        Their song
                       </div>
-                    )}
-                    {hasText(associatedSong.artist) && (
-                      <div className="break-words text-xs" style={{ color: "var(--text-2)" }}>
-                        {associatedSong.artist}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {topSongs.length > 0 && (
-                <div>
-                  <SubLabel icon={ListMusic}>Top Songs</SubLabel>
-                  <div className="space-y-2">
-                    {topSongs.map((song, i) => (
-                      <div
-                        key={song.id ?? i}
-                        className="paper-sunk flex items-center gap-3 rounded-2xl p-3"
-                      >
+                      {hasText(associatedSong.name) && (
                         <div
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-                          style={{ background: "var(--surface-3)", color: "var(--text-2)" }}
+                          className="break-words text-sm font-semibold"
+                          style={{ color: "var(--text-1)" }}
                         >
-                          {i + 1}
+                          {associatedSong.name}
                         </div>
-                        <div className="min-w-0">
-                          {hasText(song.name) && (
-                            <div
-                              className="break-words text-sm font-semibold"
-                              style={{ color: "var(--text-1)" }}
-                            >
-                              {song.name}
-                            </div>
-                          )}
-                          {hasText(song.artist) && (
-                            <div className="break-words text-xs" style={{ color: "var(--text-2)" }}>
-                              {song.artist}
-                            </div>
-                          )}
+                      )}
+                      {hasText(associatedSong.artist) && (
+                        <div className="break-words text-xs" style={{ color: "var(--text-2)" }}>
+                          {associatedSong.artist}
                         </div>
-                      </div>
-                    ))}
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {movieGenres.length > 0 && (
-                <div>
-                  <SubLabel icon={Film}>Movie Genres</SubLabel>
-                  <ChipGroup items={movieGenres} />
-                </div>
-              )}
-              {bookGenres.length > 0 && (
-                <div>
-                  <SubLabel icon={Book}>Book Genres</SubLabel>
-                  <ChipGroup items={bookGenres} />
-                </div>
-              )}
-            </Section>
+                {topSongs.length > 0 && (
+                  <div>
+                    <SubLabel icon={ListMusic}>Top Songs</SubLabel>
+                    <ol className="space-y-3">
+                      {topSongs.map((song, i) => {
+                        const tint = RANK_TINTS[i % RANK_TINTS.length]!;
+                        return (
+                          <li key={song.id ?? i} className="flex items-center gap-3.5">
+                            <span
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border text-sm font-extrabold"
+                              style={{
+                                background: tint.wash,
+                                borderColor: tint.line,
+                                color: tint.ink,
+                              }}
+                            >
+                              {i + 1}
+                            </span>
+                            <div className="min-w-0">
+                              {hasText(song.name) && (
+                                <div
+                                  className="break-words text-sm font-semibold"
+                                  style={{ color: "var(--text-1)" }}
+                                >
+                                  {song.name}
+                                </div>
+                              )}
+                              {hasText(song.artist) && (
+                                <div
+                                  className="break-words text-xs"
+                                  style={{ color: "var(--text-2)" }}
+                                >
+                                  {song.artist}
+                                </div>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                )}
+
+                {movieGenres.length > 0 && (
+                  <div>
+                    <SubLabel icon={Film}>Movie Genres</SubLabel>
+                    <ChipGroup items={movieGenres} />
+                  </div>
+                )}
+                {bookGenres.length > 0 && (
+                  <div>
+                    <SubLabel icon={Book}>Book Genres</SubLabel>
+                    <ChipGroup items={bookGenres} />
+                  </div>
+                )}
+              </div>
+            </SheetSection>
           )}
 
           {hasLifestyle && (
-            <Section id="lifestyle" title="Lifestyle" icon={Coffee} index={2}>
-              {hangoutPlaces.length > 0 && (
-                <div>
-                  <SubLabel icon={MapPin}>Hangout Places</SubLabel>
-                  <ChipGroup items={hangoutPlaces} />
-                </div>
-              )}
-              {foodRestrictions.length > 0 && (
-                <div>
-                  <SubLabel icon={Utensils}>Food Restrictions</SubLabel>
-                  <ChipGroup items={foodRestrictions} />
-                </div>
-              )}
-              {politicalViews.length > 0 && (
-                <div>
-                  <SubLabel icon={Vote}>Political Views</SubLabel>
-                  <ChipGroup items={politicalViews} />
-                </div>
-              )}
-            </Section>
+            <SheetSection section={PROFILE_SECTIONS.lifestyle} index={nextIndex()}>
+              <div className="space-y-6">
+                {hangoutPlaces.length > 0 && (
+                  <div>
+                    <SubLabel icon={MapPin}>Hangout Places</SubLabel>
+                    <ChipGroup items={hangoutPlaces} />
+                  </div>
+                )}
+                {foodRestrictions.length > 0 && (
+                  <div>
+                    <SubLabel icon={Utensils}>Food Restrictions</SubLabel>
+                    <ChipGroup items={foodRestrictions} />
+                  </div>
+                )}
+                {politicalViews.length > 0 && (
+                  <div>
+                    <SubLabel icon={Vote}>Political Views</SubLabel>
+                    <ChipGroup items={politicalViews} />
+                  </div>
+                )}
+              </div>
+            </SheetSection>
           )}
 
           {hasDeep && (
-            <Section id="deep" title="Deep Dive" icon={MessageSquare} index={3}>
-              {profile.long_term_goals && (
-                <div>
-                  <SubLabel>Long-Term Goals</SubLabel>
-                  <p
-                    className="whitespace-pre-line text-sm leading-relaxed"
-                    style={{ color: "var(--text-2)" }}
-                  >
-                    {profile.long_term_goals}
-                  </p>
-                </div>
-              )}
-
-              {favoriteMemories.length > 0 && (
-                <div>
-                  <SubLabel icon={Heart}>Favorite Memories</SubLabel>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {favoriteMemories.map((m) => (
-                      <QuoteCard
-                        key={m.id ?? m.memory}
-                        quote={m.memory}
-                        onOpen={() => setSelectedMemory(m.memory)}
-                      />
-                    ))}
+            <SheetSection section={PROFILE_SECTIONS.deep} index={nextIndex()}>
+              <div className="space-y-6">
+                {profile.long_term_goals && (
+                  <div>
+                    <SubLabel>Long-Term Goals</SubLabel>
+                    <p
+                      className="whitespace-pre-line text-sm leading-relaxed"
+                      style={{ color: "var(--text-2)" }}
+                    >
+                      {profile.long_term_goals}
+                    </p>
                   </div>
-                </div>
-              )}
+                )}
 
-              {profile.notes && (
-                <div>
-                  <SubLabel>Additional Notes</SubLabel>
-                  <p
-                    className="whitespace-pre-line text-sm leading-relaxed"
-                    style={{ color: "var(--text-2)" }}
-                  >
-                    {profile.notes}
-                  </p>
-                </div>
-              )}
-
-              {quotes.length > 0 && (
-                <div>
-                  <SubLabel icon={Quote}>Their Quotes</SubLabel>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {quotes.map((q) => (
-                      <QuoteCard
-                        key={q.id ?? q.quote}
-                        quote={q.quote}
-                        onOpen={() => setSelectedQuote(q.quote)}
-                      />
-                    ))}
+                {favoriteMemories.length > 0 && (
+                  <div>
+                    <SubLabel icon={Heart}>Favorite Memories</SubLabel>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {favoriteMemories.map((m) => (
+                        <MemoryCard
+                          key={m.id ?? m.memory}
+                          memory={m.memory}
+                          onOpen={() => setSelectedMemory(m.memory)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </Section>
+                )}
+
+                {profile.notes && (
+                  <div>
+                    <SubLabel>Additional Notes</SubLabel>
+                    <p
+                      className="whitespace-pre-line text-sm leading-relaxed"
+                      style={{ color: "var(--text-2)" }}
+                    >
+                      {profile.notes}
+                    </p>
+                  </div>
+                )}
+
+                {quotes.length > 0 && (
+                  <div>
+                    <SubLabel icon={Quote}>Their Quotes</SubLabel>
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      {quotes.map((q) => (
+                        <QuoteBubble
+                          key={q.id ?? q.quote}
+                          quote={q.quote}
+                          onOpen={() => setSelectedQuote(q.quote)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </SheetSection>
           )}
-        </div>
+        </motion.article>
       </PageShell>
 
       <AnimatePresence>
@@ -637,7 +707,7 @@ export default function ProfileDetailPage() {
         {selectedMemory && (
           <QuoteModal
             quote={selectedMemory}
-            title="a memory worth keeping"
+            variant="memory"
             onClose={() => setSelectedMemory(null)}
           />
         )}

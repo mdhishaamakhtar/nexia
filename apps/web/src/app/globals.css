@@ -53,12 +53,31 @@
   --lavender: #c4b5fd;
   --blue: #93c5fd;
 
+  /* ── Accent washes ──
+     The pale opaque paper behind chips, badges, and section headers. These are
+     what keep a profile from reading as one long grey form: the export has
+     always had them, the screen did not. Opaque, not alpha, so a wash reads the
+     same on --surface and on --page. */
+  --peach-soft: #ffedd5;
+  --lavender-soft: #ede9fe;
+  --blue-soft: #dbeafe;
+
+  /* Hairlines for the washes above — the accent's own ink at low alpha. */
+  --peach-line: rgba(124, 45, 18, 0.24);
+  --lavender-line: rgba(91, 33, 182, 0.24);
+  --blue-line: rgba(30, 64, 175, 0.24);
+
   /* ── Accent inks ── foreground-safe against paper (all ≥4.5:1) */
   --peach-ink: #7c2d12;
   --lavender-ink: #5b21b6;
   --blue-ink: #3b6fd4;
   --green-ink: #15803d;
   --red-ink: #c81e1e;
+
+  /* --blue-ink is tuned for white paper, where it measures 4.8:1. On
+     --blue-soft it drops to 3.8:1 and fails, so text sitting on the blue wash
+     uses this deeper blue instead (7.0:1). The two are not interchangeable. */
+  --blue-ink-deep: #1e40af;
 
   /* ── State tints ── */
   --red-bg: rgba(200, 30, 30, 0.07);
@@ -70,8 +89,24 @@
   /* ── Focus ── one visible ring, everywhere */
   --focus: #3b6fd4;
 
-  /* ── Overlay ── a plain warm scrim; modals do not blur the page */
-  --overlay: rgba(41, 37, 36, 0.42);
+  /* ── Overlay ── a plain warm scrim; modals do not blur the page.
+     At 0.42 the scrim composited to a mid tone (#a59f99) that was too close to
+     the paper it was meant to be pushing back, so dialogs never read as lifted.
+     0.55 dims the page properly and gives the card something to sit against. */
+  --overlay: rgba(41, 37, 36, 0.55);
+
+  /* ── Lines on the scrim ──
+     A hairline is only visible when it is darker than BOTH surfaces it divides.
+     On the page that is automatic: a card's line is darker than its own fill
+     and darker than the cream behind it. On the overlay it is not — the scrim
+     composites to a mid tone, so a normal 1px card line ends up *lighter* than
+     the scrim and dissolves into the card's silhouette instead of drawing an
+     edge. That is why a dialog reusing a card's border looks like it has none.
+
+     Dialogs therefore carry a heavier, darker line than the same surface would
+     on the page: 2px, and an ink strong enough to read against a mid grey. */
+  --line-float: rgba(120, 98, 74, 0.55);
+  --lavender-line-float: rgba(91, 33, 182, 0.55);
 
   /* Nexia Intel mark — deeper blue so the white glyph clears 3:1 */
   --nexia-mark: #5b8def;
@@ -202,6 +237,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-height: calc(100dvh - var(--navbar-h));
 }
 
+/* ── App-screen lock ──
+   Chat is the one screen that owns the viewport: the transcript is meant to be
+   the only thing that scrolls. Sizing it to `100dvh` is not enough on a phone.
+   The document still has a scroll container, so a flick that runs past the top
+   or bottom of the transcript chains into the page and drags the browser's own
+   URL bar — two scrolls fighting over one gesture. Killing the document
+   scroller removes the competition outright (and, as a side effect, holds
+   `dvh` still, since the toolbar has nothing left to collapse for).
+
+   Applied by the chat page while it is mounted; every other page scrolls
+   normally. `overscroll-behavior` on the inner scroller stops the chain at the
+   transcript's own edges. */
+html.app-screen,
+html.app-screen body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    MATERIALS
    ═══════════════════════════════════════════════════════════════════ */
@@ -290,7 +344,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: 999px;
 }
 
-/* ── Washi tape ── the one decorative motif; centred and subordinate */
+/* ── Washi tape ──
+   One material, two jobs, and they must share a silhouette or the second one
+   reads as a stray coloured rectangle rather than tape.
+
+   `.washi-tape` PINS: rotated, pasted across the top edge of a surface to hold
+   it down. One per surface.
+
+   `.tape-mark` MARKS: the same torn-end strip laid flat in a heading row to
+   open a section — the on-screen twin of the strip the PDF export draws before
+   every heading. It sits in the text flow instead of over an edge, so it is a
+   flag, not a fastening, and a page may carry one per section.
+
+   Both are decoration; both are aria-hidden at every call site. */
+.washi-tape,
+.tape-mark {
+  background: var(--lavender);
+  clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
+  pointer-events: none;
+}
+
 .washi-tape {
   position: absolute;
   top: -8px;
@@ -298,11 +371,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   width: 60px;
   height: 20px;
   transform: translateX(-50%) rotate(-2deg);
-  background: var(--lavender);
   opacity: 0.7;
-  clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
-  pointer-events: none;
   z-index: 20;
+}
+
+/* Full strength, unlike the pinned strip: at 26px wide a 70% wash of peach on
+   cream is barely a colour at all. */
+.tape-mark {
+  display: block;
+  flex-shrink: 0;
+  width: 26px;
+  height: 10px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

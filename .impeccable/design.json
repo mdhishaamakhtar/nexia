@@ -1,82 +1,137 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-29T15:26:45Z",
+  "generatedAt": "2026-08-05T00:00:00Z",
   "title": "Design System: Nexia",
   "extensions": {
     "colorMeta": {
-      "warm-page": {
+      "page": {
         "role": "neutral",
         "displayName": "Warm Page Cream",
         "canonical": "#fff7ed",
         "tonalRamp": [
-          "oklch(16% 0.016 78)",
-          "oklch(27% 0.016 78)",
-          "oklch(39% 0.016 78)",
-          "oklch(52% 0.016 78)",
-          "oklch(66% 0.016 78)",
-          "oklch(80% 0.016 78)",
-          "oklch(91% 0.016 78)",
-          "oklch(98.5% 0.016 78)"
+          "oklch(20% 0.02 70)",
+          "oklch(32% 0.03 70)",
+          "oklch(45% 0.04 70)",
+          "oklch(58% 0.05 70)",
+          "oklch(70% 0.05 70)",
+          "oklch(82% 0.04 70)",
+          "oklch(91% 0.03 70)",
+          "oklch(97% 0.02 70)"
         ]
       },
-      "paper": {
+      "surface": {
         "role": "neutral",
         "displayName": "Clean Paper",
         "canonical": "#ffffff",
         "tonalRamp": [
-          "oklch(16% 0.006 78)",
-          "oklch(28% 0.006 78)",
-          "oklch(42% 0.006 78)",
-          "oklch(56% 0.006 78)",
-          "oklch(70% 0.006 78)",
-          "oklch(84% 0.006 78)",
-          "oklch(94% 0.006 78)",
-          "oklch(99% 0.006 78)"
+          "oklch(18% 0 0)",
+          "oklch(30% 0 0)",
+          "oklch(43% 0 0)",
+          "oklch(56% 0 0)",
+          "oklch(69% 0 0)",
+          "oklch(81% 0 0)",
+          "oklch(92% 0 0)",
+          "oklch(100% 0 0)"
         ]
       },
-      "glass": {
+      "surface-2": {
         "role": "neutral",
-        "displayName": "Translucent Paper",
-        "canonical": "#ffffffb8",
+        "displayName": "Sunk Paper",
+        "canonical": "#fbf7f1",
         "tonalRamp": [
-          "oklch(18% 0.006 78 / 0.72)",
-          "oklch(30% 0.006 78 / 0.72)",
-          "oklch(43% 0.006 78 / 0.72)",
-          "oklch(57% 0.006 78 / 0.72)",
-          "oklch(71% 0.006 78 / 0.72)",
-          "oklch(84% 0.006 78 / 0.72)",
-          "oklch(94% 0.006 78 / 0.72)",
-          "oklch(99% 0.006 78 / 0.72)"
+          "oklch(19% 0.01 70)",
+          "oklch(31% 0.012 70)",
+          "oklch(44% 0.014 70)",
+          "oklch(57% 0.016 70)",
+          "oklch(70% 0.016 70)",
+          "oklch(82% 0.014 70)",
+          "oklch(91% 0.012 70)",
+          "oklch(97.5% 0.008 70)"
         ]
       },
-      "text-primary": {
+      "surface-3": {
         "role": "neutral",
-        "displayName": "Graphite Ink",
-        "canonical": "#1f2937",
+        "displayName": "Pressed Paper",
+        "canonical": "#f4ede3",
         "tonalRamp": [
-          "oklch(18% 0.028 260)",
-          "oklch(25% 0.028 260)",
-          "oklch(34% 0.028 260)",
-          "oklch(46% 0.028 260)",
-          "oklch(58% 0.028 260)",
-          "oklch(72% 0.028 260)",
-          "oklch(86% 0.028 260)",
-          "oklch(95% 0.028 260)"
+          "oklch(19% 0.014 70)",
+          "oklch(31% 0.018 70)",
+          "oklch(44% 0.022 70)",
+          "oklch(57% 0.024 70)",
+          "oklch(70% 0.024 70)",
+          "oklch(82% 0.022 70)",
+          "oklch(90% 0.018 70)",
+          "oklch(95% 0.014 70)"
         ]
+      },
+      "text-1": {
+        "role": "neutral",
+        "displayName": "Primary Ink",
+        "canonical": "#292524",
+        "tonalRamp": [
+          "oklch(15% 0.005 55)",
+          "oklch(24% 0.006 55)",
+          "oklch(36% 0.007 55)",
+          "oklch(48% 0.008 55)",
+          "oklch(60% 0.008 55)",
+          "oklch(73% 0.007 55)",
+          "oklch(85% 0.005 55)",
+          "oklch(95% 0.003 55)"
+        ]
+      },
+      "text-2": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "canonical": "#57534e",
+        "tonalRamp": [
+          "oklch(16% 0.006 60)",
+          "oklch(27% 0.008 60)",
+          "oklch(39% 0.010 60)",
+          "oklch(51% 0.011 60)",
+          "oklch(63% 0.010 60)",
+          "oklch(75% 0.008 60)",
+          "oklch(86% 0.006 60)",
+          "oklch(95% 0.004 60)"
+        ]
+      },
+      "text-3": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#6f6660",
+        "tonalRamp": [
+          "oklch(17% 0.007 62)",
+          "oklch(28% 0.009 62)",
+          "oklch(40% 0.011 62)",
+          "oklch(52% 0.012 62)",
+          "oklch(64% 0.011 62)",
+          "oklch(76% 0.009 62)",
+          "oklch(87% 0.006 62)",
+          "oklch(95% 0.004 62)"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Warm Hairline",
+        "canonical": "rgba(120, 98, 74, 0.24)"
+      },
+      "border-mid": {
+        "role": "neutral",
+        "displayName": "Warm Hairline (Strong)",
+        "canonical": "rgba(120, 98, 74, 0.38)"
       },
       "peach": {
         "role": "primary",
         "displayName": "Pressed Peach",
         "canonical": "#fdba74",
         "tonalRamp": [
-          "oklch(18% 0.12 61)",
-          "oklch(28% 0.12 61)",
-          "oklch(40% 0.12 61)",
-          "oklch(53% 0.12 61)",
-          "oklch(66% 0.12 61)",
-          "oklch(78% 0.12 61)",
-          "oklch(88% 0.08 61)",
-          "oklch(96% 0.04 61)"
+          "oklch(25% 0.06 65)",
+          "oklch(38% 0.09 65)",
+          "oklch(50% 0.12 65)",
+          "oklch(61% 0.14 65)",
+          "oklch(71% 0.13 65)",
+          "oklch(80% 0.11 65)",
+          "oklch(89% 0.07 65)",
+          "oklch(96% 0.03 65)"
         ]
       },
       "lavender": {
@@ -84,111 +139,175 @@
         "displayName": "Keepsake Lavender",
         "canonical": "#c4b5fd",
         "tonalRamp": [
-          "oklch(18% 0.08 300)",
-          "oklch(28% 0.08 300)",
-          "oklch(40% 0.08 300)",
-          "oklch(53% 0.08 300)",
-          "oklch(66% 0.08 300)",
-          "oklch(78% 0.08 300)",
-          "oklch(88% 0.05 300)",
-          "oklch(96% 0.026 300)"
+          "oklch(25% 0.09 295)",
+          "oklch(37% 0.13 295)",
+          "oklch(48% 0.17 295)",
+          "oklch(59% 0.16 295)",
+          "oklch(70% 0.13 295)",
+          "oklch(80% 0.10 295)",
+          "oklch(89% 0.06 295)",
+          "oklch(96% 0.03 295)"
         ]
       },
       "blue": {
-        "role": "secondary",
+        "role": "tertiary",
         "displayName": "Lookup Blue",
         "canonical": "#93c5fd",
         "tonalRamp": [
-          "oklch(18% 0.08 240)",
-          "oklch(28% 0.08 240)",
-          "oklch(40% 0.08 240)",
-          "oklch(53% 0.08 240)",
-          "oklch(66% 0.08 240)",
-          "oklch(78% 0.08 240)",
-          "oklch(88% 0.05 240)",
-          "oklch(96% 0.026 240)"
+          "oklch(25% 0.08 245)",
+          "oklch(37% 0.11 245)",
+          "oklch(48% 0.14 245)",
+          "oklch(59% 0.14 245)",
+          "oklch(70% 0.12 245)",
+          "oklch(80% 0.09 245)",
+          "oklch(89% 0.05 245)",
+          "oklch(96% 0.02 245)"
         ]
       },
-      "purple": {
-        "role": "tertiary",
-        "displayName": "Sticker Purple",
-        "canonical": "#5b21b6",
-        "tonalRamp": [
-          "oklch(18% 0.12 300)",
-          "oklch(28% 0.12 300)",
-          "oklch(40% 0.12 300)",
-          "oklch(53% 0.12 300)",
-          "oklch(66% 0.1 300)",
-          "oklch(78% 0.08 300)",
-          "oklch(88% 0.05 300)",
-          "oklch(96% 0.026 300)"
-        ]
+      "peach-soft": {
+        "role": "primary",
+        "displayName": "Peach Wash",
+        "canonical": "#ffedd5"
       },
-      "red": {
+      "lavender-soft": {
+        "role": "secondary",
+        "displayName": "Lavender Wash",
+        "canonical": "#ede9fe"
+      },
+      "blue-soft": {
         "role": "tertiary",
-        "displayName": "Soft Red",
-        "canonical": "#ff3b30",
-        "tonalRamp": [
-          "oklch(18% 0.12 30)",
-          "oklch(28% 0.12 30)",
-          "oklch(40% 0.12 30)",
-          "oklch(53% 0.12 30)",
-          "oklch(66% 0.11 30)",
-          "oklch(78% 0.08 30)",
-          "oklch(88% 0.05 30)",
-          "oklch(96% 0.026 30)"
-        ]
+        "displayName": "Blue Wash",
+        "canonical": "#dbeafe"
+      },
+      "peach-line": {
+        "role": "primary",
+        "displayName": "Peach Wash Hairline",
+        "canonical": "rgba(124, 45, 18, 0.24)"
+      },
+      "lavender-line": {
+        "role": "secondary",
+        "displayName": "Lavender Wash Hairline",
+        "canonical": "rgba(91, 33, 182, 0.24)"
+      },
+      "blue-line": {
+        "role": "tertiary",
+        "displayName": "Blue Wash Hairline",
+        "canonical": "rgba(30, 64, 175, 0.24)"
+      },
+      "peach-ink": {
+        "role": "primary",
+        "displayName": "Peach Ink",
+        "canonical": "#7c2d12"
+      },
+      "lavender-ink": {
+        "role": "secondary",
+        "displayName": "Lavender Ink",
+        "canonical": "#5b21b6"
+      },
+      "blue-ink": {
+        "role": "tertiary",
+        "displayName": "Lookup Blue Ink",
+        "canonical": "#3b6fd4"
+      },
+      "blue-ink-deep": {
+        "role": "tertiary",
+        "displayName": "Deep Blue Ink (on wash)",
+        "canonical": "#1e40af"
+      },
+      "green-ink": {
+        "role": "neutral",
+        "displayName": "Success Ink",
+        "canonical": "#15803d"
+      },
+      "red-ink": {
+        "role": "neutral",
+        "displayName": "Destructive Ink",
+        "canonical": "#c81e1e"
+      },
+      "focus": {
+        "role": "tertiary",
+        "displayName": "Focus Blue",
+        "canonical": "#3b6fd4"
+      },
+      "nexia-mark": {
+        "role": "tertiary",
+        "displayName": "Nexia Intel Mark",
+        "canonical": "#5b8def"
+      },
+      "overlay": {
+        "role": "neutral",
+        "displayName": "Warm Scrim",
+        "canonical": "rgba(41, 37, 36, 0.55)"
+      },
+      "line-float": {
+        "role": "neutral",
+        "displayName": "Float Line",
+        "canonical": "rgba(120, 98, 74, 0.55)"
+      },
+      "lavender-line-float": {
+        "role": "secondary",
+        "displayName": "Lavender Float Line",
+        "canonical": "rgba(91, 33, 182, 0.55)"
       }
     },
     "typographyMeta": {
       "display": {
-        "displayName": "Slambook Display",
-        "purpose": "Major page titles and first-screen emotional anchors."
+        "displayName": "Display",
+        "purpose": "Landing hero only. Fluid: clamp(2.5rem, 1.6rem + 4vw, 4.25rem) — the clamp minimum is part of this step, not a separate one."
       },
-      "headline": {
-        "displayName": "Profile Headline",
-        "purpose": "Profile names, large authenticated headings, and modal emphasis."
+      "pageTitle": {
+        "displayName": "Page Title",
+        "purpose": "Every authenticated page h1, and the hanging quotation mark on a quote bubble. Fluid: clamp(1.75rem, 1.3rem + 1.8vw, 2.5rem)."
       },
-      "title": {
-        "displayName": "Keepsake Title",
-        "purpose": "Modal titles, empty states, export cards, and section-leading copy."
+      "sectionTitle": {
+        "displayName": "Section Title",
+        "purpose": "Profile sheet sections, modal titles, empty-state headings."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Form fields and the chat composer. 16px is a floor, not a preference — smaller values make iOS Safari zoom the viewport on focus."
       },
       "body": {
-        "displayName": "Journal Body",
-        "purpose": "App copy, fields, profile details, buttons, and chat content."
+        "displayName": "Body",
+        "purpose": "Profile prose, chat text, card names."
+      },
+      "bodySm": {
+        "displayName": "Body Small",
+        "purpose": "Buttons and secondary running text."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Compact buttons and status text."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Captions and chips."
       },
       "label": {
-        "displayName": "Sticker Label",
-        "purpose": "Uppercase metadata, field labels, section captions, and chip text."
+        "displayName": "Label",
+        "purpose": "The only all-caps metadata style in the product. Every section header and field label. 11px is the floor for tracked uppercase text."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "The sole non-Nunito face, used only for inline code and code fences inside chat markdown. Must not spread to labels, data, or anything styled to look technical."
       }
     },
-    "shadows": [
-      {
-        "name": "glass-specular",
-        "value": "inset 0 1px 0 var(--specular)",
-        "purpose": "Subtle paper sheen on glass panels and cards."
-      },
-      {
-        "name": "paper-scrap-offset",
-        "value": "2px 2px 0px var(--border-mid)",
-        "purpose": "Deliberate scrapbook paper offset, not general elevation."
-      }
-    ],
+    "shadows": [],
     "motion": [
       {
-        "name": "soft-spring-enter",
-        "value": "type: spring; stiffness: 140; damping: 22",
-        "purpose": "Profile pages, sections, and primary authenticated surfaces."
+        "name": "ease-out",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "The product's only easing curve. Entrances fade and rise a few pixels; nothing overshoots. The old back-out curve cubic-bezier(0.175, 0.885, 0.32, 1.275) was removed."
       },
       {
-        "name": "button-tap",
-        "value": "hover scale 1.015; tap scale 0.985; stiffness 800; damping 20",
-        "purpose": "Button feedback without slowing interaction."
+        "name": "dur-fast",
+        "value": "140ms",
+        "purpose": "Immediate state feedback such as hover fills."
       },
       {
-        "name": "scrapbook-card-hover",
-        "value": "hover y -6, rotate 0, scale 1.02; stiffness 400; damping 20",
-        "purpose": "Profile cards settle into place on hover."
+        "name": "dur",
+        "value": "220ms",
+        "purpose": "Default transition duration for colour and border changes."
       }
     ],
     "breakpoints": [
@@ -207,131 +326,198 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Warm primary action with peach paper color and soft motion.",
-      "html": "<button class=\"ds-button-primary\">Save Profile</button>",
-      "css": ".ds-button-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--lavender-border, #7c3aed33); border-radius: 12px; background: var(--peach, #fdba74); color: var(--peach-text, #7c2d12); padding: 10px 20px; font: 600 14px/1.2 Nunito, system-ui, sans-serif; cursor: pointer; transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease; } .ds-button-primary:hover { transform: scale(1.015); } .ds-button-primary:active { transform: scale(0.985); } .ds-button-primary:focus-visible { outline: 2px solid var(--lavender, #c4b5fd); outline-offset: 2px; }"
+      "description": "The app's only call to action. Peach fill with peach ink at 8.6:1; the tint is never the text colour.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 12px; border: 1px solid transparent; font-family: Nunito, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.22,1,0.36,1), color 150ms cubic-bezier(0.22,1,0.36,1), filter 150ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-primary { background: var(--peach, #fdba74); color: var(--peach-ink, #7c2d12); border-color: var(--lavender-border, rgba(91,33,182,0.22)); } .ds-btn-primary:hover { filter: brightness(0.97); } .ds-btn-primary:focus-visible { outline: 2px solid var(--focus, #3b6fd4); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }"
     },
     {
       "name": "Secondary Button",
       "kind": "button",
       "refersTo": "button-secondary",
-      "description": "Quiet translucent control for secondary profile actions.",
-      "html": "<button class=\"ds-button-secondary\">Edit</button>",
-      "css": ".ds-button-secondary { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border, #94a3b847); border-radius: 12px; background: var(--fill, #ffffff9e); color: var(--text-2, #374151); padding: 10px 20px; font: 600 14px/1.2 Nunito, system-ui, sans-serif; cursor: pointer; transition: background 180ms ease, color 180ms ease, transform 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-secondary:hover { background: var(--fill-hover, #ffffffe6); color: var(--text-1, #1f2937); transform: scale(1.015); } .ds-button-secondary:focus-visible { outline: 2px solid var(--lavender, #c4b5fd); outline-offset: 2px; }"
+      "description": "Clean paper with a warm hairline. Used for Edit, Cancel, and icon-only actions.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--border, rgba(120,98,74,0.24)); background: var(--surface, #fff); color: var(--text-2, #57534e); font-family: Nunito, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.22,1,0.36,1), color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-secondary:hover { background: var(--surface-2, #fbf7f1); color: var(--text-1, #292524); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--focus, #3b6fd4); outline-offset: 2px; }"
     },
     {
       "name": "Destructive Button",
       "kind": "button",
       "refersTo": "button-destructive",
-      "description": "Soft red destructive action that warns without breaking the scrapbook tone.",
-      "html": "<button class=\"ds-button-destructive\">Delete</button>",
-      "css": ".ds-button-destructive { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--red-border, #ff3b302e); border-radius: 12px; background: var(--red-bg, #ff3b3014); color: var(--red, #ff3b30); padding: 10px 20px; font: 600 14px/1.2 Nunito, system-ui, sans-serif; cursor: pointer; transition: background 180ms ease, transform 180ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-destructive:hover { background: var(--red-bg-hover, #ff3b3026); transform: scale(1.015); } .ds-button-destructive:focus-visible { outline: 2px solid var(--red, #ff3b30); outline-offset: 2px; }"
+      "description": "A red wash rather than a red fill. Destructive actions announce themselves without shouting.",
+      "html": "<button class=\"ds-btn-destructive\" aria-label=\"Delete profile\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/></svg></button>",
+      "css": ".ds-btn-destructive { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--red-border, rgba(200,30,30,0.22)); background: var(--red-bg, rgba(200,30,30,0.07)); color: var(--red-ink, #c81e1e); font-family: Nunito, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-destructive:hover { background: var(--red-bg-hover, rgba(200,30,30,0.13)); } .ds-btn-destructive:focus-visible { outline: 2px solid var(--focus, #3b6fd4); outline-offset: 2px; }"
     },
     {
-      "name": "Glass Input",
+      "name": "Text Field",
       "kind": "input",
-      "refersTo": "input-text",
-      "description": "Soft translucent field used for forms, search, and chat input.",
-      "html": "<label class=\"ds-input-label\" for=\"ds-input\">Name</label><input id=\"ds-input\" class=\"ds-input\" placeholder=\"search by name...\" />",
-      "css": ".ds-input-label { display: block; margin: 0 0 8px 2px; color: var(--text-3, #6b7280); font: 700 11px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-input { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--border, #94a3b847); border-radius: 12px; background: var(--input-bg, #ffffffbf); color: var(--text-1, #1f2937); padding: 12px 16px; font: 500 14px/1.5 Nunito, system-ui, sans-serif; backdrop-filter: blur(12px); transition: border-color 200ms ease, background 200ms ease; } .ds-input::placeholder { color: var(--text-3, #6b7280); } .ds-input:focus { border-color: var(--lavender, #c4b5fd); background: var(--glass, #ffffffb8); outline: none; }"
+      "refersTo": "field",
+      "description": "White, never tinted — a field should look like a hole punched in the paper, not a slightly different shade of it. Definition comes from the stronger hairline. The focus ring sits flush at -1px inset so the edge recolours instead of gaining a halo.",
+      "html": "<input class=\"ds-field\" type=\"text\" placeholder=\"Type a tag and press Enter\" />",
+      "css": ".ds-field { display: block; width: 100%; min-height: 44px; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-mid, rgba(120,98,74,0.38)); background: var(--surface, #fff); color: var(--text-1, #292524); font-family: Nunito, system-ui, sans-serif; font-size: 1rem; font-weight: 500; transition: border-color 220ms cubic-bezier(0.22,1,0.36,1); } .ds-field::placeholder { color: var(--text-3, #6f6660); } .ds-field:hover:not(:disabled):not(:focus) { border-color: var(--text-3, #6f6660); } .ds-field:focus { border-color: var(--focus, #3b6fd4); outline: 2px solid var(--focus, #3b6fd4); outline-offset: -1px; } .ds-field:disabled { opacity: 0.5; cursor: not-allowed; }"
     },
     {
       "name": "Sticker Chip",
       "kind": "chip",
       "refersTo": "sticker-chip",
-      "description": "Small metadata sticker for relationships, tags, and profile details.",
-      "html": "<span class=\"ds-sticker-chip\">Friend</span>",
-      "css": ".ds-sticker-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-mid, #94a3b873); border-radius: 999px; background: var(--fill-hover, #ffffffe6); color: var(--text-2, #374151); padding: 4px 12px; font: 700 11px/1.2 Nunito, system-ui, sans-serif; } .ds-sticker-chip:hover { border-color: var(--border-mid, #94a3b873); color: var(--text-1, #1f2937); }"
+      "description": "Neutral paper metadata: genres, places, food restrictions, political views. The bulk of a profile is lists, and keeping them neutral is what lets the coloured things mean something.",
+      "html": "<span class=\"ds-chip\">Slow burn thriller</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border, rgba(120,98,74,0.24)); background: var(--surface-2, #fbf7f1); color: var(--text-2, #57534e); font-family: Nunito, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; }"
+    },
+    {
+      "name": "Sticker Tag",
+      "kind": "chip",
+      "refersTo": "sticker-tag",
+      "description": "Personality tags, always lavender. The same colour on the profile grid, the detail sheet, the edit form, and the PDF export — a tag is lavender because it is a tag, not because of where it renders.",
+      "html": "<span class=\"ds-tag\">#knows me best</span>",
+      "css": ".ds-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--lavender-border, rgba(91,33,182,0.22)); background: var(--lavender-bg, rgba(196,181,253,0.22)); color: var(--lavender-ink, #5b21b6); font-family: Nunito, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; }"
     },
     {
       "name": "Profile Card",
       "kind": "card",
-      "refersTo": "glass-card",
-      "description": "Browse card for a person in the slambook.",
-      "html": "<article class=\"ds-profile-card\"><div class=\"ds-card-tape\"></div><div class=\"ds-avatar\">M</div><div><h3>Maya Patel</h3><p>Friend</p></div><span class=\"ds-tag\">#artist</span></article>",
-      "css": ".ds-profile-card { position: relative; display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: center; max-width: 320px; border: 1px solid var(--border, #94a3b847); border-radius: 16px; background: var(--glass, #ffffffb8); color: var(--text-1, #1f2937); padding: 20px; box-shadow: inset 0 1px 0 var(--specular, #fffffff2); backdrop-filter: blur(20px) saturate(140%); transform: rotate(-0.5deg); transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-profile-card:hover { transform: translateY(-6px) rotate(0deg) scale(1.02); } .ds-card-tape { position: absolute; top: -4px; left: 50%; width: 40px; height: 20px; transform: translateX(-50%) rotate(-2deg); background: var(--lavender, #c4b5fd); opacity: 0; clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%); transition: opacity 180ms ease; } .ds-profile-card:hover .ds-card-tape { opacity: 0.7; } .ds-avatar { display: flex; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 12px; background: var(--lavender, #c4b5fd); color: var(--text-1, #1f2937); font: 800 14px/1 Nunito, system-ui, sans-serif; transform: rotate(-3deg); } .ds-profile-card h3 { margin: 0; font: 700 15px/1.2 Nunito, system-ui, sans-serif; } .ds-profile-card p { margin: 3px 0 0; color: var(--text-2, #374151); font: 600 11px/1.2 Nunito, system-ui, sans-serif; } .ds-tag { grid-column: 1 / -1; width: fit-content; border: 1px solid var(--purple-border, #7c3aed3d); border-radius: 999px; background: var(--purple-bg, #c4b5fd3d); color: var(--purple, #5b21b6); padding: 3px 8px; font: 700 11px/1.2 Nunito, system-ui, sans-serif; }"
+      "refersTo": "paper",
+      "description": "One person in the browse grid. Lifts on hover by translating and darkening its border — never by a shadow. Its washi tape is keyed to the profile id, so someone keeps the same tape however the list is filtered.",
+      "html": "<article class=\"ds-card\"><span class=\"ds-card-tape\"></span><div class=\"ds-card-head\"><span class=\"ds-card-avatar\">S</span><h3 class=\"ds-card-name\">Ser <span class=\"ds-card-pronouns\">he/they</span></h3></div><div class=\"ds-card-tags\"><span class=\"ds-card-tag\">#Nerdy</span><span class=\"ds-card-tag\">#Loyal</span></div></article>",
+      "css": ".ds-card { position: relative; display: flex; flex-direction: column; padding: 20px; border-radius: 16px; border: 1px solid var(--border, rgba(120,98,74,0.24)); background: var(--surface, #fff); font-family: Nunito, system-ui, sans-serif; transition: border-color 200ms cubic-bezier(0.22,1,0.36,1), transform 200ms cubic-bezier(0.22,1,0.36,1); } .ds-card:hover { border-color: var(--border-mid, rgba(120,98,74,0.38)); transform: translateY(-6px); } .ds-card-tape { position: absolute; top: -5px; left: 50%; width: 38px; height: 20px; background: var(--lavender, #c4b5fd); opacity: 0; transform: translateX(-50%) rotate(1.8deg); clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%); transition: opacity 200ms cubic-bezier(0.22,1,0.36,1); } .ds-card:hover .ds-card-tape { opacity: 0.7; } .ds-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; } .ds-card-avatar { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: var(--blue, #93c5fd); color: var(--blue-ink, #3b6fd4); font-size: 0.875rem; font-weight: 800; transform: rotate(-3deg); } .ds-card-name { margin: 0; font-size: 0.9375rem; font-weight: 700; color: var(--text-1, #292524); } .ds-card-pronouns { margin-left: 6px; font-size: 0.6875rem; font-weight: 600; color: var(--text-3, #6f6660); text-transform: lowercase; } .ds-card-tags { display: flex; flex-wrap: wrap; gap: 6px; } .ds-card-tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--lavender-border, rgba(91,33,182,0.22)); background: var(--lavender-bg, rgba(196,181,253,0.22)); color: var(--lavender-ink, #5b21b6); font-size: 0.6875rem; font-weight: 600; }"
+    },
+    {
+      "name": "Sheet Section Heading",
+      "kind": "custom",
+      "refersTo": "paper",
+      "description": "Signature component. A profile is one sheet of paper, and this is how it is divided: a strip of tape, a real title, and a hairline running out to the sheet's edge. No card, no icon tile. The tape colour belongs to the section, so reading a profile and editing one stay recognisably the same document.",
+      "html": "<div class=\"ds-sheet\"><header class=\"ds-section-head\"><span class=\"ds-tape-mark\"></span><h2 class=\"ds-section-title\">Favorites &amp; interests</h2><span class=\"ds-section-rule\"></span></header><p class=\"ds-section-body\">Sections are divided by a heading and a hairline, never by a new card.</p></div>",
+      "css": ".ds-sheet { padding: 28px 36px; border-radius: 28px; border: 1px solid var(--border, rgba(120,98,74,0.24)); background: var(--surface, #fff); font-family: Nunito, system-ui, sans-serif; } .ds-section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; } .ds-tape-mark { display: block; flex-shrink: 0; width: 26px; height: 10px; background: var(--peach, #fdba74); clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%); } .ds-section-title { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; color: var(--text-1, #292524); } .ds-section-rule { flex: 1; height: 1px; background: var(--border, rgba(120,98,74,0.24)); } .ds-section-body { margin: 0; font-size: 0.9375rem; font-weight: 500; line-height: 1.6; color: var(--text-2, #57534e); }"
+    },
+    {
+      "name": "Quote Bubble",
+      "kind": "custom",
+      "refersTo": "paper",
+      "description": "Signature component. Reserved for things the person actually said — the hanging quotation mark is the one device meaning 'their words, not yours', which is why memories, notes, and the bio are plain wells and prose instead. Its expanded modal is the same fill and radius, but takes a 2px float line, because a 1px card hairline is invisible against the scrim.",
+      "html": "<button class=\"ds-quote\"><span class=\"ds-quote-mark\" aria-hidden=\"true\">&ldquo;</span><span>I am not lost. I am taking the scenic route and you are being unsupportive.</span></button>",
+      "css": ".ds-quote { position: relative; display: flex; flex-direction: column; width: 100%; padding: 16px 16px 16px 48px; border-radius: 16px; border: 1px solid var(--lavender-line, rgba(91,33,182,0.24)); background: var(--lavender-soft, #ede9fe); color: var(--text-2, #57534e); font-family: Nunito, system-ui, sans-serif; font-size: 0.875rem; line-height: 1.625; text-align: left; cursor: pointer; transition: border-color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-quote:hover { border-color: var(--lavender, #c4b5fd); } .ds-quote:focus-visible { outline: 2px solid var(--focus, #3b6fd4); outline-offset: 2px; } .ds-quote-mark { position: absolute; left: 14px; top: 8px; font-size: 2.5rem; font-weight: 800; line-height: 1; color: var(--lavender-ink, #5b21b6); opacity: 0.4; pointer-events: none; user-select: none; }"
     },
     {
       "name": "Top Navigation",
       "kind": "nav",
-      "refersTo": "glass-card",
-      "description": "Compact sticky navigation that keeps the app calm and task-first.",
-      "html": "<nav class=\"ds-nav\"><a class=\"ds-brand\" href=\"#\">Nexia</a><div><a href=\"#\">Ask AI</a><button>Sign Out</button></div></nav>",
-      "css": ".ds-nav { display: flex; height: 48px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border, #94a3b847); background: var(--glass, #ffffffb8); padding: 0 24px; backdrop-filter: blur(20px) saturate(140%); box-shadow: inset 0 1px 0 var(--specular, #fffffff2); } .ds-nav a, .ds-nav button { border: 0; border-radius: 12px; background: transparent; color: var(--text-2, #374151); padding: 6px 12px; font: 600 14px/1.2 Nunito, system-ui, sans-serif; text-decoration: none; cursor: pointer; transition: background 150ms ease, color 150ms ease; } .ds-nav a:hover, .ds-nav button:hover { background: var(--fill, #ffffff9e); color: var(--text-1, #1f2937); } .ds-nav .ds-brand { color: var(--text-1, #1f2937); font-size: 15px; } .ds-nav div { display: flex; gap: 4px; align-items: center; }"
-    },
-    {
-      "name": "Profile PDF Panel",
-      "kind": "custom",
-      "refersTo": "glass-card",
-      "description": "Generated keepsake PDF section styling for profile exports.",
-      "html": "<section class=\"ds-print-section\"><div class=\"ds-print-tape\"></div><h2>Favorites & Interests</h2><p>Favorite Book</p><strong>Kitchen by Banana Yoshimoto</strong></section>",
-      "css": ".ds-print-section { position: relative; border: 1px solid oklch(82% 0.035 78 / 0.72); border-radius: 24px; background: oklch(99% 0.011 82 / 0.94); color: oklch(25% 0.028 260); padding: 20px; font-family: Nunito, system-ui, sans-serif; } .ds-print-tape { position: absolute; top: -12px; left: 44px; width: 80px; height: 20px; transform: rotate(-1deg); border-radius: 8px; background: oklch(83% 0.12 61); opacity: 0.58; } .ds-print-section h2 { margin: 0 0 16px; color: oklch(48% 0.032 260); font: 800 10px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-print-section p { margin: 0 0 4px; color: oklch(48% 0.032 260); font: 800 10px/1.2 Nunito, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; } .ds-print-section strong { display: block; color: oklch(25% 0.028 260); font: 700 14px/1.35 Nunito, system-ui, sans-serif; }"
+      "refersTo": "paper",
+      "description": "56px of clean paper with one warm hairline beneath. Its brand and sign-out glyphs land on exactly the same pixel columns as the page content below, because both derive their edges from the shell's gutter token.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-brand\" href=\"#\">Nexia</a><div class=\"ds-nav-actions\"><a class=\"ds-nav-link ds-nav-link-active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z\"/></svg>Ask AI</a><button class=\"ds-nav-link\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9\"/></svg>Sign out</button></div></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 24px; border-bottom: 1px solid var(--border, rgba(120,98,74,0.24)); background: var(--surface, #fff); font-family: Nunito, system-ui, sans-serif; } .ds-nav-brand { display: inline-flex; align-items: center; height: 44px; padding: 0 8px; border-radius: 12px; color: var(--text-1, #292524); font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; transition: background-color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-nav-brand:hover { background: var(--surface-2, #fbf7f1); } .ds-nav-actions { display: flex; align-items: center; gap: 4px; } .ds-nav-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; min-width: 44px; padding: 0 12px; border: none; border-radius: 12px; background: transparent; color: var(--text-2, #57534e); font-family: inherit; font-size: 0.875rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-nav-link:hover { background: var(--surface-2, #fbf7f1); } .ds-nav-link-active { background: var(--surface-3, #f4ede3); color: var(--blue-ink, #3b6fd4); } .ds-nav-link:focus-visible { outline: 2px solid var(--focus, #3b6fd4); outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "The Tidy Memory Scrapbook",
-    "overview": "Nexia is a personal memory book, not a productivity dashboard. The interface should feel like a carefully kept slambook: warm paper, soft translucent layers, sticker chips, gentle color, and small washi-tape details that make profiles feel kept rather than stored.\n\nThe system is cute, polished, and controlled. Scrapbook details are allowed only when they support hierarchy. Alignment, readable type, and dependable lookup behavior come first. The app must stay light and friendly, with no drift toward a technical command center.",
+    "overview": "Nexia is a personal memory book, not a productivity dashboard. Screens should feel like a carefully kept slambook: warm paper, sticker chips, gentle colour, and small washi-tape details that make profiles feel kept rather than stored.\n\nThe material is paper, and paper is opaque. An earlier version of this system built every surface from translucent glass (backdrop-filter: blur(20px)). It was replaced wholesale: translucency muddied every card against the warm page, cost a compositing layer per element, and read as a tech product rather than a scrapbook. Depth now comes from opaque surfaces, warm hairlines, and spacing — and from nothing else. The product is flat and carries no shadows at all.\n\nThere is no backdrop-filter anywhere in the app, and none should be added.",
     "keyCharacteristics": [
-      "Warm light surfaces with restrained peach, lavender, and blue accents.",
-      "Rounded paper-like panels with translucent fills and fine borders.",
-      "Small decorative tape and sticker motifs used as hierarchy, not clutter.",
-      "Nunito everywhere, with compact labels and calm body text.",
-      "Playful motion for state and entrance, never choreography that slows lookup."
+      "Warm cream page, opaque white paper, restrained peach / lavender / blue accents.",
+      "Rounded panels separated by fine warm borders, never by a shadow.",
+      "Small tape and sticker motifs used for hierarchy, never as wallpaper.",
+      "Nunito throughout, with compact all-caps labels and calm body text.",
+      "Ease-out motion that never overshoots."
     ],
     "rules": [
       {
-        "name": "The Warm Light Rule",
-        "body": "`warm-page` is the baseline for every app surface. Dark mode is forbidden.",
+        "name": "The One Shell Rule",
+        "body": "No page sets its own max-width or horizontal padding. If a surface needs to span the viewport (the form action bar, the navbar), it goes full-bleed and puts a PageShell inside itself.",
+        "section": "layout"
+      },
+      {
+        "name": "The Navbar Offset Rule",
+        "body": "Dashboard pages use .page-body (min-height: calc(100dvh - var(--navbar-h))), never min-h-screen. The latter overshoots by exactly the navbar height and forces a scrollbar on every page.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Sheet Rule",
+        "body": "A profile is one sheet of paper — a single .paper article that runs from the hero to the last quote — on both the detail page and the edit form. It is not a stack of section cards. The earlier version gave every section its own white panel with a grey icon tile and an 11px caps label; four of those in a column is a settings screen wearing a scrapbook's colours, and it left section headings and field labels sharing one type size, so the page had no hierarchy to read. Sections are divided by a heading and a hairline, never by a new card. The same rule is why the form uses the same sheet: editing a profile and reading one are the same document in two states.",
+        "section": "layout"
+      },
+      {
+        "name": "The App Screen Lock",
+        "body": "Chat is the only screen that owns the viewport, and it adds .app-screen to <html> while mounted, which removes the document scroller entirely. Sizing the column to 100dvh is not sufficient on a phone: the document keeps a scroller of its own, so a flick past either end of the transcript chains into the page and drags the browser chrome — two scrollers competing for one gesture. The transcript additionally sets overscroll-behavior: contain. Any future full-height screen uses the same class; nothing else should.",
+        "section": "layout"
+      },
+      {
+        "name": "The Ink Rule (non-negotiable)",
+        "body": "peach, lavender, and blue are surface tints only. They are never a text or icon colour — all three fail contrast as a foreground on paper (blue on white measures 1.8:1). Every accent has an -ink variant that clears WCAG AA: peach-ink, lavender-ink, blue-ink, green-ink, red-ink. Use those for anything a person has to read.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Blues Rule",
+        "body": "blue-ink is tuned for white paper (4.8:1). On blue-soft it falls to 3.8:1 and fails, so text on the blue wash uses blue-ink-deep (7.0:1) instead. The two are not interchangeable; peach and lavender need no equivalent because their inks already clear AA on their own washes (8.0:1 and 7.5:1).",
+        "section": "colors"
+      },
+      {
+        "name": "The Content Colour Rule",
+        "body": "Colour is assigned by what a thing is, never by where it lands in a loop. A tag is lavender on the profile grid, on the detail sheet, in the form, and in the PDF export. The song someone is bound to is the one peach well. Ranked songs cycle lavender / peach / blue because rank is the information — and they carry their number too, so colour is never the only code. Everything else — genres, places, food, politics — stays a neutral paper chip, which is what lets the coloured things mean something. An index-modulo accent applied to whatever happens to render next is the failure mode this rule exists to prevent.",
         "section": "colors"
       },
       {
         "name": "The Accent Ration Rule",
-        "body": "Peach, lavender, and blue must stay deliberate. If every card uses all three, the scrapbook stops feeling kept and starts feeling noisy.",
+        "body": "If every card uses all three accents, the scrapbook stops feeling kept and starts feeling noisy.",
         "section": "colors"
       },
       {
-        "name": "The Paper Before Chrome Rule",
-        "body": "Use translucent paper, fine borders, and tinted fills before reaching for heavy shadows or saturated UI chrome.",
+        "name": "The Warm Light Rule",
+        "body": "page is the baseline for every surface. Dark mode is forbidden — PRODUCT.md specifies light theme only.",
+        "section": "colors"
+      },
+      {
+        "name": "The Focus Rule",
+        "body": "One focus treatment, set globally on :focus-visible: a 2px focus outline at 2px offset. Components must not remove it.",
         "section": "colors"
       },
       {
         "name": "The One Family Rule",
-        "body": "Nunito carries the product. Do not introduce display fonts for app labels, buttons, forms, or profile detail content.",
+        "body": "Nunito carries the product. No display face for app labels, buttons, forms, or profile content.",
         "section": "typography"
       },
       {
-        "name": "The Compact Label Rule",
-        "body": "Labels are uppercase, small, and widely tracked. They should guide scanning without sounding corporate.",
+        "name": "The One Label Rule",
+        "body": ".t-label is the only all-caps metadata style. A second, smaller 10px label size existed on the detail page and was removed — 11px is the floor for tracked uppercase text.",
         "section": "typography"
       },
       {
-        "name": "The Flat Keepsake Rule",
-        "body": "Surfaces are flat by default. Create depth through paper layering, translucent fills, and borders before using shadow.",
+        "name": "The 16px Field Rule",
+        "body": "Form controls never go below 16px on mobile.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Rule",
+        "body": "No box-shadow anywhere. Hover states that used to lift with a shadow (profile cards) now darken their border and rise a few pixels instead.",
         "section": "elevation"
       },
       {
-        "name": "The No Heavy Glass Rule",
-        "body": "Blur can support translucent paper panels, but decorative glassmorphism is prohibited.",
+        "name": "The No Nested Paper Rule",
+        "body": ".paper inside .paper is never correct. Nested groups use .paper-sunk (a bordered surface-2 well).",
+        "section": "elevation"
+      },
+      {
+        "name": "The Float Line Rule",
+        "body": "A hairline is only visible when it is darker than both surfaces it divides. On the page that happens for free — a card's line is darker than its own fill and darker than the cream behind it. On the overlay it does not: the scrim composites to a mid tone, so a normal 1px card border ends up lighter than the scrim and dissolves into the card's silhouette. A dialog that simply reuses its card's border therefore looks like it has no border at all. Surfaces floating on the scrim use line-float / lavender-line-float at 2px instead — the one place in the product where a border is not 1px, because it is the one place a border has to out-contrast a mid grey. overlay itself is 0.55, not 0.42; the lighter scrim sat too close to the paper it was meant to be pushing back.",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do keep the product light and warm, with `warm-page` as the default surface.",
-      "Do use peach, lavender, and blue with restraint so the product stays cute and controlled.",
-      "Do center washi-tape details and keep them tidy, deliberate, and subordinate to content.",
-      "Do use rounded, soft-edged shapes consistently across cards, buttons, inputs, chips, and modals.",
-      "Do make lookup easy: search, profile cards, forms, and chat responses must stay readable before decorative.",
-      "Do hide empty profile sections and avoid placeholders that make a profile feel unfinished.",
-      "Do preserve standard affordances for buttons, inputs, navigation, dialogs, and print export."
+      "Do route every page through PageShell.",
+      "Do use an -ink colour for anything readable.",
+      "Do keep touch targets at 44px or larger.",
+      "Do hide empty profile sections rather than showing placeholders.",
+      "Do keep 16px on form controls at mobile widths.",
+      "Do let the loading skeleton use the loaded state's shell and padding, so nothing shifts when data arrives."
     ],
     "donts": [
-      "Don't add dark mode. PRODUCT.md says light theme only.",
-      "Don't make Nexia feel like a tech product.",
-      "Don't use dashboards, sterile SaaS patterns, terminal aesthetics, heavy data UI, or anything infrastructural.",
-      "Don't let scrapbook details become messy, novelty-first, loud, childish, or cluttered.",
-      "Don't use colored side-stripe borders, gradient text, decorative glassmorphism, hero-metric templates, or repeated identical card grids.",
-      "Don't use full-saturation accents on inactive states.",
-      "Don't invent custom controls where a standard input, select, button, or link would be clearer."
+      "Don't add a box-shadow. Anywhere.",
+      "Don't add backdrop-filter, glass, or blur as decoration.",
+      "Don't tint a form field — fields are white.",
+      "Don't add dark mode.",
+      "Don't put text or icons in peach, lavender, or blue.",
+      "Don't use min-h-screen on a page that sits under the navbar.",
+      "Don't hand-roll a button, field label, or container width.",
+      "Don't nest .paper inside .paper.",
+      "Don't break a profile back into a stack of section cards.",
+      "Don't colour something by its index in a loop — colour it by what it is.",
+      "Don't paste tape on a surface that already carries a wash.",
+      "Don't give a button beside a field a fixed height.",
+      "Don't animate the same property in both CSS and Framer Motion.",
+      "Don't use emoji as an icon system — the app uses Lucide."
     ]
   }
 }
