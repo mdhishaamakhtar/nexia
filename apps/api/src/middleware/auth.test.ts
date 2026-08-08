@@ -92,12 +92,15 @@ describe("authMiddleware", () => {
     expect(body.error.message).toBe("User not found");
   });
 
-  test("valid token but DB lookup error returns 401", async () => {
+  test("propagates a DB lookup failure instead of reporting it as 401", async () => {
+    // A failing lookup means the database is unreachable, which is not a
+    // statement about the caller's credentials. It must surface as a server
+    // error so the recovery middleware logs it and monitoring sees it.
     const token = await generateToken(101, testCfg);
     const errLookup = makeUserLookup(null, new Error("db down"));
     const app = makeApp(errLookup);
     const res = await app.request("/protected", { headers: { Authorization: `Bearer ${token}` } });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(500);
   });
 });
 

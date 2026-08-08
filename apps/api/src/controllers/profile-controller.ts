@@ -70,7 +70,7 @@ export function createProfileController(profileService: ProfileService) {
     const parsed = await parseJsonBody(c, profileInputSchema);
     if (!parsed.ok) return parsed.response;
     try {
-      await profileService.updateProfile(id, parsed.data, userId);
+      await profileService.replaceProfile(id, parsed.data, userId);
       return c.json({ message: "Profile updated" });
     } catch (err) {
       return respondWithServiceError(c, err);

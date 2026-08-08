@@ -51,3 +51,13 @@ export function tokenFromEmail(email: SentEmail | undefined): string {
   if (!match?.[1]) throw new Error("no token found in email body");
   return decodeURIComponent(match[1]);
 }
+
+/**
+ * Reset emails print the raw token for the user to copy rather than embedding
+ * it in the link, so it is matched as a bare 64-hex run instead.
+ */
+export function resetTokenFromEmail(email: SentEmail | undefined): string {
+  const match = email?.html.match(/>([a-f0-9]{64})</);
+  if (!match?.[1]) throw new Error("no reset token found in email body");
+  return match[1];
+}

@@ -11,7 +11,7 @@ import type {
   AIConfig,
   EmailConfig,
 } from "../../src/config/config";
-import type { DB } from "../../src/db/client";
+import { createDb, type DB } from "../../src/db/client";
 import { createRedisConnection } from "../../src/queue/producer";
 import { createBcryptHasher } from "../../src/services/password-hasher";
 import { getTestDb } from "./db";
@@ -110,7 +110,12 @@ export function createHarness(options: HarnessOptions = {}): Harness {
 
   const config = testConfig(options.config);
   const logger = pino({ level: "silent" });
-  const { db, sql } = getTestDb();
+
+  // Normally every harness shares the worker's pool. A test that overrides the
+  // db config is asking for a different connection (a wrong port, say), so it
+  // gets a dedicated pool that is torn down with the harness.
+  const ownsPool = options.config?.db !== undefined;
+  const { db, sql } = ownsPool ? createDb(config) : getTestDb();
 
   const embeddings = withEmbeddings ? createFakeEmbeddingGenerator() : null;
   const redis = withQueue ? createRedisConnection(inject("redisUrl")) : null;
@@ -137,6 +142,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     close: async () => {
       await runtime.close();
       redis?.disconnect();
+      if (ownsPool) await sql.end({ timeout: 5 }).catch(() => {});
     },
   };
 }
