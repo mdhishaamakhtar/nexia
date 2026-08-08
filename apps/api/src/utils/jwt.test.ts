@@ -25,7 +25,7 @@ const testCfg: Config = {
     name: "",
     ssl_mode: "disable",
     run_migrations: false,
-    max_idle_conns: 10,
+    idle_timeout_seconds: 300,
     max_open_conns: 50,
     conn_max_lifetime_minutes: 60,
   },

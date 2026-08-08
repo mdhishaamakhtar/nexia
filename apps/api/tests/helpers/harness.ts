@@ -56,9 +56,9 @@ export function testConfig(overrides: ConfigOverrides = {}): Config {
       name: url.pathname.slice(1),
       ssl_mode: "disable",
       run_migrations: false,
-      max_idle_conns: 2,
       max_open_conns: 5,
       conn_max_lifetime_minutes: 60,
+      idle_timeout_seconds: 300,
       ...overrides.db,
     },
     ai: {

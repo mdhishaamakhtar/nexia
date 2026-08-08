@@ -1,6 +1,7 @@
 import { Worker, UnrecoverableError } from "bullmq";
 import Redis from "ioredis";
 import {
+  QUEUE_NAME,
   TYPE_EMBEDDING_TASK,
   TYPE_DELETION_TASK,
   type EmbeddingPayload,
@@ -23,7 +24,7 @@ export function createWorker(
   const log = logger.child({ component: "queue_worker" });
 
   const worker = new Worker(
-    "nexia-embedding",
+    QUEUE_NAME,
     async (job) => {
       switch (job.name) {
         case TYPE_EMBEDDING_TASK: {

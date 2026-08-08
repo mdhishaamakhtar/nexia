@@ -298,6 +298,56 @@ describe("PUT /profiles/:id", () => {
     expect(await h.db.select().from(tags)).toHaveLength(1);
   });
 
+  test("replaces every child collection, not just the first", async () => {
+    const a = await actor();
+    const id = await createProfile(a, profileInput({ full_name: "Swap Everything" }));
+
+    await call(h.app, "PUT", `/api/v1/profiles/${id}`, {
+      headers: a.headers,
+      body: profileInput({
+        full_name: "Swap Everything",
+        tags: [{ tag: "t" }],
+        political_views: [{ view: "v" }],
+        food_restrictions: [{ restriction: "r" }],
+        movie_genres: [{ genre: "mg" }],
+        book_genres: [{ genre: "bg" }],
+        hangout_places: [{ place: "p" }],
+        quotes: [{ quote: "q" }],
+        favorite_memories: [{ memory: "m" }],
+        top_songs: [{ name: "n", artist: "ar" }],
+        associated_song: { name: "as", artist: "aa" },
+      }),
+    });
+
+    const got = await getProfile(a, id);
+    expect(got.body.tags[0]!.tag).toBe("t");
+    expect(got.body.political_views[0]!.view).toBe("v");
+    expect(got.body.food_restrictions[0]!.restriction).toBe("r");
+    expect(got.body.movie_genres[0]!.genre).toBe("mg");
+    expect(got.body.book_genres[0]!.genre).toBe("bg");
+    expect(got.body.hangout_places[0]!.place).toBe("p");
+    expect(got.body.quotes[0]!.quote).toBe("q");
+    expect(got.body.favorite_memories[0]!.memory).toBe("m");
+    expect(got.body.top_songs[0]!.name).toBe("n");
+    expect(got.body.associated_song!.name).toBe("as");
+  });
+
+  test("clears the has-one associated song when set to null", async () => {
+    const a = await actor();
+    const id = await createProfile(
+      a,
+      profileInput({ associated_song: { name: "Theme", artist: "Composer" } })
+    );
+    expect((await getProfile(a, id)).body.associated_song).not.toBeNull();
+
+    await call(h.app, "PUT", `/api/v1/profiles/${id}`, {
+      headers: a.headers,
+      body: profileInput({ associated_song: null }),
+    });
+
+    expect((await getProfile(a, id)).body.associated_song).toBeNull();
+  });
+
   test("clears a child collection when given an empty array", async () => {
     const a = await actor();
     const id = await createProfile(a, profileInput({ tags: [{ tag: "temporary" }] }));

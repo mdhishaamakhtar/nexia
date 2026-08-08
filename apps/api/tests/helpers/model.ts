@@ -1,5 +1,6 @@
 import { MockLanguageModelV4, simulateReadableStream } from "ai/test";
 import type {
+  LanguageModelV4FinishReason,
   LanguageModelV4Prompt,
   LanguageModelV4StreamPart,
   LanguageModelV4Usage,
@@ -43,11 +44,11 @@ function partsFor(step: MockStep): LanguageModelV4StreamPart[] {
     parts.push({ type: "text-end", id: "text-1" });
   }
 
-  parts.push({
-    type: "finish",
-    finishReason: step.toolCalls?.length ? "tool-calls" : "stop",
-    usage: USAGE,
-  });
+  const finishReason: LanguageModelV4FinishReason = {
+    unified: step.toolCalls?.length ? "tool-calls" : "stop",
+    raw: undefined,
+  };
+  parts.push({ type: "finish", finishReason, usage: USAGE });
 
   return parts;
 }

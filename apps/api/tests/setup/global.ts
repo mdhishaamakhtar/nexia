@@ -2,8 +2,12 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testconta
 import { RedisContainer, type StartedRedisContainer } from "@testcontainers/redis";
 import postgres from "postgres";
 import pino from "pino";
-import type { GlobalSetupContext } from "vitest/node";
 import { runMigrations } from "../../src/db/migrate";
+
+/** The slice of Vitest's global setup context this file uses. */
+interface SetupContext {
+  provide: <K extends "databaseUrl" | "redisUrl">(key: K, value: string) => void;
+}
 
 declare module "vitest" {
   export interface ProvidedContext {
@@ -21,7 +25,7 @@ declare module "vitest" {
  * The Postgres image matches docker-compose exactly, so pgvector behaves here
  * the way it does in development.
  */
-export default async function setup({ provide }: GlobalSetupContext) {
+export default async function setup({ provide }: SetupContext) {
   let pg: StartedPostgreSqlContainer;
   let redis: StartedRedisContainer;
 

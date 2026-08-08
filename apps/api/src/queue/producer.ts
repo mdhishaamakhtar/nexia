@@ -1,6 +1,7 @@
 import { Queue } from "bullmq";
 import Redis from "ioredis";
 import {
+  QUEUE_NAME,
   TYPE_EMBEDDING_TASK,
   TYPE_DELETION_TASK,
   type EmbeddingPayload,
@@ -13,7 +14,7 @@ export class EmbeddingQueueProducer {
   private logger: Logger;
 
   constructor(redis: Redis, logger: Logger) {
-    this.queue = new Queue("nexia-embedding", { connection: redis });
+    this.queue = new Queue(QUEUE_NAME, { connection: redis });
     this.logger = logger.child({ component: "queue_producer" });
   }
 

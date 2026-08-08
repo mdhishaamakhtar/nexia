@@ -269,7 +269,28 @@ describe("database failure handling", () => {
 
       // 401 would tell the client to re-authenticate over an outage they
       // cannot fix, and would hide the incident from error dashboards.
-      expect(res.status).toBeGreaterThanOrEqual(500);
+      expect(res.status).toBe(500);
+      // And it must still be the JSON envelope every other error uses — the
+      // web client parses every failure as JSON.
+      expect(errorCode(res)).toBe("SERVER_ERROR");
+    } finally {
+      await broken.close();
+    }
+  });
+
+  test("unexpected failures keep the JSON error envelope and the request id", async () => {
+    const broken = createHarness({ config: { db: { port: 1 } } });
+
+    try {
+      const user = await seedUser(h);
+      const res = await call(broken.app, "GET", "/api/v1/profiles", {
+        headers: { "X-Request-ID": "outage-trace", ...(await bearerAuth(h, user.id)) },
+      });
+
+      expect(res.status).toBe(500);
+      expect(errorCode(res)).toBe("SERVER_ERROR");
+      expect(res.headers.get("Content-Type")).toContain("application/json");
+      expect(res.headers.get("X-Request-ID")).toBe("outage-trace");
     } finally {
       await broken.close();
     }
