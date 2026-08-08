@@ -23,6 +23,22 @@ export default defineConfig({
           include: ["src/**/*.test.ts"],
         },
       },
+      {
+        test: {
+          name: "api-integration",
+          root: "./apps/api",
+          include: ["tests/integration/**/*.test.ts"],
+          globalSetup: ["./tests/setup/global.ts"],
+          setupFiles: ["./tests/setup/each.ts"],
+          // Every file shares one Postgres and one Redis, and isolation comes
+          // from truncating between tests — which only holds if no two files
+          // are in flight at once.
+          fileParallelism: false,
+          testTimeout: 30_000,
+          // Generous: the first run pays for image pulls.
+          hookTimeout: 300_000,
+        },
+      },
     ],
     coverage: {
       provider: "istanbul",
