@@ -18,13 +18,19 @@ Augmented Generation) over the stored profiles.
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, TanStack Query v5, React Hook Form + Zod, Framer Motion |
-| Backend | Bun, Hono, Drizzle ORM, BullMQ |
+| Backend | Node 24, Hono, Drizzle ORM, BullMQ |
 | Database | PostgreSQL 17 + pgvector extension |
 | Queue | Redis 7 + BullMQ |
 | AI / Embeddings | Vercel AI SDK, Google Gemini (`gemini-embedding-001` for 3072-dim embeddings), OpenCode (chat model) |
 | Email | Resend API |
+| Testing | Vitest, Testcontainers (Postgres + Redis), MSW, `ai/test` mock models |
 | Container | Docker + Docker Compose |
-| Monorepo | Bun workspaces |
+| Monorepo | npm workspaces |
+
+**Runtime note.** The backend runs on Node 24, not Bun. Bun's test runner emits
+no branch-coverage data at all, which made a branch-coverage gate unmeasurable;
+the Bun coupling was eight call sites, so the runtime moved instead of the goal.
+Dev runs on `tsx`, production on a `tsup` bundle (`node dist/index.js`).
 
 ---
 
@@ -33,7 +39,7 @@ Augmented Generation) over the stored profiles.
 ```
 nexia/
 ├── apps/
-│   ├── api/                      # Bun + Hono backend service
+│   ├── api/                      # Node + Hono backend service
 │   │   ├── config/
 │   │   │   ├── local.yaml        # Local dev config
 │   │   │   └── prod.yaml         # Production config
@@ -52,10 +58,15 @@ nexia/
 │   │   │   ├── scripts/          # Embedding back-fill utility
 │   │   │   ├── services/         # Business logic (auth, profiles, embedding)
 │   │   │   ├── utils/            # JWT, CSRF, validation helpers
-│   │   │   ├── app.ts            # DI wiring factory
+│   │   │   ├── app.ts            # wireApp (pure graph) + createApp (bootstrap)
 │   │   │   └── index.ts          # Entry point
+│   │   ├── tests/
+│   │   │   ├── helpers/          # harness, factories, mock model, MSW, waits
+│   │   │   ├── integration/      # one file per surface
+│   │   │   └── setup/            # containers (global) + truncation (per test)
 │   │   ├── Dockerfile
 │   │   ├── drizzle.config.ts
+│   │   ├── tsup.config.ts
 │   │   └── package.json
 │   └── web/                      # Next.js frontend application
 │       └── src/
@@ -69,9 +80,11 @@ nexia/
 │       └── src/
 ├── docs/
 │   └── superpowers/              # Migration plan docs (reference only)
+├── .github/workflows/ci.yml      # typecheck, lint, format, tests + coverage gate
 ├── docker-compose.yml            # Full-stack local Docker environment
 ├── nexia.sh                      # Dev CLI helper (wraps docker compose)
-└── package.json                  # Monorepo root (bun workspaces)
+├── vitest.config.ts              # Three projects + istanbul coverage thresholds
+└── package.json                  # Monorepo root (npm workspaces)
 ```
 
 ---
@@ -137,7 +150,7 @@ Key config sections:
 | Section | Fields |
 |---|---|
 | `server` | `port`, `mode`, `jwt_secret`, `jwt_expiry_minutes`, `cors_origins`, `cookie_domain`, auth/chat rate limit fields |
-| `db` | `host`, `port`, `user`, `password`, `name`, `ssl_mode`, `run_migrations`, connection pool settings |
+| `db` | `host`, `port`, `user`, `password`, `name`, `ssl_mode`, `run_migrations`, `max_open_conns`, `conn_max_lifetime_minutes`, `idle_timeout_seconds` |
 | `ai` | `gemini_api_key`, `redis_url`, `opencode_api_key`, `opencode_base_url`, `chat_model` |
 | `email` | `resend_api_key`, `from_address`, `app_base_url` |
 
@@ -178,29 +191,60 @@ All routes are under `/api/v1`.
 | POST | `/profiles` | Yes | Create profile |
 | GET | `/profiles` | Yes | List profiles (paginated, filterable) |
 | GET | `/profiles/:id` | Yes | Get single profile |
-| PUT | `/profiles/:id` | Yes | Full-overwrite update |
-| DELETE | `/profiles/:id` | Yes | Delete profile |
+| PUT | `/profiles/:id` | Yes | Full replacement — omitted optional fields are cleared |
+| DELETE | `/profiles/:id` | Yes | Delete profile; 404 if missing or not yours |
 
 `GET /profiles` accepts query params: `page`, `limit`, `search` (name substring),
 `relationship_type`.
 
 ### Testing
 
-**Framework:** `bun:test` (built-in Bun test runner)
+**Framework:** Vitest, configured as three projects in the root
+`vitest.config.ts`.
+
+| Project | Location | Needs Docker? |
+|---|---|---|
+| `shared` | `packages/shared/src/**/*.test.ts` | No |
+| `api-unit` | `apps/api/src/**/*.test.ts` (colocated) | No |
+| `api-integration` | `apps/api/tests/integration/**` | Yes |
 
 ```bash
-cd apps/api
-bun test src              # Unit tests
+npm test                   # everything
+npm run test:unit          # fast, no containers
+npm run test:integration    # containers only
+npm run test:coverage      # enforces the coverage gate
+npm run test:watch
 ```
 
-```bash
-bun test                  # All tests (from root)
-```
+**Integration-first.** Anything that crosses a boundary is tested against real
+infrastructure: Testcontainers starts one Postgres (`pgvector/pgvector:pg17`,
+the same image as docker-compose) and one Redis for the whole run, migrations
+are applied once, and tests are isolated by truncating every public table
+between cases. Integration files run sequentially, since they share those
+containers.
 
-Unit tests are **colocated** with the code they cover (e.g.,
-`services/auth-service.test.ts` sits next to `services/auth-service.ts`).
-No external test dependencies. Each test file defines its own fake/stub
-classes that implement the service-package interfaces.
+`tests/helpers/harness.ts` assembles the **real** application graph via
+`wireApp` — real repositories, real services, the real Hono router — and
+requests go through `app.request()`, so real JWTs, cookies, CSRF and rate
+limiting are all exercised. Only the outbound network edges are substituted:
+
+- **Language model** → `MockLanguageModelV4` from `ai/test`, scripted turn by
+  turn, so agent tools run for real against the database.
+- **Embeddings** → a deterministic bag-of-words embedder, so cosine ranking is
+  assertable and repeatable.
+- **Resend** → MSW, so the real `EmailService` code path runs. Any unstubbed
+  outbound request fails the test rather than escaping to the network.
+
+**Unit tests are for logic that earns them** — pure, branch-dense code such as
+`profile-mapper` null-collapsing, zodiac boundaries, config coercion and the
+rate-limit bucket maths. They are colocated with their subject. Do not write a
+unit test with hand-rolled repository fakes for something an integration test
+already proves; that pattern is what let a batch of real defects through.
+
+**Coverage gate:** 90% branches / functions / lines / statements, enforced by
+`@vitest/coverage-istanbul` over `apps/api/src` and `packages/shared/src`. Only
+genuinely untestable bootstrap is excluded (`index.ts`, `scripts/`,
+`db/schema.ts`). Do not hit the number by widening the exclude list.
 
 ### Error Handling Convention
 
@@ -222,6 +266,13 @@ Error responses always have the shape:
 ```json
 { "error": { "code": "NOT_FOUND", "message": "Resource not found" } }
 ```
+
+Anything that escapes a controller is caught by `errorHandler` in
+`middleware/request-context.ts`, registered with **`app.onError`** — not as
+middleware. Hono's dispatcher catches a throwing handler itself and routes it
+straight to the error handler, so a middleware wrapping `await next()` in
+try/catch never sees it. Keep it on `onError`, or unhandled failures silently
+revert to Hono's plain-text default and break the envelope above.
 
 ### Data Models
 
@@ -284,7 +335,7 @@ Migrations live in `apps/api/drizzle/` using drizzle-kit naming. They run
 automatically at server startup. The migration runner detects if the database
 was previously managed by golang-migrate and baselines accordingly.
 
-Always create new migrations via `bun run db:generate` from `apps/api/`.
+Always create new migrations via `npm run db:generate -w api` from `apps/api/`.
 Never edit existing migration files.
 
 ---
@@ -413,8 +464,8 @@ no separate `ProtectedRoute` component.
 
 ### Prerequisites
 
-- Docker + Docker Compose
-- Bun 1.x (package manager and runtime)
+- Docker + Docker Compose (also required for the integration tests)
+- Node 24 (see `.nvmrc`) and npm
 - A Google Gemini API key (optional; required for AI/chat features)
 
 ### Local Development (hybrid: infra in Docker, services native)
@@ -426,13 +477,13 @@ docker compose up -d postgres redis
 ./nexia.sh infra
 
 # Install dependencies
-bun install
+npm install
 
-# Run backend (from apps/api/)
-bun --filter api dev
+# Run backend
+npm run dev:api
 
-# Run frontend (from apps/web/)
-bun --filter web dev        # http://localhost:3000
+# Run frontend
+npm run dev:web            # http://localhost:3000
 ```
 
 ### Full Docker Stack
@@ -446,18 +497,19 @@ GEMINI_API_KEY=your_key_here ./nexia.sh ra   # build + start everything
 
 ```bash
 # From root
-bun run typecheck          # Typecheck all packages
-bun run lint               # ESLint all packages
-bun run lint:fix           # ESLint fix
-bun run format             # Prettier write
-bun run format:check       # Prettier check
-bun test                   # Run all tests
+npm run typecheck          # Typecheck all workspaces
+npm run lint               # ESLint all packages
+npm run lint:fix           # ESLint fix
+npm run format             # Prettier write
+npm run format:check       # Prettier check
+npm test                   # Run all tests
+npm run test:coverage      # Run tests with the 90% gate enforced
 
-# Filter to specific packages
-bun --filter api dev       # Run API dev server
-bun --filter web dev       # Run web dev server
-bun --filter api test      # Run API tests
-bun --filter web build     # Build web for production
+# Per workspace
+npm run dev:api            # API dev server (tsx watch)
+npm run dev:web            # Web dev server
+npm run build:api          # Bundle the API to apps/api/dist
+npm run build              # Build web for production
 ```
 
 ### nexia.sh Reference
@@ -475,22 +527,24 @@ bun --filter web build     # Build web for production
 ### Running Backend Tests
 
 ```bash
-cd apps/api
-bun test src               # Unit tests (colocated with code)
+npm run test:unit          # colocated unit tests, no Docker needed
+```
+
+```bash
+npm run test:integration   # testcontainers; requires a running Docker daemon
 ```
 
 ### Frontend Linting / Formatting
 
 ```bash
-bun run lint               # ESLint + Prettier auto-fix
-bun run format             # Prettier write
+npm run lint               # ESLint
+npm run format             # Prettier write
 ```
 
 ### Database Migrations
 
 ```bash
-cd apps/api
-bun run db:generate        # Generate new migration from schema changes
+npm run db:generate -w api    # Generate new migration from schema changes
 ```
 
 Migrations run automatically at server startup.
@@ -502,14 +556,14 @@ was not configured at creation time), re-queue all profiles:
 
 ```bash
 cd apps/api
-bun run sync
+npm run sync -w api
 ```
 
 ---
 
 ## Key Conventions
 
-### Backend (TypeScript / Bun + Hono)
+### Backend (TypeScript / Node + Hono)
 
 1. **Thin controllers**: controllers only parse input (via `parseJsonBody` with
    Zod schemas from `@nexia/shared`), call the service, and write the response.
@@ -521,15 +575,23 @@ bun run sync
    (`errValidation()`, `errNotFound()`, etc.). Never throw raw `Error` for
    errors that cross a layer boundary.
 4. **No hard-coded secrets**: use env vars with the `NEXIA_` prefix.
-5. **Migration discipline**: always generate migrations via `bun run db:generate`.
+5. **Migration discipline**: always generate migrations via `npm run db:generate -w api`.
    Never edit existing migration files.
 6. **Zodiac sign**: never set `zodiac_sign` directly on a Profile; it is always
    derived by `applyDerivedZodiac` in the service layer from `birthday`.
 7. **Top songs limit**: max 3 is enforced in the service layer, not the DB or
    controller.
-8. **Unit tests**: colocated with the code they cover (e.g.,
-   `services/auth-service.test.ts`). Use the fake/stub pattern — no real DB or
-   network in unit tests.
+8. **Tests**: integration-first against real Postgres/Redis via testcontainers;
+   colocated unit tests only for pure, branch-dense logic. See the Testing
+   section above. Reach for an integration test before a fake.
+9. **Password hashing goes through the `PasswordHasher` port** injected into
+   `AuthService`, never a global. Production wires `createBcryptHasher()`
+   (bcrypt cost 10); tests inject cost 4 so the suite is not dominated by KDF
+   time.
+10. **`replaceProfile` vs `updateProfile`**: the REST `PUT` replaces (omitted
+    fields are cleared) and the chat agent's `updateProfile` tool merges. They
+    are separate service methods on purpose — collapsing them back into one is
+    what previously made `PUT` silently ignore omitted fields.
 9. **Structured logging**: all logging goes through pino. Use child loggers for
    components. Never use `console.log` in production code.
 10. **Graceful degradation**: the embedding pipeline is entirely optional.
@@ -547,7 +609,7 @@ bun run sync
    switch to localStorage tokens without a coordinated backend change.
 7. **TypeScript strict**: don't use `any`. Define types in `src/shared/types/`
    or `packages/shared/`.
-8. **Lint and format after every change**: run `bun run lint && bun run format`
+8. **Lint and format after every change**: run `npm run lint && npm run format`
    from the root after any frontend file is modified. Do this before marking a
    task complete or committing.
 
