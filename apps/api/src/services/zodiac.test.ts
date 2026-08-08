@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { deriveZodiac, applyDerivedZodiac } from "../services/zodiac";
 
 describe("deriveZodiac", () => {
@@ -60,6 +60,31 @@ describe("applyDerivedZodiac", () => {
       birthday?: string | null | undefined;
       zodiac_sign?: string | null | undefined;
     } = {};
+    applyDerivedZodiac(profile);
+    expect(profile.zodiac_sign).toBeNull();
+  });
+
+  test("yields no sign for a month outside 1-12", () => {
+    // Unreachable through the API (the date format is validated upstream) but
+    // the switch needs a defined answer rather than falling off the end.
+    expect(deriveZodiac(0, 1)).toBe("");
+    expect(deriveZodiac(13, 1)).toBe("");
+  });
+
+  test("sets null zodiac for an unparseable birthday", () => {
+    const profile: {
+      birthday?: string | null | undefined;
+      zodiac_sign?: string | null | undefined;
+    } = { birthday: "not-a-date" };
+    applyDerivedZodiac(profile);
+    expect(profile.zodiac_sign).toBeNull();
+  });
+
+  test("sets null zodiac when the date has too few parts", () => {
+    const profile: {
+      birthday?: string | null | undefined;
+      zodiac_sign?: string | null | undefined;
+    } = { birthday: "1990" };
     applyDerivedZodiac(profile);
     expect(profile.zodiac_sign).toBeNull();
   });

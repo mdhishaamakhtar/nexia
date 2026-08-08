@@ -11,9 +11,8 @@
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.20",
-    "@expo-google-fonts/nunito": "^0.4.2",
     "@hookform/resolvers": "^5.2.2",
-    "@nexia/shared": "workspace:*",
+    "@nexia/shared": "*",
     "@streamdown/cjk": "^1.0.3",
     "@streamdown/code": "^1.1.1",
     "@streamdown/math": "^1.0.2",
@@ -26,20 +25,17 @@
     "ky": "^1.14.3",
     "lucide-react": "^1.18.0",
     "next": "^16.1.7",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "react-hook-form": "^7.71.2",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "shiki": "^4.2.0",
+    "shiki": "^3.19.0",
     "streamdown": "^2.5.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
     "use-stick-to-bottom": "^1.1.6",
     "zod": "^4.3.6",
-    "zod-validation-error": "^4.0.2"
-  },
-  "overrides": {
     "zod-validation-error": "^4.0.2"
   },
   "devDependencies": {

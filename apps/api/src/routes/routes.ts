@@ -8,7 +8,7 @@ import type { ChatAgent } from "../ai/agent";
 import type { Logger } from "../logging/logger";
 import type { DB } from "../db/client";
 import type { UserLookup } from "../middleware/auth";
-import { requestContext, recovery } from "../middleware/request-context";
+import { requestContext, errorHandler } from "../middleware/request-context";
 import { authMiddleware, type AppEnv } from "../middleware/auth";
 import { csrfMiddleware } from "../middleware/csrf";
 import { createAuthRateLimiter } from "../middleware/auth-rate-limit";
@@ -44,7 +44,7 @@ export function buildApp(deps: BuildDeps) {
   );
   app.use("*", compress());
   app.use("*", requestContext(logger));
-  app.use("*", recovery(logger));
+  app.onError(errorHandler(logger));
 
   // Health probes
   app.get("/api/v1/healthz", (c) => c.json({ status: "ok" }));

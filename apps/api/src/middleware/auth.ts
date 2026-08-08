@@ -51,12 +51,13 @@ export function authMiddleware(cfg: Config, userLookup: UserLookup) {
       return c.json({ error: { code: "UNAUTHORIZED", message: "Invalid or expired token" } }, 401);
     }
 
-    let user;
-    try {
-      user = await userLookup.findById(claims.user_id);
-    } catch {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "User not found" } }, 401);
-    }
+    // Deliberately unguarded: a lookup that *fails* is an outage, not a
+    // credential problem. Reporting it as 401 tells the client to sign in again
+    // over something they cannot fix, and hides the incident from error
+    // dashboards. Letting it throw sends it to the recovery middleware, which
+    // logs the stack and answers 500.
+    const user = await userLookup.findById(claims.user_id);
+
     if (!user) {
       return c.json({ error: { code: "UNAUTHORIZED", message: "User not found" } }, 401);
     }

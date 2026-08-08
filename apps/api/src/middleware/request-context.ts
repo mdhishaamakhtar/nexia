@@ -1,4 +1,4 @@
-import type { Context, MiddlewareHandler } from "hono";
+import type { Context, ErrorHandler, MiddlewareHandler } from "hono";
 import type { Logger } from "../logging/logger";
 
 export function requestContext(logger: Logger): MiddlewareHandler {
@@ -38,23 +38,26 @@ export function requestContext(logger: Logger): MiddlewareHandler {
   };
 }
 
-export function recovery(logger: Logger): MiddlewareHandler {
-  return async (c, next) => {
-    try {
-      await next();
-    } catch (err) {
-      logger.error(
-        {
-          request_id: c.get("requestID") ?? "-",
-          panic: String(err),
-          stack: err instanceof Error ? err.stack : undefined,
-          method: c.req.method,
-          path: c.req.path,
-        },
-        "panic recovered"
-      );
-      return c.json({ error: { code: "SERVER_ERROR", message: "Internal server error" } }, 500);
-    }
+/**
+ * Registered with `app.onError`, not as middleware. Hono's dispatcher catches a
+ * throwing handler itself and routes it straight to the error handler, so a
+ * `try { await next() }` middleware never sees it — which is why unexpected
+ * failures used to fall through to Hono's default plain-text "Internal Server
+ * Error" instead of this JSON envelope.
+ */
+export function errorHandler(logger: Logger): ErrorHandler {
+  return (err, c) => {
+    logger.error(
+      {
+        request_id: c.get("requestID") ?? "-",
+        panic: String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+        method: c.req.method,
+        path: c.req.path,
+      },
+      "unhandled error"
+    );
+    return c.json({ error: { code: "SERVER_ERROR", message: "Internal server error" } }, 500);
   };
 }
 

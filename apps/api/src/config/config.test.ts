@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -18,7 +18,7 @@ db:
   name: db
   ssl_mode: disable
   run_migrations: true
-  max_idle_conns: 10
+  idle_timeout_seconds: 300
   max_open_conns: 50
   conn_max_lifetime_minutes: 60
 ai:
@@ -47,7 +47,7 @@ db:
   name: prod
   ssl_mode: require
   run_migrations: false
-  max_idle_conns: 15
+  idle_timeout_seconds: 120
   max_open_conns: 75
   conn_max_lifetime_minutes: 120
 ai:
@@ -119,7 +119,7 @@ describe("config loader", () => {
       expect(cfg.server.port).toBe(9999);
       expect(cfg.db.password).toBe("override-pass");
       expect(cfg.db.run_migrations).toBe(true);
-      expect(cfg.db.max_idle_conns).toBe(10);
+      expect(cfg.db.idle_timeout_seconds).toBe(300);
       expect(cfg.db.max_open_conns).toBe(80);
       expect(cfg.db.conn_max_lifetime_minutes).toBe(60);
     } finally {
@@ -142,7 +142,7 @@ describe("config loader", () => {
       expect(cfg.server.mode).toBe("release");
       expect(cfg.db.host).toBe("prod-db");
       expect(cfg.db.run_migrations).toBe(false);
-      expect(cfg.db.max_idle_conns).toBe(15);
+      expect(cfg.db.idle_timeout_seconds).toBe(120);
       expect(cfg.db.max_open_conns).toBe(75);
       expect(cfg.db.conn_max_lifetime_minutes).toBe(120);
       expect(cfg.db.ssl_mode).toBe("require");
@@ -161,7 +161,7 @@ describe("config loader", () => {
       const cfg = await loadConfig(join(tmp, "config"));
 
       expect(cfg.db.run_migrations).toBe(true);
-      expect(cfg.db.max_idle_conns).toBe(10);
+      expect(cfg.db.idle_timeout_seconds).toBe(300);
       expect(cfg.db.max_open_conns).toBe(50);
       expect(cfg.db.conn_max_lifetime_minutes).toBe(60);
     } finally {

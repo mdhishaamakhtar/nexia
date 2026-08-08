@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import type { Logger } from "../logging/logger";
-import { getConnInfo } from "hono/bun";
+import { getConnInfo } from "@hono/node-server/conninfo";
 
 export interface RateLimitConfig {
   requests: number;

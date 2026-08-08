@@ -8,6 +8,7 @@ import { mermaid } from "@streamdown/mermaid";
 import type { ComponentProps } from "react";
 import { memo } from "react";
 import { Streamdown } from "streamdown";
+import type { CodeHighlighterPlugin, PluginConfig } from "streamdown";
 
 /**
  * Streaming markdown renderer for chat.
@@ -22,7 +23,17 @@ import { Streamdown } from "streamdown";
  */
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
-const streamdownPlugins = { cjk, code, math, mermaid };
+const streamdownPlugins = {
+  cjk,
+  // Upstream declaration drift: @streamdown/code types its highlight result as
+  // shiki's `TokensResult`, while streamdown declares its own `HighlightResult`
+  // that its docs describe as "compatible with shiki's TokensResult". The
+  // runtime shapes agree; only the .d.ts files disagree. Bridge it here so the
+  // mismatch is documented in one place instead of failing the build.
+  code: code as unknown as CodeHighlighterPlugin,
+  math,
+  mermaid,
+} satisfies PluginConfig;
 
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (

@@ -67,8 +67,9 @@ export class EmbeddingRepository {
     const vecLiteral = sql.raw(`'${vecStr}'::vector`);
 
     const rows = await this.db.execute<{
-      profile_id: number;
-      score: number;
+      // Both arrive as strings from the driver; see the conversion below.
+      profile_id: string;
+      score: string;
       payload: Record<string, unknown>;
     }>(
       sql`
@@ -85,7 +86,10 @@ export class EmbeddingRepository {
     const results: SearchResult[] = [];
     for (const row of rows) {
       results.push({
-        profileId: row.profile_id,
+        // profile_id is a bigint, which the driver hands back as a string on a
+        // raw query. Without this it reaches the agent — and the client — as
+        // `"12"` while the type says `number`.
+        profileId: Number(row.profile_id),
         score: Number(row.score),
         payload: row.payload,
       });

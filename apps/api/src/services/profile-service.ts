@@ -79,6 +79,20 @@ export class ProfileService {
     return this.repo.findAll({ page, limit, search, relationshipType, userId });
   }
 
+  /**
+   * PUT semantics: the supplied profile replaces the stored one outright, so any
+   * field the caller left out is reset rather than preserved.
+   *
+   * This is deliberately separate from `updateProfile`, which merges. The two
+   * callers want genuinely different things — the REST endpoint validates a
+   * complete profile and means "make it look exactly like this", while the chat
+   * agent sends only the fields it is changing — and serving both from one
+   * merging method is what made PUT quietly ignore omitted fields.
+   */
+  async replaceProfile(id: number, profile: ProfileInput, userId: number): Promise<ProfileOutput> {
+    return this.updateProfile(id, withOmittedFieldsCleared(profile), userId);
+  }
+
   async updateProfile(
     id: number,
     profile: Partial<ProfileInput>,
@@ -123,6 +137,36 @@ export class ProfileService {
       this.logger.warn({ profileId, err: String(err) }, "failed to enqueue profile embedding task");
     }
   }
+}
+
+/**
+ * Materialises every optional field so the update path sees an explicit value
+ * for each one. `undefined` means "leave alone" further down the stack, which is
+ * exactly the wrong reading for a replacement.
+ */
+function withOmittedFieldsCleared(p: ProfileInput): ProfileInput {
+  return {
+    ...p,
+    pronouns: p.pronouns ?? "",
+    bio: p.bio ?? "",
+    profession: p.profession ?? "",
+    long_term_goals: p.long_term_goals ?? "",
+    birthday: p.birthday ?? null,
+    music_preference: p.music_preference ?? "",
+    favorite_movie: p.favorite_movie ?? "",
+    favorite_book: p.favorite_book ?? "",
+    notes: p.notes ?? "",
+    tags: p.tags ?? [],
+    political_views: p.political_views ?? [],
+    food_restrictions: p.food_restrictions ?? [],
+    movie_genres: p.movie_genres ?? [],
+    book_genres: p.book_genres ?? [],
+    hangout_places: p.hangout_places ?? [],
+    quotes: p.quotes ?? [],
+    favorite_memories: p.favorite_memories ?? [],
+    top_songs: p.top_songs ?? [],
+    associated_song: p.associated_song ?? null,
+  };
 }
 
 function mapProfileToRepoInput(p: ProfileInput, userId: number) {

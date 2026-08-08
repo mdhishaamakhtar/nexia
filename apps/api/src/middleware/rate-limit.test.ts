@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { Hono } from "hono";
 import pino from "pino";
 import { createRateLimiter, rateLimitConfigFromValues } from "../middleware/rate-limit";

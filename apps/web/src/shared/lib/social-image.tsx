@@ -14,10 +14,18 @@ const siteDomain = "nexia.hishaam.dev";
 const siteDescription =
   "Your personal digital slambook for friends, memories, and the little details you want to keep.";
 
-const NUNITO_FONT_DIR = join(process.cwd(), "node_modules/@expo-google-fonts/nunito");
+/*
+ * The fonts are vendored into the repo rather than read out of node_modules.
+ * Two reasons: the package manager decides whether a dependency lands in the
+ * workspace or hoisted at the root, so no single node_modules path is correct;
+ * and Next's file tracer can only follow a path it can read statically. A
+ * candidate list or a resolved package root defeats it, and the tracer widens
+ * to the whole source tree instead of the two files actually needed.
+ */
+const FONT_DIR = join(process.cwd(), "src/assets/fonts");
 
-function loadFont(subdir: string, filename: string) {
-  return readFile(join(NUNITO_FONT_DIR, subdir, filename));
+function loadFont(filename: string): Promise<Buffer> {
+  return readFile(join(FONT_DIR, filename));
 }
 
 /*
@@ -36,8 +44,8 @@ const LSB_META = -1.5; // Regular at 18px
 
 export async function createSocialImage() {
   const [nunitoRegular, nunitoBold] = await Promise.all([
-    loadFont("400Regular", "Nunito_400Regular.ttf"),
-    loadFont("700Bold", "Nunito_700Bold.ttf"),
+    loadFont("Nunito_400Regular.ttf"),
+    loadFont("Nunito_700Bold.ttf"),
   ]);
 
   return new ImageResponse(

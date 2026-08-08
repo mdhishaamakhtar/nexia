@@ -1,6 +1,7 @@
 node_modules
-bun.lock
+package-lock.json
 **/dist
+coverage
 apps/web/.next
 apps/web/next-env.d.ts
 apps/api/drizzle

@@ -49,6 +49,11 @@ export interface EmailSender {
   sendPasswordResetEmail(toEmail: string, token: string): Promise<void>;
 }
 
+export interface PasswordHasher {
+  hash(plain: string): Promise<string>;
+  verify(plain: string, hashed: string): Promise<boolean>;
+}
+
 function generateToken(): string {
   return randomBytes(32).toString("hex");
 }
@@ -64,6 +69,7 @@ export class AuthService {
     private resetRepo: PasswordResetRepo,
     private verifyRepo: EmailVerificationRepo,
     private emailSvc: EmailSender,
+    private hasher: PasswordHasher,
     private config: Config,
     private logger: Logger
   ) {}
@@ -82,7 +88,7 @@ export class AuthService {
       throw errEmailConflict();
     }
 
-    const hashedPassword = await Bun.password.hash(password, { algorithm: "bcrypt", cost: 10 });
+    const hashedPassword = await this.hasher.hash(password);
     const newUser = await this.repo.create({
       email,
       password: hashedPassword,
@@ -112,7 +118,7 @@ export class AuthService {
       throw errAccountNotFound();
     }
 
-    const valid = await Bun.password.verify(password, user.password, "bcrypt");
+    const valid = await this.hasher.verify(password, user.password);
     if (!valid) {
       throw errUnauthorized();
     }
@@ -178,7 +184,7 @@ export class AuthService {
       throw errNotFound();
     }
 
-    const hashed = await Bun.password.hash(newPassword, { algorithm: "bcrypt", cost: 10 });
+    const hashed = await this.hasher.hash(newPassword);
     await this.repo.updatePassword(record.userId, hashed);
     await this.resetRepo.markAsUsed(record.id);
   }

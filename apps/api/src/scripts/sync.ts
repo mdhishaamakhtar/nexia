@@ -9,7 +9,7 @@ import { EmbeddingQueueProducer, createRedisConnection } from "../queue/producer
  * Run after configuring Gemini for the first time or after wiping Redis.
  */
 async function main(): Promise<void> {
-  const config = await loadConfig(Bun.env.CONFIG_DIR ?? "config");
+  const config = await loadConfig(process.env.CONFIG_DIR ?? "config");
   const logger = createLogger(config).child({ component: "sync" });
 
   if (!config.ai.gemini_api_key) {

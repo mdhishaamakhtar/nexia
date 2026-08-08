@@ -273,6 +273,14 @@ export class ProfileRepository {
   }
 
   async delete(id: number, userId: number): Promise<void> {
-    await this.db.delete(profiles).where(and(eq(profiles.id, id), eq(profiles.userId, userId)));
+    // `returning` is what makes "deleted nothing" distinguishable from "deleted
+    // it". Without it a DELETE for a missing row — or for a row owned by
+    // somebody else — succeeds silently and the caller reports success.
+    const deleted = await this.db
+      .delete(profiles)
+      .where(and(eq(profiles.id, id), eq(profiles.userId, userId)))
+      .returning({ id: profiles.id });
+
+    if (deleted.length === 0) throw errNotFound();
   }
 }

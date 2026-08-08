@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import YAML from "yaml";
 
@@ -24,9 +25,10 @@ export const dbConfigSchema = z.object({
   name: z.string(),
   ssl_mode: z.enum(["disable", "require"]).default("disable"),
   run_migrations: z.boolean().default(true),
-  max_idle_conns: z.number().default(10),
   max_open_conns: z.number().default(50),
   conn_max_lifetime_minutes: z.number().default(60),
+  /** Seconds an idle pooled connection is kept before being closed. */
+  idle_timeout_seconds: z.number().default(300),
 });
 
 export const aiConfigSchema = z.object({
@@ -69,7 +71,12 @@ function coerceValue(section: string, key: string, value: string): unknown {
       .filter(Boolean);
   }
   if (section === "db") {
-    const intFields = ["port", "max_idle_conns", "max_open_conns", "conn_max_lifetime_minutes"];
+    const intFields = [
+      "port",
+      "max_open_conns",
+      "conn_max_lifetime_minutes",
+      "idle_timeout_seconds",
+    ];
     if (intFields.includes(key)) return Number(value);
   }
   if (section === "server") {
@@ -106,11 +113,18 @@ function applyEnvOverrides(raw: Record<string, unknown>): void {
 
 export async function loadConfig(configDir = "config"): Promise<Config> {
   const env = process.env.APP_ENV ?? "local";
-  const file = Bun.file(`${configDir}/${env}.yaml`);
-  if (!(await file.exists())) {
-    throw new Error(`config file not found: ${configDir}/${env}.yaml`);
+  const path = `${configDir}/${env}.yaml`;
+
+  let text: string;
+  try {
+    text = await readFile(path, "utf8");
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`config file not found: ${path}`);
+    }
+    throw err;
   }
-  const text = await file.text();
+
   const raw = YAML.parse(text) as Record<string, unknown>;
   applyEnvOverrides(raw);
   return configSchema.parse(raw);
