@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import {
   AuthService,
   type UserRepo,
@@ -7,8 +7,12 @@ import {
   type EmailSender,
 } from "../services/auth-service";
 import { ServiceError, ErrorKind } from "../services/errors";
+import { createBcryptHasher } from "../services/password-hasher";
 import pino from "pino";
 const logger = pino({ level: "silent" });
+
+// Cost 4 instead of the production 10: still real bcrypt, ~80x faster per call.
+const hasher = createBcryptHasher(4);
 
 const config = {
   server: {
@@ -140,7 +144,7 @@ function newSvc(
   verifyRepo = new FakeVerifyRepo(),
   emailSvc = new FakeEmailSender()
 ) {
-  return new AuthService(userRepo, resetRepo, verifyRepo, emailSvc, config, logger);
+  return new AuthService(userRepo, resetRepo, verifyRepo, emailSvc, hasher, config, logger);
 }
 
 function assertServiceError(err: unknown, kind: ErrorKind) {
@@ -189,7 +193,7 @@ describe("AuthService", () => {
   });
 
   test("login success", async () => {
-    const hash = await Bun.password.hash("validpass", { algorithm: "bcrypt", cost: 10 });
+    const hash = await hasher.hash("validpass");
     const repo = new FakeUserRepo();
     repo.users.push({ id: 9, email: "alice@example.com", password: hash, emailVerified: true });
     const svc = newSvc(repo);
@@ -199,7 +203,7 @@ describe("AuthService", () => {
   });
 
   test("login email not verified", async () => {
-    const hash = await Bun.password.hash("validpass", { algorithm: "bcrypt", cost: 10 });
+    const hash = await hasher.hash("validpass");
     const repo = new FakeUserRepo();
     repo.users.push({ id: 9, email: "alice@example.com", password: hash, emailVerified: false });
     const svc = newSvc(repo);
@@ -213,7 +217,7 @@ describe("AuthService", () => {
   });
 
   test("login wrong password", async () => {
-    const hash = await Bun.password.hash("validpass", { algorithm: "bcrypt", cost: 10 });
+    const hash = await hasher.hash("validpass");
     const repo = new FakeUserRepo();
     repo.users.push({ id: 9, email: "alice@example.com", password: hash, emailVerified: true });
     const svc = newSvc(repo);

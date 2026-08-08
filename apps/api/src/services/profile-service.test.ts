@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import type { ProfileOutput } from "@nexia/shared";
 import { ProfileService, type ProfileRepo, type EmbeddingQueue } from "../services/profile-service";
 import { ServiceError, ErrorKind } from "../services/errors";

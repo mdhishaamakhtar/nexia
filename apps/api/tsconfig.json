@@ -1,9 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["bun-types"],
+    "types": ["node"],
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "drizzle.config.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "drizzle.config.ts", "tsup.config.ts"]
 }

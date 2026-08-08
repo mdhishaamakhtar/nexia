@@ -14,10 +14,28 @@ const siteDomain = "nexia.hishaam.dev";
 const siteDescription =
   "Your personal digital slambook for friends, memories, and the little details you want to keep.";
 
-const NUNITO_FONT_DIR = join(process.cwd(), "node_modules/@expo-google-fonts/nunito");
+/*
+ * npm hoists workspace dependencies to the monorepo root, while other package
+ * managers keep a copy inside the workspace itself. Neither location is wrong,
+ * so try both rather than hard-coding one. (Node's own resolution would be
+ * tidier, but `import.meta.url` does not survive Next's bundling of this
+ * module, and `require.resolve` gets rewritten by the bundler.)
+ */
+const NUNITO_PACKAGE = "@expo-google-fonts/nunito";
+const NUNITO_FONT_DIRS = [
+  join(process.cwd(), "node_modules", NUNITO_PACKAGE),
+  join(process.cwd(), "..", "..", "node_modules", NUNITO_PACKAGE),
+];
 
-function loadFont(subdir: string, filename: string) {
-  return readFile(join(NUNITO_FONT_DIR, subdir, filename));
+async function loadFont(subdir: string, filename: string): Promise<Buffer> {
+  for (const dir of NUNITO_FONT_DIRS) {
+    try {
+      return await readFile(join(dir, subdir, filename));
+    } catch {
+      // Try the next candidate layout.
+    }
+  }
+  throw new Error(`could not locate ${NUNITO_PACKAGE}/${subdir}/${filename}`);
 }
 
 /*

@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { parseRedisURL } from "../queue/producer";
 import { ErrorKind } from "../services/errors";
 

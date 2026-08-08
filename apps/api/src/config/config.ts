@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import YAML from "yaml";
 
@@ -106,11 +107,18 @@ function applyEnvOverrides(raw: Record<string, unknown>): void {
 
 export async function loadConfig(configDir = "config"): Promise<Config> {
   const env = process.env.APP_ENV ?? "local";
-  const file = Bun.file(`${configDir}/${env}.yaml`);
-  if (!(await file.exists())) {
-    throw new Error(`config file not found: ${configDir}/${env}.yaml`);
+  const path = `${configDir}/${env}.yaml`;
+
+  let text: string;
+  try {
+    text = await readFile(path, "utf8");
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(`config file not found: ${path}`);
+    }
+    throw err;
   }
-  const text = await file.text();
+
   const raw = YAML.parse(text) as Record<string, unknown>;
   applyEnvOverrides(raw);
   return configSchema.parse(raw);

@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { Hono } from "hono";
 import { generateToken } from "../utils/jwt";
 import { authMiddleware, getUserId, type AppEnv } from "../middleware/auth";

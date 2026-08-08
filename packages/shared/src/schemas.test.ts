@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { relationshipTypeSchema, zodiacSignSchema } from "../src/enums";
 import { errorResponseSchema } from "../src/errors";
 import {

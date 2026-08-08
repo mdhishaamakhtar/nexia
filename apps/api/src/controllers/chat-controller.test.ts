@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { Hono } from "hono";
 import { createChatController } from "../controllers/chat-controller";
 import { ChatAgent } from "../ai/agent";

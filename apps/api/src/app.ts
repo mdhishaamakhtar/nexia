@@ -13,6 +13,7 @@ import { ProfileRepository } from "./repositories/profile";
 import { EmbeddingRepository } from "./repositories/embedding";
 import { EmailService } from "./email/email-service";
 import { AuthService } from "./services/auth-service";
+import { createBcryptHasher } from "./services/password-hasher";
 import { ProfileService } from "./services/profile-service";
 import { EmbeddingService } from "./services/embedding-service";
 import { ChatAgent } from "./ai/agent";
@@ -52,6 +53,7 @@ export async function createApp(configDir = "config"): Promise<Bootstrap> {
     new PasswordResetRepository(db),
     new EmailVerificationRepository(db),
     emailService,
+    createBcryptHasher(),
     config,
     logger
   );
