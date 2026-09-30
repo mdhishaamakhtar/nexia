@@ -1,275 +1,104 @@
-import { eq, and, ilike, count as sqlCount } from "drizzle-orm";
-import type { ProfileOutput, ProfileSummary } from "@nexia/shared";
-import {
-  profiles,
-  tags,
-  politicalViews,
-  foodRestrictions,
-  movieGenres,
-  bookGenres,
-  hangoutPlaces,
-  quotes,
-  favoriteMemories,
-  topSongs,
-  associatedSongs,
-} from "../db/schema";
+import { and, asc, count, eq, ilike, inArray, sql } from "drizzle-orm";
+import type { ProfileInput, ProfileOutput, ProfileSummary, RelationshipType } from "@nexia/shared";
+import { profiles } from "../db/schema";
 import type { DB } from "../db/client";
-import { toProfileOutput, toProfileSummary } from "./profile-mapper";
 import { errNotFound } from "../services/errors";
+import {
+  toNewProfileRow,
+  toProfileOutput,
+  toProfilePatch,
+  toProfileSummary,
+} from "./profile-mapper";
 
-/**
- * `with` clause that hydrates a profile and every child collection in one
- * relational query. Drizzle emits lateral json-aggregation, so the result is a
- * single row per profile (no cartesian explosion from the ten one-to-many
- * tables).
- */
-const FULL_PROFILE_WITH = {
-  tags: true,
-  politicalViews: true,
-  foodRestrictions: true,
-  movieGenres: true,
-  bookGenres: true,
-  hangoutPlaces: true,
-  quotes: true,
-  favoriteMemories: true,
-  topSongs: true,
-  associatedSong: true,
-} as const;
-
-export type ProfileRow = typeof profiles.$inferSelect;
-export type NewProfile = typeof profiles.$inferInsert;
-
-/** Child collections accepted by create/update, keyed to their value columns. */
-export interface ProfileChildInput {
-  tags?: Array<{ tag: string }>;
-  politicalViews?: Array<{ view: string }>;
-  foodRestrictions?: Array<{ restriction: string }>;
-  movieGenres?: Array<{ genre: string }>;
-  bookGenres?: Array<{ genre: string }>;
-  hangoutPlaces?: Array<{ place: string }>;
-  quotes?: Array<{ quote: string }>;
-  favoriteMemories?: Array<{ memory: string }>;
-  topSongs?: Array<{ name: string; artist: string }>;
-  associatedSong?: { name: string; artist: string } | null;
+export interface ListProfilesParams {
+  userId: number;
+  page: number;
+  limit: number;
+  search?: string;
+  relationshipType?: RelationshipType;
 }
 
-export interface CreateProfileInput extends ProfileChildInput {
-  profile: Omit<NewProfile, "id">;
-}
-
-export interface UpdateProfileInput extends ProfileChildInput {
-  profile: Partial<Omit<NewProfile, "id" | "userId">>;
+/** Escapes LIKE wildcards so a search for "50%" finds "50%", not everything. */
+function likeLiteral(value: string): string {
+  return value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
 }
 
 export class ProfileRepository {
   constructor(private db: DB) {}
 
-  async create(data: CreateProfileInput): Promise<ProfileOutput> {
-    const id = await this.db.transaction(async (tx) => {
-      const [profile] = await tx.insert(profiles).values(data.profile).returning();
-      if (!profile) throw new Error("Failed to create profile — insert returned no row");
-
-      const pid = profile.id;
-      if (data.tags?.length) {
-        await tx.insert(tags).values(data.tags.map((t) => ({ ...t, profileId: pid })));
-      }
-      if (data.politicalViews?.length) {
-        await tx
-          .insert(politicalViews)
-          .values(data.politicalViews.map((v) => ({ ...v, profileId: pid })));
-      }
-      if (data.foodRestrictions?.length) {
-        await tx
-          .insert(foodRestrictions)
-          .values(data.foodRestrictions.map((r) => ({ ...r, profileId: pid })));
-      }
-      if (data.movieGenres?.length) {
-        await tx
-          .insert(movieGenres)
-          .values(data.movieGenres.map((g) => ({ ...g, profileId: pid })));
-      }
-      if (data.bookGenres?.length) {
-        await tx.insert(bookGenres).values(data.bookGenres.map((g) => ({ ...g, profileId: pid })));
-      }
-      if (data.hangoutPlaces?.length) {
-        await tx
-          .insert(hangoutPlaces)
-          .values(data.hangoutPlaces.map((p) => ({ ...p, profileId: pid })));
-      }
-      if (data.quotes?.length) {
-        await tx.insert(quotes).values(data.quotes.map((q) => ({ ...q, profileId: pid })));
-      }
-      if (data.favoriteMemories?.length) {
-        await tx
-          .insert(favoriteMemories)
-          .values(data.favoriteMemories.map((m) => ({ ...m, profileId: pid })));
-      }
-      if (data.topSongs?.length) {
-        await tx.insert(topSongs).values(data.topSongs.map((s) => ({ ...s, profileId: pid })));
-      }
-      if (data.associatedSong) {
-        await tx.insert(associatedSongs).values({ ...data.associatedSong, profileId: pid });
-      }
-
-      return pid;
-    });
-
-    const created = await this.findById(id, data.profile.userId);
-    if (!created) throw errNotFound();
-    return created;
+  async create(userId: number, input: ProfileInput): Promise<ProfileOutput> {
+    const [row] = await this.db.insert(profiles).values(toNewProfileRow(userId, input)).returning();
+    return toProfileOutput(row!);
   }
 
   async findById(id: number, userId: number): Promise<ProfileOutput | null> {
-    const row = await this.db.query.profiles.findFirst({
-      where: and(eq(profiles.id, id), eq(profiles.userId, userId)),
-      with: FULL_PROFILE_WITH,
-    });
-    if (!row) return null;
-    return toProfileOutput(row, row);
+    const [row] = await this.db
+      .select()
+      .from(profiles)
+      .where(and(eq(profiles.id, id), eq(profiles.userId, userId)))
+      .limit(1);
+    return row ? toProfileOutput(row) : null;
   }
 
-  async findAll(params: {
-    page: number;
-    limit: number;
-    search?: string;
-    relationshipType?: string;
-    userId: number;
-  }): Promise<{ profiles: ProfileSummary[]; total: number }> {
-    const { page, limit, search, relationshipType, userId } = params;
+  /** Loads several profiles, returned in the order of `ids`. Missing ids are skipped. */
+  async findByIds(ids: number[], userId: number): Promise<ProfileOutput[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.db
+      .select()
+      .from(profiles)
+      .where(and(inArray(profiles.id, ids), eq(profiles.userId, userId)));
+    const byId = new Map(rows.map((row) => [row.id, toProfileOutput(row)]));
+    return ids.flatMap((id) => byId.get(id) ?? []);
+  }
+
+  async findAll(
+    params: ListProfilesParams
+  ): Promise<{ profiles: ProfileSummary[]; total: number }> {
+    const { userId, page, limit, search, relationshipType } = params;
 
     const conditions = [eq(profiles.userId, userId)];
-    if (search) conditions.push(ilike(profiles.fullName, `%${search}%`));
+    if (search) conditions.push(ilike(profiles.fullName, `%${likeLiteral(search)}%`));
     if (relationshipType) conditions.push(eq(profiles.relationshipType, relationshipType));
     const where = and(...conditions);
 
-    const [totalRow] = await this.db.select({ count: sqlCount() }).from(profiles).where(where);
-    const total = Number(totalRow?.count ?? 0);
+    const [totalRow] = await this.db.select({ total: count() }).from(profiles).where(where);
 
-    // The list/search surfaces only render name, pronouns, relationship, zodiac
-    // and tags, so project just those columns plus the tags relation — the other
-    // nine child collections are never fetched.
-    const rows = await this.db.query.profiles.findMany({
-      columns: {
-        id: true,
-        fullName: true,
-        pronouns: true,
-        relationshipType: true,
-        zodiacSign: true,
-      },
-      with: { tags: true },
-      where,
-      orderBy: profiles.id,
-      offset: (page - 1) * limit,
-      limit,
-    });
+    // Alphabetical, the way people look for someone in a book; id breaks ties
+    // so paging stays stable when two people share a name.
+    const rows = await this.db
+      .select({
+        id: profiles.id,
+        fullName: profiles.fullName,
+        pronouns: profiles.pronouns,
+        relationshipType: profiles.relationshipType,
+        birthday: profiles.birthday,
+        tags: profiles.tags,
+      })
+      .from(profiles)
+      .where(where)
+      .orderBy(sql`lower(${profiles.fullName})`, asc(profiles.id))
+      .offset((page - 1) * limit)
+      .limit(limit);
 
-    return { profiles: rows.map(toProfileSummary), total };
+    return { profiles: rows.map(toProfileSummary), total: Number(totalRow?.total ?? 0) };
   }
 
-  async update(
-    profileId: number,
-    userId: number,
-    data: UpdateProfileInput
-  ): Promise<ProfileOutput> {
-    await this.db.transaction(async (tx) => {
-      const [existing] = await tx
-        .select({ id: profiles.id })
-        .from(profiles)
-        .where(and(eq(profiles.id, profileId), eq(profiles.userId, userId)))
-        .limit(1);
-      if (!existing) throw errNotFound();
-
-      const [updated] = await tx
-        .update(profiles)
-        .set({ ...data.profile, updatedAt: new Date() })
-        .where(eq(profiles.id, profileId))
-        .returning({ id: profiles.id });
-      if (!updated) throw errNotFound();
-
-      // Full-overwrite semantics: when a child collection is provided, replace it.
-      if (data.tags !== undefined) {
-        await tx.delete(tags).where(eq(tags.profileId, profileId));
-        if (data.tags.length) {
-          await tx.insert(tags).values(data.tags.map((t) => ({ ...t, profileId })));
-        }
-      }
-      if (data.politicalViews !== undefined) {
-        await tx.delete(politicalViews).where(eq(politicalViews.profileId, profileId));
-        if (data.politicalViews.length) {
-          await tx
-            .insert(politicalViews)
-            .values(data.politicalViews.map((v) => ({ ...v, profileId })));
-        }
-      }
-      if (data.foodRestrictions !== undefined) {
-        await tx.delete(foodRestrictions).where(eq(foodRestrictions.profileId, profileId));
-        if (data.foodRestrictions.length) {
-          await tx
-            .insert(foodRestrictions)
-            .values(data.foodRestrictions.map((r) => ({ ...r, profileId })));
-        }
-      }
-      if (data.movieGenres !== undefined) {
-        await tx.delete(movieGenres).where(eq(movieGenres.profileId, profileId));
-        if (data.movieGenres.length) {
-          await tx.insert(movieGenres).values(data.movieGenres.map((g) => ({ ...g, profileId })));
-        }
-      }
-      if (data.bookGenres !== undefined) {
-        await tx.delete(bookGenres).where(eq(bookGenres.profileId, profileId));
-        if (data.bookGenres.length) {
-          await tx.insert(bookGenres).values(data.bookGenres.map((g) => ({ ...g, profileId })));
-        }
-      }
-      if (data.hangoutPlaces !== undefined) {
-        await tx.delete(hangoutPlaces).where(eq(hangoutPlaces.profileId, profileId));
-        if (data.hangoutPlaces.length) {
-          await tx
-            .insert(hangoutPlaces)
-            .values(data.hangoutPlaces.map((p) => ({ ...p, profileId })));
-        }
-      }
-      if (data.quotes !== undefined) {
-        await tx.delete(quotes).where(eq(quotes.profileId, profileId));
-        if (data.quotes.length) {
-          await tx.insert(quotes).values(data.quotes.map((q) => ({ ...q, profileId })));
-        }
-      }
-      if (data.favoriteMemories !== undefined) {
-        await tx.delete(favoriteMemories).where(eq(favoriteMemories.profileId, profileId));
-        if (data.favoriteMemories.length) {
-          await tx
-            .insert(favoriteMemories)
-            .values(data.favoriteMemories.map((m) => ({ ...m, profileId })));
-        }
-      }
-      if (data.topSongs !== undefined) {
-        await tx.delete(topSongs).where(eq(topSongs.profileId, profileId));
-        if (data.topSongs.length) {
-          await tx.insert(topSongs).values(data.topSongs.map((s) => ({ ...s, profileId })));
-        }
-      }
-      if (data.associatedSong !== undefined) {
-        await tx.delete(associatedSongs).where(eq(associatedSongs.profileId, profileId));
-        if (data.associatedSong) {
-          await tx.insert(associatedSongs).values({ ...data.associatedSong, profileId });
-        }
-      }
-    });
-
-    const result = await this.findById(profileId, userId);
-    if (!result) throw errNotFound();
-    return result;
-  }
-
-  /** Loads a fully-hydrated profile without a user guard (queue worker use). */
-  async loadForEmbedding(profileId: number): Promise<ProfileOutput | null> {
-    const row = await this.db.query.profiles.findFirst({
-      where: eq(profiles.id, profileId),
-      with: FULL_PROFILE_WITH,
-    });
-    if (!row) return null;
-    return toProfileOutput(row, row);
+  /**
+   * Merges `patch` into the profile: keys that are `undefined` keep their stored
+   * value. Every write bumps `revision`, which is what marks the embedding stale.
+   */
+  async update(id: number, userId: number, patch: Partial<ProfileInput>): Promise<ProfileOutput> {
+    const [row] = await this.db
+      .update(profiles)
+      .set({
+        ...toProfilePatch(patch),
+        revision: sql`${profiles.revision} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(profiles.id, id), eq(profiles.userId, userId)))
+      .returning();
+    if (!row) throw errNotFound();
+    return toProfileOutput(row);
   }
 
   async delete(id: number, userId: number): Promise<void> {

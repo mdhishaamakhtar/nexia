@@ -9,7 +9,6 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: {
     index: "src/index.ts",
-    "scripts/sync": "src/scripts/sync.ts",
   },
   format: ["esm"],
   target: "node24",
@@ -17,8 +16,5 @@ export default defineConfig({
   outDir: "dist",
   sourcemap: true,
   clean: true,
-  // Keep native/optional deps external so they resolve from node_modules at
-  // runtime rather than being inlined.
-  external: ["pino-pretty"],
   noExternal: [/@nexia\/shared/],
 });

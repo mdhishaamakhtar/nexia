@@ -1,6 +1,4 @@
 import type { Hono } from "hono";
-import type Redis from "ioredis";
-import type { Worker } from "bullmq";
 import type { LanguageModel } from "ai";
 import { buildApp } from "./routes/routes";
 import { loadConfig, type Config } from "./config/config";
@@ -8,25 +6,24 @@ import { createLogger, type Logger } from "./logging/logger";
 import { createDb, type DB } from "./db/client";
 import { runMigrations } from "./db/migrate";
 import { UserRepository } from "./repositories/user";
-import { PasswordResetRepository } from "./repositories/password-reset";
-import { EmailVerificationRepository } from "./repositories/email-verification";
+import { EmailTokenRepository } from "./repositories/email-token";
 import { ProfileRepository } from "./repositories/profile";
 import { EmbeddingRepository } from "./repositories/embedding";
+import { emailVerificationTokens, passwordResetTokens } from "./db/schema";
 import { EmailService } from "./email/email-service";
 import { AuthService, type PasswordHasher } from "./services/auth-service";
 import { createBcryptHasher } from "./services/password-hasher";
 import { ProfileService } from "./services/profile-service";
-import { EmbeddingService } from "./services/embedding-service";
+import { EmbeddingService, type EmbeddingGenerator } from "./services/embedding-service";
+import { EmbeddingWorker } from "./services/embedding-worker";
 import { ChatAgent } from "./ai/agent";
-import { createEmbeddingGenerator, type EmbeddingGenerator } from "./ai/embeddings";
+import { createEmbeddingGenerator } from "./ai/embeddings";
 import { createChatModel } from "./ai/provider";
-import { createWorker } from "./queue/worker";
-import { EmbeddingQueueProducer, createRedisConnection } from "./queue/producer";
 
 /**
  * Everything `wireApp` needs, already constructed. Keeping the optional
- * collaborators (model, embeddings, redis) as parameters rather than building
- * them inside means the graph can be assembled against a mocked model and a
+ * collaborators (model, embeddings) as parameters rather than building them
+ * inside means the graph can be assembled against a mocked model and a
  * throwaway container without touching config files or the network.
  */
 export interface RuntimeDeps {
@@ -36,75 +33,79 @@ export interface RuntimeDeps {
   hasher: PasswordHasher;
   chatModel: LanguageModel | null;
   embeddingGenerator: EmbeddingGenerator | null;
-  redis: Redis | null;
 }
 
 export interface Runtime {
   app: Hono;
   config: Config;
   logger: Logger;
-  queue: EmbeddingQueueProducer | null;
-  worker: Worker | null;
   embeddingService: EmbeddingService | null;
+  /** Not started: `createApp` starts it, tests drive it with `drain()`. */
+  embeddingWorker: EmbeddingWorker | null;
   close: () => Promise<void>;
 }
 
 /**
- * Pure wiring: no config loading, no connections opened, no migrations. Given a
- * database handle and the optional AI/queue collaborators, returns the Hono app
- * plus the background pieces a caller may need to drive or shut down.
+ * Pure wiring: no config loading, no connections opened, no migrations, no
+ * timers. Given a database handle and the optional AI collaborators, returns
+ * the Hono app plus the background worker a caller may start or drive.
  */
 export function wireApp(deps: RuntimeDeps): Runtime {
-  const { config, logger, db, hasher, chatModel, embeddingGenerator, redis } = deps;
+  const { config, logger, db, hasher, chatModel, embeddingGenerator } = deps;
 
   const userRepo = new UserRepository(db);
-  const profileRepo = new ProfileRepository(db);
-  const emailService = new EmailService(config, logger);
-
   const authService = new AuthService(
     userRepo,
-    new PasswordResetRepository(db),
-    new EmailVerificationRepository(db),
-    emailService,
+    new EmailTokenRepository(db, passwordResetTokens),
+    new EmailTokenRepository(db, emailVerificationTokens),
+    new EmailService(config, logger),
     hasher,
-    config,
-    logger
+    logger.child({ component: "auth" })
   );
 
   // The embedding half of the system is optional end to end: without a
-  // generator there is nothing to store, and without Redis nothing to schedule.
-  const embeddingRepo = embeddingGenerator ? new EmbeddingRepository(db, logger) : null;
-  const embeddingService =
-    embeddingGenerator && embeddingRepo
-      ? new EmbeddingService(profileRepo, embeddingGenerator, embeddingRepo, logger)
-      : null;
+  // generator there is nothing to store and semantic search is unavailable.
+  const embeddingService = embeddingGenerator
+    ? new EmbeddingService(
+        new EmbeddingRepository(db),
+        embeddingGenerator,
+        logger.child({ component: "embeddings" })
+      )
+    : null;
+  const embeddingWorker = embeddingService
+    ? new EmbeddingWorker(
+        embeddingService,
+        logger.child({ component: "embedding_worker" }),
+        config.ai.embedding_interval_seconds * 1000
+      )
+    : null;
 
-  const queue = redis ? new EmbeddingQueueProducer(redis, logger) : null;
-  const worker = redis && embeddingService ? createWorker(redis, embeddingService, logger) : null;
-
-  const profileService = new ProfileService(profileRepo, queue, logger);
-  const chatAgent = new ChatAgent(chatModel, profileService, embeddingRepo, embeddingGenerator);
+  const profileService = new ProfileService(new ProfileRepository(db), embeddingWorker);
+  const chatAgent = new ChatAgent({
+    model: chatModel,
+    profileService,
+    embeddingService,
+    secret: config.server.jwt_secret,
+  });
 
   const app = buildApp({
     config,
     logger,
     db,
-    userLookup: userRepo,
+    sessions: userRepo,
     authService,
     profileService,
     chatAgent,
   });
 
   return {
-    app,
+    app: app as unknown as Hono,
     config,
     logger,
-    queue,
-    worker,
     embeddingService,
+    embeddingWorker,
     close: async () => {
-      await worker?.close();
-      await queue?.close();
+      await embeddingWorker?.stop();
     },
   };
 }
@@ -117,8 +118,8 @@ export interface Bootstrap {
 }
 
 /**
- * Production entry point: loads config, opens the database, runs migrations and
- * hands the result to `wireApp`.
+ * Production entry point: loads config, opens the database, runs migrations,
+ * hands the result to `wireApp` and starts the embedding worker.
  */
 export async function createApp(configDir = "config"): Promise<Bootstrap> {
   const config = await loadConfig(configDir);
@@ -129,22 +130,16 @@ export async function createApp(configDir = "config"): Promise<Bootstrap> {
     await runMigrations(sql, logger);
   }
 
-  let embeddingGenerator: EmbeddingGenerator | null = null;
-  let redis: Redis | null = null;
+  const embeddingGenerator = config.ai.gemini_api_key
+    ? createEmbeddingGenerator(config.ai.gemini_api_key)
+    : null;
+  if (!embeddingGenerator) {
+    logger.warn("Gemini API key not set: embeddings and semantic search are disabled");
+  }
 
-  if (config.ai.gemini_api_key) {
-    embeddingGenerator = createEmbeddingGenerator(config.ai.gemini_api_key);
-
-    if (config.ai.redis_url) {
-      try {
-        redis = createRedisConnection(config.ai.redis_url);
-      } catch (err) {
-        logger.warn({ err: String(err) }, "Redis connection failed, embedding queue disabled");
-        redis = null;
-      }
-    }
-  } else {
-    logger.warn("Gemini API key not set — embedding pipeline and RAG search disabled");
+  const chatModel = createChatModel(config);
+  if (!chatModel) {
+    logger.warn("OpenCode API key not set: chat is disabled");
   }
 
   const runtime = wireApp({
@@ -152,15 +147,14 @@ export async function createApp(configDir = "config"): Promise<Bootstrap> {
     logger,
     db,
     hasher: createBcryptHasher(),
-    chatModel: createChatModel(config),
+    chatModel,
     embeddingGenerator,
-    redis,
   });
+  runtime.embeddingWorker?.start();
 
   const shutdown = async (): Promise<void> => {
     logger.info("shutting down");
     await runtime.close();
-    redis?.disconnect();
     await sql.end({ timeout: 5 });
   };
 

@@ -2,251 +2,163 @@ import { describe, expect, test } from "vitest";
 import { relationshipTypeSchema, zodiacSignSchema } from "../src/enums";
 import { errorResponseSchema } from "../src/errors";
 import {
+  emailSchema,
   signupRequestSchema,
   loginRequestSchema,
-  messageResponseSchema,
-  loginResponseSchema,
-  authSessionSchema,
-  forgotPasswordRequestSchema,
   resetPasswordRequestSchema,
+  verifyEmailRequestSchema,
 } from "../src/auth";
 import {
+  MAX_TOP_SONGS,
+  PROFILE_LIST_LIMITS,
+  PROFILE_TEXT_LIMITS,
   profileInputSchema,
   profileOutputSchema,
-  topSongSchema,
-  associatedSongSchema,
   listProfilesQuerySchema,
-  profileListResponseSchema,
 } from "../src/profile";
 import {
   ragSearchInputSchema,
   searchProfilesInputSchema,
-  getProfileInputSchema,
-  createProfileToolInputSchema,
   updateProfileToolInputSchema,
 } from "../src/chat";
 
+const minimal = { full_name: "Asha Kumar", relationship_type: "Friend" as const };
+const TOKEN = "a".repeat(64);
+
 describe("enums", () => {
-  test("relationshipTypeSchema accepts valid values", () => {
+  test("relationship and zodiac enums reject unknown values", () => {
     expect(relationshipTypeSchema.parse("Friend")).toBe("Friend");
-    expect(relationshipTypeSchema.parse("Family")).toBe("Family");
-    expect(relationshipTypeSchema.parse("Other")).toBe("Other");
-  });
-
-  test("relationshipTypeSchema rejects invalid values", () => {
     expect(() => relationshipTypeSchema.parse("Stranger")).toThrow();
-    expect(() => relationshipTypeSchema.parse("")).toThrow();
-  });
-
-  test("zodiacSignSchema accepts valid values", () => {
-    expect(zodiacSignSchema.parse("Aries")).toBe("Aries");
     expect(zodiacSignSchema.parse("Pisces")).toBe("Pisces");
-  });
-
-  test("zodiacSignSchema rejects invalid values", () => {
     expect(() => zodiacSignSchema.parse("Unknown")).toThrow();
-  });
-
-  test("birthday format validation", () => {
-    // Valid birthday
-    const valid = profileInputSchema.parse({
-      full_name: "Test",
-      relationship_type: "Friend",
-      birthday: "1990-05-15",
-    });
-    expect(valid.birthday).toBe("1990-05-15");
-
-    // Null birthday
-    const nullBirthday = profileInputSchema.parse({
-      full_name: "Test",
-      relationship_type: "Friend",
-      birthday: null,
-    });
-    expect(nullBirthday.birthday).toBeNull();
-
-    // Undefined birthday
-    const undefBirthday = profileInputSchema.parse({
-      full_name: "Test",
-      relationship_type: "Friend",
-    });
-    expect(undefBirthday.birthday).toBeUndefined();
-
-    // Invalid birthday format
-    expect(() =>
-      profileInputSchema.parse({
-        full_name: "Test",
-        relationship_type: "Friend",
-        birthday: "05/15/1990",
-      })
-    ).toThrow();
   });
 });
 
 describe("errors", () => {
-  test("errorResponseSchema parses valid error", () => {
-    const result = errorResponseSchema.parse({
-      error: { code: "NOT_FOUND", message: "Profile not found" },
-    });
-    expect(result.error.code).toBe("NOT_FOUND");
-    expect(result.error.message).toBe("Profile not found");
-  });
-
-  test("errorResponseSchema rejects missing fields", () => {
+  test("errorResponseSchema requires code and message", () => {
+    expect(
+      errorResponseSchema.parse({ error: { code: "NOT_FOUND", message: "x" } }).error.code
+    ).toBe("NOT_FOUND");
     expect(() => errorResponseSchema.parse({ error: { code: "x" } })).toThrow();
   });
 });
 
 describe("auth schemas", () => {
-  test("signupRequestSchema requires email and password", () => {
-    const valid = signupRequestSchema.parse({
-      email: "test@example.com",
-      password: "password123",
-    });
-    expect(valid.email).toBe("test@example.com");
-    expect(valid.password).toBe("password123");
+  test("emails are trimmed and lower-cased", () => {
+    expect(emailSchema.parse("  Asha.K@Example.COM ")).toBe("asha.k@example.com");
   });
 
-  test("signupRequestSchema rejects missing fields", () => {
-    expect(() => signupRequestSchema.parse({ email: "x@y.z" })).toThrow();
-    expect(() => signupRequestSchema.parse({ password: "123456" })).toThrow();
+  test("emails must be addresses", () => {
+    expect(() => emailSchema.parse("a@b")).toThrow();
+    expect(() => emailSchema.parse("not an email")).toThrow();
   });
 
-  test("loginRequestSchema", () => {
+  test("a new password needs eight characters; signing in does not", () => {
+    expect(() => signupRequestSchema.parse({ email: "a@b.co", password: "1234567" })).toThrow();
+    expect(signupRequestSchema.parse({ email: "a@b.co", password: "12345678" }).password).toBe(
+      "12345678"
+    );
+    // Accounts made under the old six-character rule must still get in.
+    expect(loginRequestSchema.parse({ email: "a@b.co", password: "123456" }).password).toBe(
+      "123456"
+    );
+    expect(() => loginRequestSchema.parse({ email: "a@b.co", password: "" })).toThrow();
+  });
+
+  test("email tokens are 64 hex characters", () => {
+    expect(verifyEmailRequestSchema.parse({ token: TOKEN }).token).toBe(TOKEN);
+    expect(() => verifyEmailRequestSchema.parse({ token: "abc123" })).toThrow();
     expect(() =>
-      loginRequestSchema.parse({ email: "test@test.com", password: "123456" })
-    ).not.toThrow();
-  });
-
-  test("forgotPasswordRequestSchema", () => {
-    const valid = forgotPasswordRequestSchema.parse({ email: "test@test.com" });
-    expect(valid.email).toBe("test@test.com");
-  });
-
-  test("resetPasswordRequestSchema", () => {
-    const valid = resetPasswordRequestSchema.parse({
-      token: "abc123",
-      new_password: "newpass123",
-    });
-    expect(valid.token).toBe("abc123");
-  });
-
-  test("messageResponseSchema", () => {
-    const valid = messageResponseSchema.parse({ message: "Done" });
-    expect(valid.message).toBe("Done");
-  });
-
-  test("loginResponseSchema", () => {
-    const valid = loginResponseSchema.parse({ token: "jwt..." });
-    expect(valid.token).toBe("jwt...");
-  });
-
-  test("authSessionSchema", () => {
-    const valid = authSessionSchema.parse({
-      authenticated: true,
-      user_id: 42,
-    });
-    expect(valid.authenticated).toBe(true);
-    expect(valid.user_id).toBe(42);
+      resetPasswordRequestSchema.parse({ token: TOKEN, new_password: "short" })
+    ).toThrow();
   });
 });
 
-describe("profile schemas", () => {
-  const minimalProfile = {
-    full_name: "Asha Kumar",
-    relationship_type: "Friend" as const,
-  };
-
-  test("profileInputSchema accepts minimal profile", () => {
-    const result = profileInputSchema.parse(minimalProfile);
-    expect(result.full_name).toBe("Asha Kumar");
-    expect(result.relationship_type).toBe("Friend");
+describe("profile input", () => {
+  test("accepts a minimal profile", () => {
+    expect(profileInputSchema.parse(minimal)).toEqual(minimal);
   });
 
-  test("profileInputSchema rejects missing full_name", () => {
-    expect(() => profileInputSchema.parse({ relationship_type: "Friend" })).toThrow();
+  test("rejects a blank name after trimming", () => {
+    expect(() => profileInputSchema.parse({ ...minimal, full_name: "   " })).toThrow();
   });
 
-  test("profileInputSchema rejects invalid relationship_type", () => {
+  test("birthdays must be real calendar dates", () => {
+    expect(profileInputSchema.parse({ ...minimal, birthday: "1990-05-15" }).birthday).toBe(
+      "1990-05-15"
+    );
+    expect(profileInputSchema.parse({ ...minimal, birthday: null }).birthday).toBeNull();
+    for (const bad of ["2024-13-45", "2023-02-29", "05/15/1990", ""]) {
+      expect(() => profileInputSchema.parse({ ...minimal, birthday: bad }), bad).toThrow();
+    }
+  });
+
+  test("text fields stop at their column size", () => {
+    const max = PROFILE_TEXT_LIMITS.favorite_movie;
     expect(() =>
-      profileInputSchema.parse({ full_name: "Test", relationship_type: "Boss" })
+      profileInputSchema.parse({ ...minimal, favorite_movie: "x".repeat(max) })
+    ).not.toThrow();
+    expect(() =>
+      profileInputSchema.parse({ ...minimal, favorite_movie: "x".repeat(max + 1) })
     ).toThrow();
   });
 
-  test("profileInputSchema accepts full profile with children", () => {
-    const full = {
-      full_name: "Asha Kumar",
-      relationship_type: "Friend" as const,
-      bio: "A great friend",
-      profession: "Engineer",
-      long_term_goals: "Travel the world",
-      birthday: "1990-06-15",
-      zodiac_sign: "Gemini" as const,
-      music_preference: "Pop",
-      favorite_movie: "Inception",
-      favorite_book: "Dune",
-      notes: "Awesome person",
-      tags: [{ tag: "kind" }, { tag: "funny" }],
-      political_views: [{ view: "moderate" }],
-      food_restrictions: [{ restriction: "vegetarian" }],
-      movie_genres: [{ genre: "sci-fi" }],
-      book_genres: [{ genre: "fiction" }],
-      hangout_places: [{ place: "coffee shop" }],
-      quotes: [{ quote: "Be yourself" }],
-      favorite_memories: [{ memory: "Road trip" }, { memory: "Beach day" }],
-      top_songs: [
-        { name: "Song 1", artist: "Artist 1" },
-        { name: "Song 2", artist: "Artist 2" },
-        { name: "Song 3", artist: "Artist 3" },
-      ],
-      associated_song: { name: "Anthem", artist: "Band" },
-    };
-    const result = profileInputSchema.parse(full);
-    expect(result.tags?.length).toBe(2);
-    expect(result.favorite_memories?.length).toBe(2);
-    expect(result.top_songs?.length).toBe(3);
-    expect(result.associated_song?.name).toBe("Anthem");
+  test("list fields are trimmed strings with bounded length and count", () => {
+    const parsed = profileInputSchema.parse({ ...minimal, tags: ["  kind ", "funny"] });
+    expect(parsed.tags).toEqual(["kind", "funny"]);
+
+    expect(() => profileInputSchema.parse({ ...minimal, tags: ["  "] })).toThrow();
+    const { items, length } = PROFILE_LIST_LIMITS.quotes;
+    expect(() =>
+      profileInputSchema.parse({ ...minimal, quotes: ["x".repeat(length + 1)] })
+    ).toThrow();
+    expect(() =>
+      profileInputSchema.parse({ ...minimal, quotes: Array.from({ length: items + 1 }, () => "q") })
+    ).toThrow();
   });
 
-  test("topSongSchema validates name and artist", () => {
-    const valid = topSongSchema.parse({
-      name: "Bohemian Rhapsody",
-      artist: "Queen",
+  test("songs need a name; the artist is optional", () => {
+    const parsed = profileInputSchema.parse({
+      ...minimal,
+      top_songs: [{ name: "Holocene" }],
+      associated_song: { name: "Yellow", artist: "Coldplay" },
     });
-    expect(valid.name).toBe("Bohemian Rhapsody");
-    expect(valid.artist).toBe("Queen");
+    expect(parsed.top_songs).toEqual([{ name: "Holocene", artist: "" }]);
+    expect(() => profileInputSchema.parse({ ...minimal, top_songs: [{ name: " " }] })).toThrow();
   });
 
-  test("topSongSchema rejects missing name", () => {
-    expect(() => topSongSchema.parse({ artist: "Queen" })).toThrow();
+  test(`at most ${MAX_TOP_SONGS} top songs`, () => {
+    const songs = Array.from({ length: MAX_TOP_SONGS + 1 }, (_, i) => ({ name: `s${i}` }));
+    expect(() => profileInputSchema.parse({ ...minimal, top_songs: songs })).toThrow();
   });
 
-  test("associatedSongSchema", () => {
-    const valid = associatedSongSchema.parse({
-      name: "Anthem",
-      artist: "Band",
-    });
-    expect(valid.name).toBe("Anthem");
+  test("unknown keys, including a client-supplied zodiac sign, are dropped", () => {
+    const parsed = profileInputSchema.parse({ ...minimal, zodiac_sign: "Leo", id: 4 });
+    expect(parsed).not.toHaveProperty("zodiac_sign");
+    expect(parsed).not.toHaveProperty("id");
   });
+});
 
-  test("profileOutputSchema requires all fields present", () => {
-    const output = {
+describe("profile output and queries", () => {
+  test("output lists are plain string arrays", () => {
+    const output = profileOutputSchema.parse({
       id: 1,
       user_id: 42,
       full_name: "Asha Kumar",
-      pronouns: "she/her",
+      pronouns: "",
       relationship_type: "Friend",
       bio: "",
       profession: "",
       long_term_goals: "",
-      birthday: null,
-      zodiac_sign: null,
+      birthday: "1990-05-15",
+      zodiac_sign: "Taurus",
       music_preference: "",
       favorite_movie: "",
       favorite_book: "",
       notes: "",
       created_at: "2025-01-01T00:00:00Z",
       updated_at: "2025-01-01T00:00:00Z",
-      tags: [],
+      tags: ["kind"],
       political_views: [],
       food_restrictions: [],
       movie_genres: [],
@@ -254,75 +166,35 @@ describe("profile schemas", () => {
       hangout_places: [],
       quotes: [],
       favorite_memories: [],
-      top_songs: [],
+      top_songs: [{ name: "Song", artist: "" }],
       associated_song: null,
-    };
-    const result = profileOutputSchema.parse(output);
-    expect(result.id).toBe(1);
-  });
-
-  test("listProfilesQuerySchema coerces page/limit", () => {
-    const result = listProfilesQuerySchema.parse({
-      page: "3",
-      limit: "20",
-      search: "asha",
-      relationship_type: "Friend",
     });
-    expect(result.page).toBe(3);
-    expect(result.limit).toBe(20);
-    expect(result.search).toBe("asha");
+    expect(output.tags).toEqual(["kind"]);
   });
 
-  test("profileListResponseSchema", () => {
-    const response = {
-      data: [],
-      total: 0,
-      page: 1,
-      limit: 10,
-    };
-    const result = profileListResponseSchema.parse(response);
-    expect(result.total).toBe(0);
+  test("list query coerces numbers, applies defaults and bounds", () => {
+    expect(listProfilesQuerySchema.parse({})).toEqual({ page: 1, limit: 24 });
+    expect(listProfilesQuerySchema.parse({ page: "3", limit: "20", search: " asha " })).toEqual({
+      page: 3,
+      limit: 20,
+      search: "asha",
+    });
+    expect(() => listProfilesQuerySchema.parse({ limit: "101" })).toThrow();
+    expect(() => listProfilesQuerySchema.parse({ page: "0" })).toThrow();
+    expect(() => listProfilesQuerySchema.parse({ page: "1.5" })).toThrow();
   });
 });
 
-describe("chat schemas", () => {
-  test("ragSearchInputSchema", () => {
-    const result = ragSearchInputSchema.parse({ query: "favorite movies" });
-    expect(result.query).toBe("favorite movies");
-    expect(result.limit).toBe(5);
+describe("chat tool schemas", () => {
+  test("search defaults and relationship enum", () => {
+    expect(searchProfilesInputSchema.parse({})).toEqual({ page: 1, limit: 10 });
+    expect(() => searchProfilesInputSchema.parse({ relationship_type: "friends" })).toThrow();
+    expect(ragSearchInputSchema.parse({ query: "jazz" }).limit).toBe(5);
+    expect(() => ragSearchInputSchema.parse({ query: "  " })).toThrow();
   });
 
-  test("ragSearchInputSchema with custom limit", () => {
-    const result = ragSearchInputSchema.parse({ query: "test", limit: 3 });
-    expect(result.limit).toBe(3);
-  });
-
-  test("searchProfilesInputSchema defaults", () => {
-    const result = searchProfilesInputSchema.parse({});
-    expect(result.page).toBe(1);
-    expect(result.limit).toBe(10);
-  });
-
-  test("getProfileInputSchema requires id", () => {
-    const result = getProfileInputSchema.parse({ id: 5 });
-    expect(result.id).toBe(5);
-    expect(() => getProfileInputSchema.parse({})).toThrow();
-  });
-
-  test("createProfileToolInputSchema", () => {
-    const result = createProfileToolInputSchema.parse({
-      full_name: "New Person",
-      relationship_type: "Colleague",
-    });
-    expect(result.full_name).toBe("New Person");
-  });
-
-  test("updateProfileToolInputSchema", () => {
-    const result = updateProfileToolInputSchema.parse({
-      id: 1,
-      profile: { full_name: "Updated", relationship_type: "Friend" },
-    });
-    expect(result.id).toBe(1);
-    expect(result.profile.full_name).toBe("Updated");
+  test("updates accept any subset of the profile", () => {
+    const parsed = updateProfileToolInputSchema.parse({ id: 1, profile: { tags: ["new"] } });
+    expect(parsed.profile).toEqual({ tags: ["new"] });
   });
 });

@@ -11,6 +11,11 @@ export function readCookie(name: string): string | null {
   return null;
 }
 
+/**
+ * The CSRF cookie is set with the session and cleared with it, and unlike the
+ * session cookie it is readable. Its presence is how the app knows, without a
+ * request, whether there is a session worth checking.
+ */
 export const CSRF_COOKIE_NAME = "nexia_csrf";
 
 /** Returns the CSRF header for state-changing requests, or an empty object. */

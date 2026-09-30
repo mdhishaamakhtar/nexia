@@ -1,6 +1,5 @@
 import { inject } from "vitest";
 import type { Hono } from "hono";
-import type Redis from "ioredis";
 import type { LanguageModel } from "ai";
 import pino from "pino";
 import { wireApp, type Runtime } from "../../src/app";
@@ -12,7 +11,6 @@ import type {
   EmailConfig,
 } from "../../src/config/config";
 import { createDb, type DB } from "../../src/db/client";
-import { createRedisConnection } from "../../src/queue/producer";
 import { createBcryptHasher } from "../../src/services/password-hasher";
 import { getTestDb } from "./db";
 import { createFakeEmbeddingGenerator, type FakeEmbeddingGenerator } from "./embeddings";
@@ -40,6 +38,7 @@ export function testConfig(overrides: ConfigOverrides = {}): Config {
       jwt_expiry_minutes: 60,
       cors_origins: ["http://localhost:3000"],
       cookie_domain: "",
+      client_ip_header: "",
       auth_rate_limit_requests: 10_000,
       auth_rate_limit_window_seconds: 10,
       auth_rate_limit_burst: 10_000,
@@ -63,10 +62,10 @@ export function testConfig(overrides: ConfigOverrides = {}): Config {
     },
     ai: {
       gemini_api_key: "test-gemini-key",
-      redis_url: "",
       opencode_api_key: "test-opencode-key",
       opencode_base_url: "https://example.invalid/v1",
       chat_model: "mock-model",
+      embedding_interval_seconds: 30,
       ...overrides.ai,
     },
     email: {
@@ -83,8 +82,6 @@ export interface HarnessOptions {
   chatModel?: LanguageModel | null;
   /** Defaults to true — a deterministic local embedder, never the network. */
   withEmbeddings?: boolean;
-  /** Opt in to a real BullMQ producer + worker against the Redis container. */
-  withQueue?: boolean;
   config?: ConfigOverrides;
 }
 
@@ -95,7 +92,8 @@ export interface Harness {
   db: DB;
   sql: ReturnType<typeof getTestDb>["sql"];
   embeddings: FakeEmbeddingGenerator | null;
-  redis: Redis | null;
+  /** Runs the embedding pipeline to completion, as the background worker would. */
+  embedPending: () => Promise<void>;
   close: () => Promise<void>;
 }
 
@@ -104,9 +102,12 @@ export interface Harness {
  * Hono router — against the container database. Only the two outbound edges that
  * would otherwise hit the network are substituted: the language model and the
  * embedding provider. Resend is intercepted by MSW instead (see email.ts).
+ *
+ * The embedding worker is built but never started, so no timer runs between
+ * tests; a test that wants vectors calls `embedPending()`.
  */
 export function createHarness(options: HarnessOptions = {}): Harness {
-  const { chatModel = null, withEmbeddings = true, withQueue = false } = options;
+  const { chatModel = null, withEmbeddings = true } = options;
 
   const config = testConfig(options.config);
   const logger = pino({ level: "silent" });
@@ -118,7 +119,6 @@ export function createHarness(options: HarnessOptions = {}): Harness {
   const { db, sql } = ownsPool ? createDb(config) : getTestDb();
 
   const embeddings = withEmbeddings ? createFakeEmbeddingGenerator() : null;
-  const redis = withQueue ? createRedisConnection(inject("redisUrl")) : null;
 
   const runtime = wireApp({
     config,
@@ -128,7 +128,6 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     hasher: createBcryptHasher(4),
     chatModel,
     embeddingGenerator: embeddings,
-    redis,
   });
 
   return {
@@ -138,10 +137,11 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     db,
     sql,
     embeddings,
-    redis,
+    embedPending: async () => {
+      await runtime.embeddingWorker?.drain();
+    },
     close: async () => {
       await runtime.close();
-      redis?.disconnect();
       if (ownsPool) await sql.end({ timeout: 5 }).catch(() => {});
     },
   };

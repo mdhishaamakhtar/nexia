@@ -1,5 +1,8 @@
+import type { ProfileOutput } from "@nexia/shared";
 import type { jsPDF } from "jspdf";
-import type { Profile } from "@/shared/types/profile";
+import { markDataUrl } from "@/shared/brand/mark";
+import { ageOn, formatDate } from "@/shared/lib/dates";
+import { PDF_TAPE, PROFILE_SECTIONS, type ProfileFieldKey } from "./sections";
 
 type Pdf = jsPDF;
 type Rgb = [number, number, number];
@@ -12,6 +15,8 @@ interface PdfContext {
   topY: number;
   bottomY: number;
   y: number;
+  /** The brand mark as a PNG data URL, for each page's footer. */
+  mark: string;
 }
 
 interface FieldItem {
@@ -25,31 +30,29 @@ interface SectionAccent {
   soft: Rgb;
 }
 
+/** The app's tokens (globals.css) in RGB: jsPDF cannot read CSS variables. */
 const colors = {
-  page: [255, 247, 237] as Rgb,
-  paper: [255, 253, 248] as Rgb,
-  rule: [232, 217, 196] as Rgb,
-  border: [214, 198, 173] as Rgb,
-  ink: [31, 41, 55] as Rgb,
-  text: [55, 65, 81] as Rgb,
-  muted: [120, 113, 108] as Rgb,
-  peach: [253, 186, 116] as Rgb,
-  peachInk: [124, 45, 18] as Rgb,
-  peachSoft: [255, 237, 213] as Rgb,
-  lavender: [196, 181, 253] as Rgb,
-  lavenderInk: [76, 29, 149] as Rgb,
-  lavenderSoft: [237, 233, 254] as Rgb,
-  blue: [147, 197, 253] as Rgb,
-  blueInk: [30, 64, 175] as Rgb,
-  blueSoft: [219, 234, 254] as Rgb,
+  page: [255, 247, 237] as Rgb, // --page
+  paper: [255, 255, 255] as Rgb, // --surface
+  sunk: [251, 247, 241] as Rgb, // --surface-2
+  rule: [226, 216, 204] as Rgb, // --border on paper
+  border: [210, 197, 182] as Rgb, // --border-mid on paper
+  ink: [41, 37, 36] as Rgb, // --text-1
+  text: [87, 83, 78] as Rgb, // --text-2
+  muted: [111, 102, 96] as Rgb, // --text-3
+  peach: PDF_TAPE.peach.tape,
+  peachInk: PDF_TAPE.peach.ink,
+  peachSoft: PDF_TAPE.peach.soft,
+  lavender: PDF_TAPE.lavender.tape,
+  lavenderInk: PDF_TAPE.lavender.ink,
+  lavenderSoft: PDF_TAPE.lavender.soft,
+  blue: PDF_TAPE.blue.tape,
+  blueInk: PDF_TAPE.blue.ink,
+  blueSoft: PDF_TAPE.blue.soft,
 };
 
-const sectionAccents: SectionAccent[] = [
-  { tape: colors.lavender, ink: colors.lavenderInk, soft: colors.lavenderSoft },
-  { tape: colors.peach, ink: colors.peachInk, soft: colors.peachSoft },
-  { tape: colors.blue, ink: colors.blueInk, soft: colors.blueSoft },
-  { tape: colors.lavender, ink: colors.lavenderInk, soft: colors.lavenderSoft },
-];
+/** Rank badges cycle the three accents, like the sheet's top three. */
+const RANK_ACCENTS: SectionAccent[] = [PDF_TAPE.lavender, PDF_TAPE.peach, PDF_TAPE.blue];
 
 // Single source of truth for vertical rhythm. Every block ends at its visual
 // bottom (no trailing); gaps live BETWEEN blocks. Same model everywhere.
@@ -65,25 +68,8 @@ const space = {
   pillHeight: 17,
 };
 
-function compactStrings(values: Array<string | null | undefined>) {
-  return values.map((value) => value?.trim()).filter((value): value is string => Boolean(value));
-}
-
-function hasText(value?: string | null) {
+function hasText(value?: string | null): value is string {
   return Boolean(value?.trim());
-}
-
-function formatDate(value?: string | null, options?: Intl.DateTimeFormatOptions) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  if (options) {
-    return date.toLocaleDateString(undefined, options);
-  }
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
 }
 
 function safeFilename(value: string) {
@@ -155,11 +141,43 @@ function drawCornerTape(ctx: PdfContext) {
   pdf.roundedRect(pageWidth - 70, 24, 32, 11, 3, 3, "F");
 }
 
+/**
+ * The mark as a PNG: jsPDF cannot place an SVG, so the browser draws it onto
+ * a canvas first, at 4× the printed size so it stays sharp when zoomed.
+ */
+async function rasterizeMark(sizePt: number): Promise<string> {
+  const px = sizePt * 4;
+  const image = new Image();
+  image.src = markDataUrl({ size: px });
+  await image.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = px;
+  canvas.height = px;
+  canvas.getContext("2d")?.drawImage(image, 0, 0, px, px);
+  return canvas.toDataURL("image/png");
+}
+
+const FOOTER_MARK = 14;
+
+function drawFooter(ctx: PdfContext) {
+  const { pdf, marginX, pageHeight } = ctx;
+  const top = pageHeight - 32;
+  pdf.addImage(ctx.mark, "PNG", marginX, top, FOOTER_MARK, FOOTER_MARK);
+  setFont(pdf, 9, "bold");
+  setText(pdf, colors.ink);
+  pdf.text("Nexia", marginX + FOOTER_MARK + 5, top + 10.5);
+  const nameWidth = pdf.getTextWidth("Nexia");
+  setFont(pdf, 9);
+  setText(pdf, colors.muted);
+  pdf.text("· your digital slambook", marginX + FOOTER_MARK + 5 + nameWidth + 4, top + 10.5);
+}
+
 function drawPageBackground(ctx: PdfContext) {
   const { pdf, pageWidth, pageHeight } = ctx;
   setFill(pdf, colors.page);
   pdf.rect(0, 0, pageWidth, pageHeight, "F");
   drawCornerTape(ctx);
+  drawFooter(ctx);
 }
 
 function ensureSpace(ctx: PdfContext, neededHeight: number) {
@@ -298,16 +316,14 @@ function drawSongCard(
 
   ensureSpace(ctx, height);
 
-  setFill(ctx.pdf, colors.paper);
-  setDraw(ctx.pdf, colors.border);
+  // The peach well, as on the sheet. No tape: tape never goes on a surface
+  // that already carries a wash.
+  setFill(ctx.pdf, colors.peachSoft);
+  setDraw(ctx.pdf, colors.peach);
   ctx.pdf.setLineWidth(0.5);
   ctx.pdf.roundedRect(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX * 2, height, 14, 14, "FD");
 
-  // Peach washi tape pasted on top edge of the card
-  setFill(ctx.pdf, colors.peach);
-  ctx.pdf.roundedRect(ctx.marginX + padLeft, ctx.y - 5, 60, 11, 3, 3, "F");
-
-  drawLabel(ctx, label, ctx.marginX + padLeft, ctx.y + labelBaseline);
+  drawLabel(ctx, label, ctx.marginX + padLeft, ctx.y + labelBaseline, colors.peachInk);
   if (hasName) {
     setText(ctx.pdf, colors.ink);
     setFont(ctx.pdf, 13, "bold");
@@ -346,7 +362,7 @@ function drawNumberedSongs(
     const rowHeight = Math.max(badgeSize + 4, contentHeight + 8);
     ensureSpace(ctx, rowHeight);
 
-    const accent = sectionAccents[index % sectionAccents.length]!;
+    const accent = RANK_ACCENTS[index % RANK_ACCENTS.length]!;
     setFill(ctx.pdf, accent.soft);
     setDraw(ctx.pdf, accent.tape);
     ctx.pdf.setLineWidth(0.4);
@@ -378,18 +394,17 @@ function drawNumberedSongs(
 function drawQuoteBlock(
   ctx: PdfContext,
   value: string,
-  options: { tone?: "soft" | "warm" | "cool"; label?: string } = {}
+  options: { tone?: "speech" | "memory"; label?: string } = {}
 ) {
-  const tone = options.tone ?? "soft";
-  const palette =
-    tone === "warm"
-      ? { bg: colors.peachSoft, border: colors.peach, ink: colors.peachInk, glyph: colors.peach }
-      : tone === "cool"
-        ? { bg: colors.blueSoft, border: colors.blue, ink: colors.blueInk, glyph: colors.blue }
-        : { bg: colors.paper, border: colors.border, ink: colors.text, glyph: colors.lavender };
+  // The hanging mark means "their words": quotes get it, memories don't —
+  // the same distinction the sheet draws.
+  const speech = (options.tone ?? "speech") === "speech";
+  const palette = speech
+    ? { bg: colors.lavenderSoft, border: colors.lavender, ink: colors.text }
+    : { bg: colors.sunk, border: colors.border, ink: colors.text };
 
-  const innerX = ctx.marginX + 44;
-  const innerWidth = ctx.pageWidth - ctx.marginX * 2 - 62;
+  const innerX = ctx.marginX + (speech ? 44 : 20);
+  const innerWidth = ctx.pageWidth - ctx.marginX * 2 - (speech ? 62 : 40);
   const lines = splitText(ctx, value, innerWidth, 11);
 
   const padTop = 22;
@@ -405,9 +420,11 @@ function drawQuoteBlock(
   ctx.pdf.setLineWidth(0.5);
   ctx.pdf.roundedRect(ctx.marginX, ctx.y, ctx.pageWidth - ctx.marginX * 2, height, 14, 14, "FD");
 
-  setText(ctx.pdf, palette.glyph);
-  setFont(ctx.pdf, 36, "bold");
-  ctx.pdf.text("“", ctx.marginX + 14, ctx.y + 40);
+  if (speech) {
+    setText(ctx.pdf, colors.lavenderInk);
+    setFont(ctx.pdf, 36, "bold");
+    ctx.pdf.text("\u201C", ctx.marginX + 14, ctx.y + 40);
+  }
 
   let cursorY = ctx.y + padTop;
   if (options.label) {
@@ -416,7 +433,7 @@ function drawQuoteBlock(
   }
 
   setText(ctx.pdf, palette.ink);
-  setFont(ctx.pdf, 11, "italic");
+  setFont(ctx.pdf, 11, speech ? "italic" : "normal");
   ctx.pdf.text(lines, innerX, cursorY + 10);
 
   ctx.y += height;
@@ -424,13 +441,13 @@ function drawQuoteBlock(
 
 // === BLOCK: labeled list of quote bubbles ==================================
 
-function drawQuoteList(ctx: PdfContext, label: string, quotes: Array<{ quote: string }>) {
-  if (quotes.length === 0) return;
+function drawQuoteList(ctx: PdfContext, label: string, items: string[], tone: "speech" | "memory") {
+  if (items.length === 0) return;
   drawLabel(ctx, label, ctx.marginX, ctx.y);
   ctx.y += space.labelToBody;
-  quotes.forEach((q, i) => {
+  items.forEach((item, i) => {
     if (i > 0) ctx.y += space.quoteItem;
-    drawQuoteBlock(ctx, q.quote.trim(), { tone: "soft" });
+    drawQuoteBlock(ctx, item.trim(), { tone });
   });
 }
 
@@ -489,7 +506,7 @@ function renderSection(
 
 // === Hero block ============================================================
 
-function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | null) {
+function drawHero(ctx: PdfContext, profile: ProfileOutput, birthdayShort: string | null) {
   const { pdf } = ctx;
   const avatarSize = 74;
   const x = ctx.marginX;
@@ -514,19 +531,25 @@ function drawHero(ctx: PdfContext, profile: Profile, birthdayShort: string | nul
   const heroBottom = Math.max(ctx.y + avatarSize, textBottom);
   ctx.y = heroBottom + 22;
 
-  const meta = compactStrings([
+  const meta = [
     profile.pronouns,
     profile.relationship_type,
     birthdayShort,
     profile.zodiac_sign,
-  ]);
+  ].filter(hasText);
   if (meta.length > 0) {
     drawPills(ctx, meta);
   }
 
+  // The bio is your own words about them: prose, not a quotation.
   if (hasText(profile.bio)) {
-    if (meta.length > 0) ctx.y += 14;
-    drawQuoteBlock(ctx, profile.bio!.trim(), { tone: "soft" });
+    if (meta.length > 0) ctx.y += 18;
+    const lines = splitText(ctx, profile.bio.trim(), ctx.pageWidth - ctx.marginX * 2, 11);
+    ensureSpace(ctx, lines.length * 15);
+    setText(ctx.pdf, colors.text);
+    setFont(ctx.pdf, 11, "normal");
+    ctx.pdf.text(lines, ctx.marginX, ctx.y + 10);
+    ctx.y += lines.length * 15;
   }
 
   // Closing rule. ctx.y ends AT the rule; renderSection will add space.section
@@ -547,10 +570,10 @@ function buildFields(items: Array<[string, string | null | undefined]>): FieldIt
 
 // === Entry point ===========================================================
 
-export async function exportProfilePdf(profile: Profile) {
+export async function exportProfilePdf(profile: ProfileOutput) {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4", compress: true });
-  await registerNunito(pdf);
+  const [mark] = await Promise.all([rasterizeMark(FOOTER_MARK), registerNunito(pdf)]);
 
   const ctx: PdfContext = {
     pdf,
@@ -560,89 +583,82 @@ export async function exportProfilePdf(profile: Profile) {
     topY: 60,
     bottomY: pdf.internal.pageSize.getHeight() - 48,
     y: 60,
+    mark,
   };
 
   drawPageBackground(ctx);
+  drawHero(ctx, profile, formatDate(profile.birthday, "birthday"));
 
-  const birthdayShort = formatDate(profile.birthday, { month: "long", day: "numeric" });
-  const birthdayFull = formatDate(profile.birthday);
-  const tags = compactStrings(profile.tags?.map((tag) => tag.tag) ?? []);
-  const movieGenres = compactStrings(profile.movie_genres?.map((genre) => genre.genre) ?? []);
-  const bookGenres = compactStrings(profile.book_genres?.map((genre) => genre.genre) ?? []);
-  const hangoutPlaces = compactStrings(profile.hangout_places?.map((place) => place.place) ?? []);
-  const foodRestrictions = compactStrings(
-    profile.food_restrictions?.map((restriction) => restriction.restriction) ?? []
-  );
-  const politicalViews = compactStrings(profile.political_views?.map((view) => view.view) ?? []);
-  const quotes = (profile.quotes ?? []).filter((quote) => hasText(quote.quote));
-  const favoriteMemories = (profile.favorite_memories ?? [])
-    .filter((m) => hasText(m.memory))
-    .map((m) => ({ quote: m.memory }));
-  const topSongs = (profile.top_songs ?? []).filter(
-    (song) => hasText(song.name) || hasText(song.artist)
-  );
-  const associatedSong = profile.associated_song;
-  const hasAssociatedSong = hasText(associatedSong?.name) || hasText(associatedSong?.artist);
+  const age = ageOn(profile.birthday);
+  const birthday = formatDate(profile.birthday, "long");
+  const song = profile.associated_song;
 
-  drawHero(ctx, profile, birthdayShort);
-
-  const overviewFields = buildFields([
-    ["Profession", profile.profession],
-    ["Birthday", birthdayFull],
-    ["Zodiac", profile.zodiac_sign],
-  ]);
-
-  renderSection(ctx, "Overview", sectionAccents[0]!, [
-    overviewFields.length > 0 ? () => drawFieldGrid(ctx, overviewFields) : null,
-    tags.length > 0
+  // Each field's block, if it has anything to draw. Which section a field is
+  // printed in comes from sections.ts, the same list the sheet and form read.
+  const blocks: Record<ProfileFieldKey, (() => void) | null> = {
+    profession: null,
+    birthday: null,
+    favorite_movie: null,
+    favorite_book: null,
+    music_preference: null,
+    tags: profile.tags.length
       ? () =>
           drawLabeledPillGroup(
             ctx,
             "Tags",
-            tags.map((tag) => `#${tag}`),
+            profile.tags.map((t) => `#${t}`),
             "tag"
           )
       : null,
-  ]);
+    associated_song: song?.name
+      ? () => drawSongCard(ctx, "Their song", song.name, song.artist)
+      : null,
+    top_songs: profile.top_songs.length ? () => drawNumberedSongs(ctx, profile.top_songs) : null,
+    movie_genres: profile.movie_genres.length
+      ? () => drawLabeledPillGroup(ctx, "Movie genres", profile.movie_genres)
+      : null,
+    book_genres: profile.book_genres.length
+      ? () => drawLabeledPillGroup(ctx, "Book genres", profile.book_genres)
+      : null,
+    hangout_places: profile.hangout_places.length
+      ? () => drawLabeledPillGroup(ctx, "Hangout places", profile.hangout_places)
+      : null,
+    food_restrictions: profile.food_restrictions.length
+      ? () => drawLabeledPillGroup(ctx, "Food restrictions", profile.food_restrictions)
+      : null,
+    political_views: profile.political_views.length
+      ? () => drawLabeledPillGroup(ctx, "Political views", profile.political_views)
+      : null,
+    long_term_goals: hasText(profile.long_term_goals)
+      ? () => drawParagraph(ctx, "Long-term goals", profile.long_term_goals)
+      : null,
+    favorite_memories: profile.favorite_memories.length
+      ? () => drawQuoteList(ctx, "Favorite memories", profile.favorite_memories, "memory")
+      : null,
+    notes: hasText(profile.notes)
+      ? () => drawParagraph(ctx, "Additional notes", profile.notes)
+      : null,
+    quotes: profile.quotes.length
+      ? () => drawQuoteList(ctx, "Their quotes", profile.quotes, "speech")
+      : null,
+  };
 
-  const favoriteFields = buildFields([
-    ["Favorite Movie", profile.favorite_movie],
-    ["Favorite Book", profile.favorite_book],
-    ["Music Preference", profile.music_preference],
-  ]);
+  // Short facts share a two-column grid at the top of their section.
+  const facts: Partial<Record<ProfileFieldKey, [string, string | null | undefined]>> = {
+    profession: ["Profession", profile.profession],
+    birthday: ["Birthday", birthday && age !== null ? `${birthday} (${age})` : birthday],
+    favorite_movie: ["Favorite movie", profile.favorite_movie],
+    favorite_book: ["Favorite book", profile.favorite_book],
+    music_preference: ["Music preference", profile.music_preference],
+  };
 
-  renderSection(ctx, "Favorites & Interests", sectionAccents[1]!, [
-    favoriteFields.length > 0 ? () => drawFieldGrid(ctx, favoriteFields) : null,
-    hasAssociatedSong
-      ? () => drawSongCard(ctx, "Associated Song", associatedSong?.name, associatedSong?.artist)
-      : null,
-    topSongs.length > 0 ? () => drawNumberedSongs(ctx, topSongs) : null,
-    movieGenres.length > 0 ? () => drawLabeledPillGroup(ctx, "Movie Genres", movieGenres) : null,
-    bookGenres.length > 0 ? () => drawLabeledPillGroup(ctx, "Book Genres", bookGenres) : null,
-  ]);
-
-  renderSection(ctx, "Lifestyle", sectionAccents[2]!, [
-    hangoutPlaces.length > 0
-      ? () => drawLabeledPillGroup(ctx, "Hangout Places", hangoutPlaces)
-      : null,
-    foodRestrictions.length > 0
-      ? () => drawLabeledPillGroup(ctx, "Food Restrictions", foodRestrictions)
-      : null,
-    politicalViews.length > 0
-      ? () => drawLabeledPillGroup(ctx, "Political Views", politicalViews)
-      : null,
-  ]);
-
-  renderSection(ctx, "Deep Dive", sectionAccents[3]!, [
-    hasText(profile.long_term_goals)
-      ? () => drawParagraph(ctx, "Long-term Goals", profile.long_term_goals!)
-      : null,
-    favoriteMemories.length > 0
-      ? () => drawQuoteList(ctx, "Favorite Memories", favoriteMemories)
-      : null,
-    hasText(profile.notes) ? () => drawParagraph(ctx, "Additional Notes", profile.notes!) : null,
-    quotes.length > 0 ? () => drawQuoteList(ctx, "Their Quotes", quotes) : null,
-  ]);
+  for (const section of PROFILE_SECTIONS) {
+    const fields = buildFields(section.fields.flatMap((key) => (facts[key] ? [facts[key]!] : [])));
+    renderSection(ctx, section.title, PDF_TAPE[section.tape], [
+      fields.length > 0 ? () => drawFieldGrid(ctx, fields) : null,
+      ...section.fields.map((key) => blocks[key]),
+    ]);
+  }
 
   pdf.save(`${safeFilename(profile.full_name)}-nexia-profile.pdf`);
 }

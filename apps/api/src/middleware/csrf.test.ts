@@ -1,6 +1,7 @@
 import { describe, test, expect } from "vitest";
 import { Hono } from "hono";
-import { csrfMiddleware, CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from "../middleware/csrf";
+import { csrfMiddleware, CSRF_HEADER_NAME } from "./csrf";
+import { CSRF_COOKIE_NAME } from "../utils/session";
 import type { AppEnv } from "../middleware/auth";
 
 describe("csrfMiddleware", () => {

@@ -33,6 +33,10 @@ COPY --from=builder /repo/apps/web/public apps/web/public
 COPY --from=builder /repo/apps/web/next.config.ts apps/web/next.config.ts
 
 WORKDIR /repo/apps/web
+# `next start` writes its cache under .next, so that one directory is handed
+# to the unprivileged user; everything else stays read-only root-owned.
+RUN chown -R node:node .next
+USER node
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"

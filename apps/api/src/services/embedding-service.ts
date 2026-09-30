@@ -1,65 +1,88 @@
 import type { ProfileOutput } from "@nexia/shared";
 import type { Logger } from "../logging/logger";
-import { errNotFound, errAIUnavailable } from "./errors";
 
 export interface EmbeddingGenerator {
   generateEmbedding(text: string): Promise<number[]>;
 }
 
-export interface EmbeddingStorage {
-  upsertProfile(
-    profileId: number,
+export interface EmbeddingStore {
+  findStale(
+    limit: number,
+    skipIds: number[]
+  ): Promise<Array<{ profile: ProfileOutput; revision: number }>>;
+  upsert(entry: {
+    profileId: number;
+    userId: number;
+    embedding: number[];
+    revision: number;
+  }): Promise<void>;
+  search(
     userId: number,
-    embedding: number[],
-    payload: Record<string, unknown>
-  ): Promise<void>;
-  deleteProfile(profileId: number): Promise<void>;
+    queryEmbedding: number[],
+    limit: number
+  ): Promise<Array<{ profileId: number; score: number }>>;
 }
 
-export interface ProfileLoader {
-  loadForEmbedding(profileId: number): Promise<ProfileOutput | null>;
-}
+const RETRY_BASE_MS = 5_000;
+const RETRY_MAX_MS = 60 * 60 * 1000;
 
+/**
+ * Keeps each profile's vector in step with the profile, and runs semantic
+ * search over them.
+ *
+ * There is no job queue: a profile is stale when its stored vector's revision
+ * is behind the profile's, so the work to do is always one query away and a
+ * lost wake-up or a restart can only delay it, never drop it.
+ */
 export class EmbeddingService {
+  /** Profiles that failed recently, and when they may be tried again. */
+  private backoff = new Map<number, { failures: number; retryAt: number }>();
+
   constructor(
-    private profiles: ProfileLoader,
+    private store: EmbeddingStore,
     private generator: EmbeddingGenerator,
-    private repo: EmbeddingStorage,
     private logger: Logger
   ) {}
 
-  async embedProfile(profileId: number): Promise<void> {
-    const profile = await this.profiles.loadForEmbedding(profileId);
-    if (!profile) {
-      throw errNotFound();
+  /** Embeds up to `limit` stale profiles. Returns how many succeeded. */
+  async embedStale(limit: number): Promise<number> {
+    const now = Date.now();
+    for (const [id, b] of this.backoff) {
+      // Long past its retry time and never retried: the profile is gone.
+      if (b.retryAt < now - RETRY_MAX_MS) this.backoff.delete(id);
     }
+    const waiting = [...this.backoff].filter(([, b]) => b.retryAt > now).map(([id]) => id);
+    const stale = await this.store.findStale(limit, waiting);
 
-    const text = buildEmbeddingText(profile);
-
-    let embedding: number[];
-    try {
-      embedding = await this.generator.generateEmbedding(text);
-    } catch (err) {
-      this.logger.error({ profileId, err: String(err) }, "embedding generation failed");
-      throw errAIUnavailable(
-        `gemini embedding failed: ${err instanceof Error ? err.message : String(err)}`
-      );
+    let embedded = 0;
+    for (const { profile, revision } of stale) {
+      try {
+        const embedding = await this.generator.generateEmbedding(buildEmbeddingText(profile));
+        await this.store.upsert({
+          profileId: profile.id,
+          userId: profile.user_id,
+          embedding,
+          revision,
+        });
+        this.backoff.delete(profile.id);
+        embedded += 1;
+      } catch (err) {
+        const failures = (this.backoff.get(profile.id)?.failures ?? 0) + 1;
+        const delay = Math.min(RETRY_BASE_MS * 2 ** (failures - 1), RETRY_MAX_MS);
+        this.backoff.set(profile.id, { failures, retryAt: Date.now() + delay });
+        this.logger.warn(
+          { profileId: profile.id, failures, retryInMs: delay, err },
+          "embedding failed"
+        );
+      }
     }
-
-    try {
-      await this.repo.upsertProfile(profile.id, profile.user_id, embedding, profile);
-    } catch (err) {
-      this.logger.error({ profileId, err: String(err) }, "embedding upsert failed");
-      throw errAIUnavailable(
-        `pgvector upsert failed: ${err instanceof Error ? err.message : String(err)}`
-      );
-    }
-
-    this.logger.info({ profileId, userId: profile.user_id }, "profile embedded");
+    return embedded;
   }
 
-  async deleteEmbedding(profileId: number): Promise<void> {
-    await this.repo.deleteProfile(profileId);
+  /** The user's profiles closest to `query`, best first. */
+  async search(userId: number, query: string, limit: number) {
+    const embedding = await this.generator.generateEmbedding(query);
+    return this.store.search(userId, embedding, limit);
   }
 }
 
@@ -78,58 +101,55 @@ const MONTHS = [
   "December",
 ] as const;
 
-/** Formats "YYYY-MM-DD" as "Month DD, YYYY" to match the Go embedding text. */
+/** Formats "YYYY-MM-DD" as "Month D, YYYY" without going through a time zone. */
 function formatDate(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00Z`);
-  const month = MONTHS[d.getUTCMonth()];
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${month} ${day}, ${d.getUTCFullYear()}`;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return `${MONTHS[(month ?? 1) - 1]} ${day}, ${year}`;
 }
 
-/** Flattens a profile into the labelled text block fed to the embedding model. */
+/**
+ * Flattens a profile into the labelled text block fed to the embedding model.
+ * Empty fields are left out entirely: a run of "Bio: " lines with nothing after
+ * them only adds noise shared by every sparse profile.
+ */
 export function buildEmbeddingText(p: ProfileOutput): string {
-  const lines: string[] = [];
-  lines.push(`Profile of ${p.full_name}`);
-  if (p.pronouns) lines.push(`Pronouns: ${p.pronouns}`);
-  lines.push(`Bio: ${p.bio}`);
-  lines.push(`Profession: ${p.profession}`);
-  lines.push(`Relationship Type: ${p.relationship_type}`);
-  if (p.zodiac_sign) lines.push(`Zodiac Sign: ${p.zodiac_sign}`);
-  if (p.birthday) lines.push(`Birthday: ${formatDate(p.birthday)}`);
-  lines.push(`Long Term Goals: ${p.long_term_goals}`);
-  lines.push(`Music Preference: ${p.music_preference}`);
-  lines.push(`Favorite Movie: ${p.favorite_movie}`);
-  lines.push(`Favorite Book: ${p.favorite_book}`);
-  lines.push(`Notes: ${p.notes}`);
+  const lines = [`Profile of ${p.full_name}`, `Relationship: ${p.relationship_type}`];
+  const add = (label: string, value: string | null | undefined) => {
+    if (value?.trim()) lines.push(`${label}: ${value.trim()}`);
+  };
+  const addList = (label: string, values: string[], sep = ", ") => {
+    if (values.length) lines.push(`${label}: ${values.join(sep)}`);
+  };
 
-  if (p.tags.length) lines.push(`Interests/Tags: ${p.tags.map((t) => t.tag).join(", ")}`);
-  if (p.political_views.length) {
-    lines.push(`Political Views: ${p.political_views.map((v) => v.view).join(", ")}`);
-  }
-  if (p.food_restrictions.length) {
-    lines.push(`Food Restrictions: ${p.food_restrictions.map((r) => r.restriction).join(", ")}`);
-  }
-  if (p.movie_genres.length) {
-    lines.push(`Favorite Movie Genres: ${p.movie_genres.map((g) => g.genre).join(", ")}`);
-  }
-  if (p.book_genres.length) {
-    lines.push(`Favorite Book Genres: ${p.book_genres.map((g) => g.genre).join(", ")}`);
-  }
-  if (p.hangout_places.length) {
-    lines.push(`Favorite Hangout Places: ${p.hangout_places.map((h) => h.place).join(", ")}`);
-  }
-  if (p.top_songs.length) {
-    lines.push(`Top Songs: ${p.top_songs.map((s) => `${s.name} by ${s.artist}`).join(", ")}`);
-  }
+  add("Pronouns", p.pronouns);
+  add("Bio", p.bio);
+  add("Profession", p.profession);
+  add("Zodiac sign", p.zodiac_sign);
+  if (p.birthday) add("Birthday", formatDate(p.birthday));
+  add("Long-term goals", p.long_term_goals);
+  add("Music preference", p.music_preference);
+  add("Favorite movie", p.favorite_movie);
+  add("Favorite book", p.favorite_book);
+  add("Notes", p.notes);
+  addList("Interests and tags", p.tags);
+  addList("Political views", p.political_views);
+  addList("Food restrictions", p.food_restrictions);
+  addList("Favorite movie genres", p.movie_genres);
+  addList("Favorite book genres", p.book_genres);
+  addList("Favorite hangout places", p.hangout_places);
+  addList(
+    "Top songs",
+    p.top_songs.map((s) => (s.artist ? `${s.name} by ${s.artist}` : s.name))
+  );
   if (p.associated_song) {
-    lines.push(`Associated Song: ${p.associated_song.name} by ${p.associated_song.artist}`);
+    const s = p.associated_song;
+    add("Their song", s.artist ? `${s.name} by ${s.artist}` : s.name);
   }
-  if (p.quotes.length) {
-    lines.push(`Quotes: ${p.quotes.map((q) => `"${q.quote}"`).join(", ")}`);
-  }
-  if (p.favorite_memories.length) {
-    lines.push(`Favorite Memories: ${p.favorite_memories.map((m) => m.memory).join("; ")}`);
-  }
+  addList(
+    "Quotes",
+    p.quotes.map((q) => `"${q}"`)
+  );
+  addList("Favorite memories", p.favorite_memories, "; ");
 
   return lines.join("\n");
 }

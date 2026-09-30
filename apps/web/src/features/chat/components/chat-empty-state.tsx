@@ -1,76 +1,55 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
-import { Heart, Music, Star, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
-import { NexiaAvatar } from "@/shared/ui/AIIcons";
+import Tape from "@/components/atoms/Tape";
+import { enter } from "@/shared/ui/motion";
 
-interface PromptDef {
-  text: string;
-  icon: LucideIcon;
-  accent: string;
-}
-
-const PROMPTS: PromptDef[] = [
-  { text: "Who are my oldest friends?", icon: Heart, accent: "var(--peach)" },
-  { text: "Who shares my zodiac sign?", icon: Star, accent: "var(--lavender)" },
-  { text: "Add a new friend named Asha", icon: UserPlus, accent: "var(--blue)" },
-  { text: "Recommend a song from my friends' tastes", icon: Music, accent: "var(--green-ink)" },
+const PROMPTS = [
+  "Whose birthday is coming up?",
+  "Who's vegetarian?",
+  "Who would enjoy a jazz night?",
+  "Add a friend called Asha",
 ];
 
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "Good morning";
-  if (hour >= 12 && hour < 17) return "Good afternoon";
-  if (hour >= 17 && hour < 21) return "Good evening";
-  return "Up late?";
-}
-
+/**
+ * The start of a conversation, as a note pinned in the scrapbook rather than
+ * the usual assistant splash. The suggestions are paper stickers, the same
+ * chips the profiles use.
+ */
 export function ChatEmptyState({ onPrompt }: { onPrompt: (text: string) => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ type: "spring", stiffness: 240, damping: 26 }}
-      className="flex flex-1 flex-col items-center justify-center px-2 py-8 text-center"
+      {...enter(0, 10)}
+      className="flex flex-1 flex-col items-center justify-center px-1 py-8"
     >
-      <div className="floating mb-5">
-        <NexiaAvatar size={60} tilt={-4} />
-      </div>
+      <div className="paper relative w-full max-w-md rounded-3xl px-6 pb-6 pt-8 sm:px-8">
+        <Tape color="blue" width={92} height={22} tilt={-2.5} />
+        <p className="t-label mb-1.5">Ask your slambook</p>
+        <h2 className="t-section-title text-balance text-text-1">
+          What would you like to remember?
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-text-2">
+          Nexia reads your profiles to answer. It can add or update someone too, and you approve
+          every change before it&apos;s saved.
+        </p>
 
-      <h2 className="text-[22px] font-extrabold tracking-tight" style={{ color: "var(--text-1)" }}>
-        {greeting()}
-      </h2>
-      <p
-        className="mt-1.5 max-w-[19rem] text-[14px] leading-relaxed font-medium"
-        style={{ color: "var(--text-2)" }}
-      >
-        Ask me anything about your people. I can look someone up, or add and update them for you.
-      </p>
+        <ul className="mt-5 flex flex-wrap gap-2">
+          {PROMPTS.map((prompt) => (
+            <li key={prompt}>
+              <button
+                type="button"
+                onClick={() => onPrompt(prompt)}
+                className="sticker-chip min-h-11 px-4 text-left text-sm font-semibold transition-colors hover:border-line-mid hover:bg-surface-3 hover:text-text-1"
+              >
+                {prompt}
+              </button>
+            </li>
+          ))}
+        </ul>
 
-      <div className="mt-7 grid w-full max-w-md grid-cols-1 gap-2.5 sm:grid-cols-2">
-        {PROMPTS.map((prompt) => (
-          <button
-            key={prompt.text}
-            onClick={() => onPrompt(prompt.text)}
-            className="group flex items-center gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-(--surface-3) active:translate-y-0 active:scale-[0.98]"
-            style={{ borderColor: "var(--border)", background: "var(--surface)" }}
-          >
-            <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 group-hover:-rotate-6"
-              style={{ background: `color-mix(in srgb, ${prompt.accent} 22%, transparent)` }}
-            >
-              <prompt.icon size={15} style={{ color: prompt.accent }} strokeWidth={2.4} />
-            </span>
-            <span
-              className="text-[12.5px] font-semibold leading-snug"
-              style={{ color: "var(--text-2)" }}
-            >
-              {prompt.text}
-            </span>
-          </button>
-        ))}
+        <p className="mt-5 border-t border-line pt-3 text-xs leading-relaxed text-text-3">
+          The profiles Nexia reads to answer you are sent to the AI services that power it.
+        </p>
       </div>
     </motion.div>
   );

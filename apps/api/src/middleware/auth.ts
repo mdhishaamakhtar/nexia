@@ -1,73 +1,80 @@
 import { createMiddleware } from "hono/factory";
 import { getCookie } from "hono/cookie";
 import type { Config } from "../config/config";
-import { validateToken } from "../utils/jwt";
+import { validateToken, type JWTClaims } from "../utils/jwt";
+import { respondError } from "../utils/http";
+import { AUTH_TOKEN_COOKIE, startSession } from "../utils/session";
 
-// Context variable type declarations
 export interface AppVariables {
   userId: number;
   authMethod: "bearer" | "cookie";
+  requestID: string;
 }
 
 export type AppEnv = {
   Variables: AppVariables;
 };
 
-export type UserLookup = {
-  findById(id: number): Promise<{ id: number } | null>;
+export type SessionLookup = {
+  findSession(id: number): Promise<{ id: number; passwordChangedAt: Date | null } | null>;
 };
 
-export function authMiddleware(cfg: Config, userLookup: UserLookup) {
+/** A token older than the last password change belongs to the old password. */
+function issuedBeforePasswordChange(claims: JWTClaims, changedAt: Date | null): boolean {
+  if (!changedAt) return false;
+  // `iat` has one-second resolution; compare whole seconds so a sign-in in the
+  // same second as the reset is not refused.
+  return claims.iat < Math.floor(changedAt.getTime() / 1000);
+}
+
+/**
+ * Authenticates by `Authorization: Bearer` or the `nexia_token` cookie.
+ *
+ * Cookie sessions slide: once half the lifetime has passed, the response
+ * carries a fresh token, so someone using the app is never signed out mid-edit.
+ * The configured expiry is therefore an idle timeout.
+ */
+export function authMiddleware(cfg: Config, sessions: SessionLookup) {
   return createMiddleware<AppEnv>(async (c, next) => {
     const authHeader = c.req.header("Authorization");
-    let tokenString: string;
+    let token: string | undefined;
 
     if (authHeader) {
-      const parts = authHeader.split(" ");
-      if (parts.length !== 2 || parts[0] !== "Bearer") {
-        return c.json(
-          { error: { code: "UNAUTHORIZED", message: "Invalid authorization header format" } },
-          401
-        );
+      const [scheme, value, ...rest] = authHeader.split(" ");
+      if (scheme !== "Bearer" || !value || rest.length > 0) {
+        return respondError(c, 401, "UNAUTHORIZED", "Invalid authorization header format");
       }
-      tokenString = parts[1]!;
+      token = value;
       c.set("authMethod", "bearer");
     } else {
-      const cookieToken = getCookie(c, "nexia_token");
-      if (!cookieToken) {
-        return c.json(
-          { error: { code: "UNAUTHORIZED", message: "Authorization token required" } },
-          401
-        );
-      }
-      tokenString = cookieToken;
+      token = getCookie(c, AUTH_TOKEN_COOKIE);
+      if (!token) return respondError(c, 401, "UNAUTHORIZED", "Authorization token required");
       c.set("authMethod", "cookie");
     }
 
-    let claims;
+    let claims: JWTClaims;
     try {
-      claims = await validateToken(tokenString, cfg);
+      claims = await validateToken(token, cfg);
     } catch {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "Invalid or expired token" } }, 401);
+      return respondError(c, 401, "UNAUTHORIZED", "Invalid or expired token");
     }
 
     // Deliberately unguarded: a lookup that *fails* is an outage, not a
-    // credential problem. Reporting it as 401 tells the client to sign in again
-    // over something they cannot fix, and hides the incident from error
-    // dashboards. Letting it throw sends it to the recovery middleware, which
-    // logs the stack and answers 500.
-    const user = await userLookup.findById(claims.user_id);
-
-    if (!user) {
-      return c.json({ error: { code: "UNAUTHORIZED", message: "User not found" } }, 401);
+    // credential problem, and belongs in the error handler as a logged 500.
+    const user = await sessions.findSession(claims.user_id);
+    if (!user || issuedBeforePasswordChange(claims, user.passwordChangedAt)) {
+      return respondError(c, 401, "UNAUTHORIZED", "Invalid or expired token");
     }
 
     c.set("userId", claims.user_id);
+
+    // Renew before the handler runs, not after: a handler that ends the session
+    // (logout) then clears the cookies after this sets them, and wins.
+    const halfLife = (claims.exp - claims.iat) / 2;
+    if (c.get("authMethod") === "cookie" && Date.now() / 1000 - claims.iat > halfLife) {
+      await startSession(c, claims.user_id, cfg);
+    }
+
     await next();
   });
-}
-
-export function getUserId(c: { get: (key: string) => unknown }): number | undefined {
-  const v = c.get("userId");
-  return typeof v === "number" ? v : undefined;
 }

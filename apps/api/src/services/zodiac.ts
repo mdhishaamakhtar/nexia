@@ -1,6 +1,7 @@
 import type { ZodiacSign } from "@nexia/shared";
 
-export function deriveZodiac(month: number, day: number): ZodiacSign {
+/** Western zodiac for a month (1–12) and day, using the usual cusp dates. */
+export function deriveZodiac(month: number, day: number): ZodiacSign | null {
   switch (month) {
     case 1:
       return day >= 20 ? "Aquarius" : "Capricorn";
@@ -27,24 +28,17 @@ export function deriveZodiac(month: number, day: number): ZodiacSign {
     case 12:
       return day >= 22 ? "Capricorn" : "Sagittarius";
     default:
-      return "" as ZodiacSign;
+      return null;
   }
 }
 
-export function applyDerivedZodiac(profile: {
-  birthday?: string | null | undefined;
-  zodiac_sign?: string | null | undefined;
-}): void {
-  if (!profile.birthday) {
-    profile.zodiac_sign = null;
-    return;
-  }
-  const parts = profile.birthday.split("-");
-  const month = Number(parts[1]);
-  const day = Number(parts[2]);
-  if (isNaN(month) || isNaN(day)) {
-    profile.zodiac_sign = null;
-    return;
-  }
-  profile.zodiac_sign = deriveZodiac(month, day);
+/**
+ * The sign for a stored `YYYY-MM-DD` birthday, or null without one. Read-time
+ * only: the sign is never stored, so it cannot drift from the birthday.
+ */
+export function zodiacForBirthday(birthday: string | null): ZodiacSign | null {
+  if (!birthday) return null;
+  const [, month, day] = birthday.split("-").map(Number);
+  if (!month || !day) return null;
+  return deriveZodiac(month, day);
 }

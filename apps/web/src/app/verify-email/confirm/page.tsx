@@ -1,79 +1,76 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { CircleAlert, CircleCheck, Loader2 } from "lucide-react";
 import Button from "@/components/atoms/Button";
 import AuthCard, { AuthLink } from "@/components/layout/AuthCard";
 import { verifyEmail } from "@/features/auth/api";
+import ResendVerification from "@/features/auth/ResendVerification";
 
-type Status = "loading" | "success" | "error";
-
-// Drawn icons from the app's icon set, not emoji — emoji render differently on
-// every platform and can't take a token colour.
-const STATE = {
-  loading: {
-    icon: Loader2,
-    tint: "var(--text-3)",
-    title: "Verifying…",
-    body: "Hang tight while we confirm your email address.",
-  },
-  success: {
-    icon: CircleCheck,
-    tint: "var(--green-ink)",
-    title: "Email verified",
-    body: "Your email is confirmed. You can sign in to Nexia now.",
-  },
-  error: {
-    icon: CircleAlert,
-    tint: "var(--red-ink)",
-    title: "That link didn't work",
-    body: "It may have expired or already been used. Sign up again to get a fresh link.",
-  },
-} as const;
-
-function VerifyEmailConfirmContent() {
+function Confirm() {
   const token = useSearchParams().get("token") ?? "";
-  const [status, setStatus] = useState<Status>(() => (token ? "loading" : "error"));
+  // A query, not a mutation: confirming is an idempotent GET, and a query
+  // survives React's development double-mount where a mutation fired from an
+  // effect loses its observer and never leaves "pending".
+  const verify = useQuery({
+    queryKey: ["verify-email", token],
+    queryFn: () => verifyEmail(token).then(() => true),
+    enabled: token !== "",
+    retry: false,
+    staleTime: Infinity,
+    gcTime: 0,
+  });
 
-  useEffect(() => {
-    if (!token) return;
-    verifyEmail(token)
-      .then(() => setStatus("success"))
-      .catch(() => setStatus("error"));
-  }, [token]);
+  const status = !token
+    ? "error"
+    : verify.isSuccess
+      ? "success"
+      : verify.isError
+        ? "error"
+        : "loading";
 
-  const { icon: Icon, tint, title, body } = STATE[status];
+  if (status === "loading") {
+    return (
+      <AuthCard title="Confirming…" eyebrow="nexia account" tape="blue">
+        <div className="flex justify-center" role="status" aria-label="Confirming your email">
+          <Loader2 className="h-8 w-8 animate-spin text-text-3" aria-hidden="true" />
+        </div>
+      </AuthCard>
+    );
+  }
+
+  if (status === "success") {
+    return (
+      <AuthCard title="Email confirmed" eyebrow="nexia account" tape="blue">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <CircleCheck className="h-8 w-8 text-green-ink" aria-hidden="true" />
+          <p className="t-body text-text-2">Your address is confirmed. You can sign in now.</p>
+          <Button href="/login" className="w-full">
+            Sign in
+          </Button>
+        </div>
+      </AuthCard>
+    );
+  }
 
   return (
     <AuthCard
-      title={title}
+      title="That link didn't work"
       eyebrow="nexia account"
-      tape={status === "error" ? "peach" : "blue"}
-      footer={
-        status === "loading" ? undefined : (
-          <p>
-            <AuthLink href="/login">Back to sign in</AuthLink>
-          </p>
-        )
-      }
+      tape="peach"
+      footer={<AuthLink href="/login">Back to sign in</AuthLink>}
     >
       <div className="flex flex-col items-center gap-4 text-center">
-        <Icon
-          className={`h-8 w-8 ${status === "loading" ? "animate-spin" : ""}`}
-          style={{ color: tint }}
-          aria-hidden="true"
-        />
-        <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
-          {body}
+        <CircleAlert className="h-8 w-8 text-red-ink" aria-hidden="true" />
+        <p className="t-body text-text-2">
+          It may have expired (links work for 24 hours) or been replaced by a newer one. Get a fresh
+          link below.
         </p>
-
-        {status === "success" && (
-          <Link href="/login" className="w-full">
-            <Button className="w-full">Sign in</Button>
-          </Link>
-        )}
+        <div className="w-full border-t border-line pt-5">
+          <ResendVerification label="Send me a new link" />
+        </div>
       </div>
     </AuthCard>
   );
@@ -82,7 +79,7 @@ function VerifyEmailConfirmContent() {
 export default function VerifyEmailConfirmPage() {
   return (
     <Suspense>
-      <VerifyEmailConfirmContent />
+      <Confirm />
     </Suspense>
   );
 }

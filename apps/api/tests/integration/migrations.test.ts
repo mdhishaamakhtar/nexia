@@ -1,4 +1,7 @@
 import { describe, test, expect, afterEach, inject } from "vitest";
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import postgres from "postgres";
 import pino from "pino";
 import { resolveMigrationsFolder, runMigrations } from "../../src/db/migrate";
@@ -53,20 +56,20 @@ describe("runMigrations", () => {
     expect(tables).toContain("users");
     expect(tables).toContain("profiles");
     expect(tables).toContain("profile_embeddings");
-    expect(tables).toContain("favorite_memories");
+    expect(tables).not.toContain("favorite_memories");
 
     const [ext] = await sql<Array<{ extname: string }>>`
       SELECT extname FROM pg_extension WHERE extname = 'vector'
     `;
     expect(ext?.extname).toBe("vector");
 
-    // pronouns arrives in the third migration; its presence proves the whole
-    // journal ran, not just the initial snapshot.
+    // The list columns arrive late in the journal; their presence proves the
+    // whole journal ran, not just the initial snapshot.
     const [col] = await sql<Array<{ column_name: string }>>`
       SELECT column_name FROM information_schema.columns
-      WHERE table_name = 'profiles' AND column_name = 'pronouns'
+      WHERE table_name = 'profiles' AND column_name = 'tags'
     `;
-    expect(col?.column_name).toBe("pronouns");
+    expect(col?.column_name).toBe("tags");
   });
 
   test("is idempotent", async () => {
@@ -77,56 +80,83 @@ describe("runMigrations", () => {
     await runMigrations(sql, logger);
     expect(await tableNames(sql)).toEqual(first);
   });
+});
 
-  test("baselines a database golang-migrate previously owned", async () => {
-    const sql = await freshDatabase("migrate_baseline");
+/** A copy of the migrations folder whose journal stops after `count` entries. */
+function migrationsUpTo(count: number): string {
+  const dir = join(mkdtempSync(join(tmpdir(), "nexia-migrations-")), "drizzle");
+  cpSync(resolveMigrationsFolder(), dir, { recursive: true });
+  const journalPath = join(dir, "meta", "_journal.json");
+  const journal = JSON.parse(readFileSync(journalPath, "utf8")) as { entries: unknown[] };
+  journal.entries = journal.entries.slice(0, count);
+  writeFileSync(journalPath, JSON.stringify(journal));
+  return dir;
+}
 
-    // Stand in for the pre-drizzle world: the schema already exists, but the
-    // drizzle journal does not and a golang-migrate version table does.
-    await runMigrations(sql, logger);
-    await sql.unsafe(`DROP SCHEMA drizzle CASCADE`);
-    await sql.unsafe(`CREATE TABLE schema_migrations (version bigint, dirty boolean)`);
-    await sql.unsafe(`INSERT INTO schema_migrations VALUES (5, false)`);
+describe("moving list fields onto the profile", () => {
+  test("carries every existing row across, in order, and tidies what it finds", async () => {
+    const sql = await freshDatabase("migrate_backfill");
+    // The schema as it was before the list columns existed.
+    await runMigrations(sql, logger, migrationsUpTo(3));
 
-    await runMigrations(sql, logger);
-
-    const rows = await sql<Array<{ hash: string }>>`
-      SELECT hash FROM drizzle.__drizzle_migrations ORDER BY id
+    const [user] = await sql<Array<{ id: string }>>`
+      INSERT INTO users (email, password, email_verified) VALUES ('Mixed.Case@Example.com', 'x', true) RETURNING id
     `;
-    // One journal row per migration file, recorded without re-running them.
-    expect(rows.length).toBeGreaterThanOrEqual(3);
-    expect(await tableNames(sql)).toContain("profiles");
-  });
+    // Two accounts that differ only by case: lowering the first would collide.
+    await sql`INSERT INTO users (email, password) VALUES ('Taken@Example.com', 'x'), ('taken@example.com', 'x')`;
+    const [profile] = await sql<Array<{ id: string }>>`
+      INSERT INTO profiles (user_id, full_name, relationship_type, notes, bio, zodiac_sign)
+      VALUES (${user!.id}, 'Old Friend', 'Friend', 'n', NULL, 'Leo') RETURNING id
+    `;
+    const pid = profile!.id;
+    await sql`INSERT INTO tags (profile_id, tag) VALUES (${pid}, ' second'), (${pid}, ''), (${pid}, 'third')`;
+    await sql`INSERT INTO quotes (profile_id, quote) VALUES (${pid}, 'said this')`;
+    await sql`INSERT INTO favorite_memories (profile_id, memory) VALUES (${pid}, 'm1'), (${pid}, 'm2')`;
+    await sql`INSERT INTO top_songs (profile_id, name, artist) VALUES (${pid}, 'One', 'A'), (${pid}, '', 'Only Artist')`;
+    await sql`INSERT INTO associated_songs (profile_id, name, artist) VALUES (${pid}, 'Theme', NULL)`;
+    await sql`INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (${user!.id}, 'plain', now() + interval '1 hour')`;
 
-  test("refuses to baseline from a dirty golang-migrate state", async () => {
-    const sql = await freshDatabase("migrate_dirty");
     await runMigrations(sql, logger);
-    await sql.unsafe(`DROP SCHEMA drizzle CASCADE`);
-    await sql.unsafe(`CREATE TABLE schema_migrations (version bigint, dirty boolean)`);
-    await sql.unsafe(`INSERT INTO schema_migrations VALUES (5, true)`);
 
-    // A dirty marker means the old tool failed part-way. Baselining would
-    // declare that mess complete, so it must not happen — drizzle then tries to
-    // apply migration 0 over existing tables and fails loudly instead.
-    await expect(runMigrations(sql, logger)).rejects.toThrow();
-  });
+    const [row] = await sql<
+      Array<{
+        tags: string[];
+        quotes: string[];
+        favorite_memories: string[];
+        top_songs: unknown;
+        associated_song: unknown;
+        bio: string;
+        revision: number;
+      }>
+    >`SELECT tags, quotes, favorite_memories, top_songs, associated_song, bio, revision FROM profiles WHERE id = ${pid}`;
 
-  test("does not baseline from a version older than the drizzle cutover", async () => {
-    const sql = await freshDatabase("migrate_old_version");
-    await runMigrations(sql, logger);
-    await sql.unsafe(`DROP SCHEMA drizzle CASCADE`);
-    await sql.unsafe(`CREATE TABLE schema_migrations (version bigint, dirty boolean)`);
-    await sql.unsafe(`INSERT INTO schema_migrations VALUES (2, false)`);
+    expect(row!.tags).toEqual(["second", "third"]);
+    expect(row!.quotes).toEqual(["said this"]);
+    expect(row!.favorite_memories).toEqual(["m1", "m2"]);
+    expect(row!.top_songs).toEqual([
+      { name: "One", artist: "A" },
+      { name: "Only Artist", artist: "" },
+    ]);
+    expect(row!.associated_song).toEqual({ name: "Theme", artist: "" });
+    expect(row!.bio).toBe("");
+    expect(row!.revision).toBe(1);
 
-    await expect(runMigrations(sql, logger)).rejects.toThrow();
-  });
+    const emails = await sql<Array<{ email: string }>>`SELECT email FROM users ORDER BY id`;
+    // Lower-cased, except where that would collide with another account.
+    expect(emails.map((e) => e.email)).toEqual([
+      "mixed.case@example.com",
+      "Taken@Example.com",
+      "taken@example.com",
+    ]);
 
-  test("ignores an empty golang-migrate version table", async () => {
-    const sql = await freshDatabase("migrate_empty_version");
-    await sql.unsafe(`CREATE TABLE schema_migrations (version bigint, dirty boolean)`);
-
-    // No row means nothing to baseline from, so the migrations simply run.
-    await runMigrations(sql, logger);
-    expect(await tableNames(sql)).toContain("profiles");
+    expect(await sql`SELECT 1 FROM password_reset_tokens`).toHaveLength(0);
+    const tables = await tableNames(sql);
+    for (const gone of ["tags", "quotes", "top_songs", "associated_songs", "favorite_memories"]) {
+      expect(tables).not.toContain(gone);
+    }
+    const [zodiac] = await sql`
+      SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'zodiac_sign'
+    `;
+    expect(zodiac).toBeUndefined();
   });
 });

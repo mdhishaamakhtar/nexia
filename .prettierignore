@@ -5,5 +5,8 @@ coverage
 apps/web/.next
 apps/web/next-env.d.ts
 apps/api/drizzle
-backend
 *.md
+**/.impeccable/
+apps/web/test-results
+apps/web/playwright-report
+apps/web/e2e/.auth

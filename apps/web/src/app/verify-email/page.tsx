@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AuthCard, { AuthLink } from "@/components/layout/AuthCard";
+import ResendVerification from "@/features/auth/ResendVerification";
 
 export const metadata: Metadata = {
   title: "Check your email",
@@ -11,21 +12,20 @@ export default function VerifyEmailPage() {
       title="Check your email"
       eyebrow="almost there"
       tape="blue"
-      footer={
-        <p>
-          <AuthLink href="/login">Back to sign in</AuthLink>
-        </p>
-      }
+      footer={<AuthLink href="/login">Back to sign in</AuthLink>}
     >
-      <div className="space-y-4 text-center">
-        <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
-          We&apos;ve sent a verification link to your email address. Open it to activate your Nexia
-          account.
+      <div className="space-y-5 text-center">
+        <p className="t-body text-text-2">
+          We&apos;ve sent a link to confirm your address. Open it, then sign in. It works for 24
+          hours.
         </p>
-        <p className="text-xs leading-relaxed" style={{ color: "var(--text-3)" }}>
-          The link expires in <strong style={{ color: "var(--text-2)" }}>24 hours</strong>. Check
-          your spam folder if you don&apos;t see it.
+        <p className="text-xs leading-relaxed text-text-3">
+          Already have an account with this address? Sign in, or reset your password instead.
         </p>
+        <div className="border-t border-line pt-5">
+          <p className="t-label mb-3">Nothing arrived?</p>
+          <ResendVerification />
+        </div>
       </div>
     </AuthCard>
   );

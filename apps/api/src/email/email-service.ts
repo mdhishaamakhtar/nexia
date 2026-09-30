@@ -1,30 +1,19 @@
 import type { Config } from "../config/config";
 import type { Logger } from "../logging/logger";
 import { errEmailUnavailable } from "../services/errors";
-import { buildVerificationEmailHTML, buildPasswordResetEmailHTML } from "./templates";
+import { passwordResetEmail, verificationEmail, type EmailContent } from "./templates";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 /**
- * Signup blocks on this call, so an unresponsive provider must not hold the
- * request open indefinitely.
+ * Sending sits on the request path of sign-up and password reset, so an
+ * unresponsive provider must not hold those requests open indefinitely.
  */
 const SEND_TIMEOUT_MS = 10_000;
-
-interface SendParams {
-  toEmail: string;
-  subject: string;
-  html: string;
-  /** Used in log messages and error text, e.g. "verification email". */
-  kind: string;
-  /** Extra fields for the "skipped" log line when sending is disabled. */
-  skipFields?: Record<string, unknown>;
-}
 
 export class EmailService {
   private fromAddress: string;
   private appBaseURL: string;
-  private enabled: boolean;
   private apiKey: string;
   private logger: Logger;
 
@@ -32,36 +21,30 @@ export class EmailService {
     this.fromAddress = cfg.email.from_address;
     this.appBaseURL = cfg.email.app_base_url;
     this.apiKey = cfg.email.resend_api_key;
-    this.enabled = Boolean(cfg.email.resend_api_key);
     this.logger = logger.child({ component: "email" });
   }
 
   async sendVerificationEmail(toEmail: string, token: string): Promise<void> {
-    const verifyURL = `${this.appBaseURL}/verify-email/confirm?token=${encodeURIComponent(token)}`;
-    await this.send({
-      toEmail,
-      subject: "Verify your Nexia email address",
-      html: buildVerificationEmailHTML(verifyURL),
-      kind: "verification email",
-      skipFields: { verifyURL },
-    });
+    const url = `${this.appBaseURL}/verify-email/confirm?token=${encodeURIComponent(token)}`;
+    await this.send(toEmail, verificationEmail(url), "verification", url);
   }
 
   async sendPasswordResetEmail(toEmail: string, token: string): Promise<void> {
-    const resetURL = `${this.appBaseURL}/reset-password`;
-    await this.send({
-      toEmail,
-      subject: "Reset your Nexia password",
-      html: buildPasswordResetEmailHTML(token, resetURL),
-      kind: "password reset email",
-      skipFields: { resetURL },
-    });
+    const url = `${this.appBaseURL}/reset-password?token=${encodeURIComponent(token)}`;
+    await this.send(toEmail, passwordResetEmail(url), "password reset", url);
   }
 
-  private async send({ toEmail, subject, html, kind, skipFields }: SendParams): Promise<void> {
-    if (!this.enabled) {
-      // Without a key, log the link so local development can still follow it.
-      this.logger.info({ toEmail, ...skipFields }, `email send skipped: ${kind}`);
+  private async send(
+    toEmail: string,
+    content: EmailContent,
+    kind: string,
+    link: string
+  ): Promise<void> {
+    if (!this.apiKey) {
+      // Development without a Resend key: print the link so the flow can still
+      // be followed. Never reached in production, where the key is required
+      // for email to work at all.
+      this.logger.info({ link }, `email disabled; ${kind} link`);
       return;
     }
 
@@ -76,15 +59,16 @@ export class EmailService {
         body: JSON.stringify({
           from: this.fromAddress,
           to: [toEmail],
-          subject,
-          html,
+          subject: content.subject,
+          html: content.html,
+          text: content.text,
         }),
         signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
       });
     } catch (err) {
       // Transport-level failure: DNS, TLS, timeout, connection reset.
       throw errEmailUnavailable(
-        `resend: send ${kind}: ${err instanceof Error ? err.message : String(err)}`
+        `resend: send ${kind} email: ${err instanceof Error ? err.message : String(err)}`
       );
     }
 
@@ -92,9 +76,9 @@ export class EmailService {
     // were a transport error.
     if (!res.ok) {
       const body = await res.text();
-      throw errEmailUnavailable(`resend: send ${kind}: API error ${res.status} ${body}`);
+      throw errEmailUnavailable(`resend: send ${kind} email: API error ${res.status} ${body}`);
     }
 
-    this.logger.info({ toEmail }, `${kind} sent`);
+    this.logger.info(`${kind} email sent`);
   }
 }

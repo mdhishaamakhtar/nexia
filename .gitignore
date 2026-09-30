@@ -8,8 +8,6 @@ dist/
 
 # Test artifacts
 coverage/
-coverage.*
-*.out
 
 # Environment
 .env

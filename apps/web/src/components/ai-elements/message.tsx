@@ -1,38 +1,27 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import type { ComponentProps } from "react";
 import { memo } from "react";
 import { Streamdown } from "streamdown";
 import type { CodeHighlighterPlugin, PluginConfig } from "streamdown";
 
 /**
- * Streaming markdown renderer for chat.
- *
- * Everything else this file used to vendor from ai-elements — Message,
- * MessageContent, MessageActions, MessageAction, the MessageBranch family,
- * MessageToolbar — was unused: Nexia renders its own bubbles in
- * features/chat/components/chat-message.tsx. Removing them also removed this
- * file's dependency on the shadcn ButtonGroup and Tooltip primitives.
+ * Streaming markdown for the assistant's replies. Only the code highlighter is
+ * loaded: answers about people have no use for diagram, maths or CJK layout
+ * engines, and each one was a large download on the one screen that already
+ * owns the viewport. Tables and lists are built in.
  *
  * Visual styling lives in the `.chat-markdown` block in globals.css.
  */
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 const streamdownPlugins = {
-  cjk,
   // Upstream declaration drift: @streamdown/code types its highlight result as
   // shiki's `TokensResult`, while streamdown declares its own `HighlightResult`
-  // that its docs describe as "compatible with shiki's TokensResult". The
-  // runtime shapes agree; only the .d.ts files disagree. Bridge it here so the
-  // mismatch is documented in one place instead of failing the build.
+  // that its docs describe as compatible. The runtime shapes agree.
   code: code as unknown as CodeHighlighterPlugin,
-  math,
-  mermaid,
 } satisfies PluginConfig;
 
 export const MessageResponse = memo(
@@ -43,6 +32,7 @@ export const MessageResponse = memo(
         className
       )}
       plugins={streamdownPlugins}
+      controls={false}
       {...props}
     />
   ),

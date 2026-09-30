@@ -2,15 +2,14 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { LogoMark } from "@/components/atoms/Logo";
+import Tape, { type TapeColor } from "@/components/atoms/Tape";
+import { enter } from "@/shared/ui/motion";
 
 /**
- * The shared shell for every unauthenticated page (login, verify email,
- * forgot/reset password). All five used to repeat the same centring wrapper,
- * washi tape, card, title block, and footer link with small inconsistencies
- * in each copy.
- *
- * `tape` is the one decorative flourish, and it is the only place these pages
- * differ visually — a light cue that they are different steps of one flow.
+ * The shell for every signed-out page (sign in, verify email, forgot and
+ * reset password): one pinned sheet, centred. The tape colour is the only
+ * thing that varies, a light cue that these are steps of one flow.
  */
 export default function AuthCard({
   title,
@@ -21,42 +20,31 @@ export default function AuthCard({
 }: {
   title: string;
   eyebrow?: string;
-  tape?: "lavender" | "peach" | "blue";
+  tape?: TapeColor;
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
   return (
-    <main className="flex min-h-dvh items-center justify-center px-5 py-10">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="relative w-full max-w-sm"
-      >
-        <span
-          className="washi-tape"
-          style={{ width: 96, height: 22, background: `var(--${tape})` }}
-          aria-hidden="true"
-        />
-
-        <div className="paper rounded-3xl p-7 sm:p-9">
+    <main id="main" className="flex min-h-dvh items-center justify-center px-(--gutter) py-10">
+      <motion.div {...enter(0, 16)} className="relative w-full max-w-sm">
+        <Link
+          href="/"
+          aria-label="Nexia home"
+          className="group/logo mx-auto mb-7 flex h-14 w-14 items-center justify-center rounded-2xl"
+        >
+          <LogoMark size={44} />
+        </Link>
+        <div className="paper relative rounded-3xl p-7 sm:p-9">
+          <Tape color={tape} width={96} height={22} />
           <header className="mb-7 text-center">
-            <h1 className="t-page-title" style={{ color: "var(--text-1)" }}>
-              {title}
-            </h1>
+            <h1 className="t-page-title text-balance text-text-1">{title}</h1>
             {eyebrow && <p className="t-label mt-2">{eyebrow}</p>}
           </header>
-
           {children}
         </div>
 
         {footer && (
-          <div
-            className="mt-5 text-center text-xs leading-relaxed"
-            style={{ color: "var(--text-3)" }}
-          >
-            {footer}
-          </div>
+          <div className="mt-5 text-center text-xs leading-relaxed text-text-3">{footer}</div>
         )}
       </motion.div>
     </main>
@@ -68,30 +56,32 @@ export function AuthLink({ href, children }: { href: string; children: React.Rea
   return (
     <Link
       href={href}
-      className="font-semibold underline underline-offset-2"
-      style={{ color: "var(--text-2)" }}
+      className="font-semibold text-text-2 underline underline-offset-2 hover:text-text-1"
     >
       {children}
     </Link>
   );
 }
 
-/** The shared inline error banner for auth forms. */
-export function AuthError({ message }: { message: string }) {
+/** The shared inline message banner for auth forms. */
+export function AuthNotice({
+  tone = "error",
+  children,
+}: {
+  tone?: "error" | "success";
+  children: React.ReactNode;
+}) {
   return (
-    <motion.p
-      role="alert"
-      initial={{ opacity: 0, y: -4 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-      className="flex items-start gap-2 rounded-xl border px-4 py-3 text-xs font-semibold"
-      style={{
-        background: "var(--red-bg)",
-        borderColor: "var(--red-border)",
-        color: "var(--red-ink)",
-      }}
+    <motion.div
+      role={tone === "error" ? "alert" : "status"}
+      {...enter(0, -4)}
+      className={
+        tone === "error"
+          ? "rounded-xl border border-red-border bg-red-bg px-4 py-3 text-[13px] font-semibold leading-snug text-red-ink"
+          : "rounded-xl border border-green-line bg-green-soft px-4 py-3 text-[13px] font-semibold leading-snug text-green-ink"
+      }
     >
-      {message}
-    </motion.p>
+      {children}
+    </motion.div>
   );
 }

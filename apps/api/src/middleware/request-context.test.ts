@@ -2,7 +2,7 @@ import { describe, test, expect } from "vitest";
 import { Hono } from "hono";
 import pino from "pino";
 import { Writable } from "node:stream";
-import { errorHandler, getRequestID, requestContext } from "./request-context";
+import { errorHandler, requestContext } from "./request-context";
 import { ErrorKind, ServiceError } from "../services/errors";
 
 interface LogLine {
@@ -11,7 +11,6 @@ interface LogLine {
   status_code?: number;
   request_id?: string;
   user_id?: number;
-  panic?: string;
 }
 
 /** A pino logger writing into an array, so log decisions can be asserted. */
@@ -86,39 +85,76 @@ describe("requestContext", () => {
   });
 });
 
+describe("request ids", () => {
+  test("echoes a well-formed caller id", async () => {
+    const { logger, lines } = capturingLogger();
+    const app = new Hono();
+    app.use("*", requestContext(logger));
+    app.get("/id", (c) => c.json({ ok: true }));
+
+    const res = await app.request("/id", { headers: { "X-Request-ID": "known-id_1.2" } });
+    expect(res.headers.get("X-Request-ID")).toBe("known-id_1.2");
+    expect(lines.at(-1)!.request_id).toBe("known-id_1.2");
+  });
+
+  test("replaces an id that could inject into the logs", async () => {
+    const { logger } = capturingLogger();
+    const app = new Hono();
+    app.use("*", requestContext(logger));
+    app.get("/id", (c) => c.json({ ok: true }));
+
+    const res = await app.request("/id", { headers: { "X-Request-ID": "bad id level=error" } });
+    expect(res.headers.get("X-Request-ID")).toMatch(/^[0-9a-f-]{36}$/);
+  });
+});
+
 describe("errorHandler", () => {
-  test("turns a thrown error into the JSON 500 envelope", async () => {
+  test("answers an unexpected error generically and logs its stack", async () => {
     const { logger, lines } = capturingLogger();
     const app = new Hono();
     app.onError(errorHandler(logger));
     app.get("/throw", () => {
-      throw new Error("kaboom");
+      throw new Error('Failed query: insert into "profiles" values ($1)');
     });
 
     const res = await app.request("/throw");
     expect(res.status).toBe(500);
-    // Hono's default handler answers with plain text; every other error in this
-    // API is a JSON envelope, and the client parses it as one.
-    expect(await res.json()).toEqual({
-      error: { code: "SERVER_ERROR", message: "Internal server error" },
-    });
+    const body = (await res.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("SERVER_ERROR");
+    // The internal message never reaches the client…
+    expect(body.error.message).not.toContain("Failed query");
 
-    const logged = lines.at(-1)!;
+    // …it goes to the log, with the stack.
+    const logged = lines.at(-1)! as LogLine & { err?: { message: string; stack: string } };
     expect(logged.level).toBe("error");
-    expect(logged.panic).toContain("kaboom");
+    expect(logged.err?.message).toContain("Failed query");
+    expect(logged.err?.stack).toContain("Error");
   });
 
-  test("handles an Error subclass, such as a ServiceError", async () => {
-    const { logger } = capturingLogger();
+  test("maps a ServiceError to its status and code", async () => {
+    const { logger, lines } = capturingLogger();
     const app = new Hono();
     app.onError(errorHandler(logger));
-    app.get("/throw", () => {
-      throw new ServiceError(ErrorKind.NotFound, "escaped the controller");
+    app.get("/missing", () => {
+      throw new ServiceError(ErrorKind.NotFound, "internal detail");
+    });
+    app.get("/invalid", () => {
+      throw new ServiceError(ErrorKind.Validation, "bio: Too long");
     });
 
-    const res = await app.request("/throw");
-    expect(res.status).toBe(500);
-    expect(await res.json()).toHaveProperty("error.code", "SERVER_ERROR");
+    const missing = await app.request("/missing");
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({
+      error: { code: "NOT_FOUND", message: "Resource not found" },
+    });
+
+    // Validation text is written for people, so it is passed through.
+    const invalid = await app.request("/invalid");
+    expect(invalid.status).toBe(400);
+    expect(await invalid.json()).toEqual({
+      error: { code: "VALIDATION_ERROR", message: "bio: Too long" },
+    });
+    expect(lines).toHaveLength(0);
   });
 
   test("handles an async rejection from a handler", async () => {
@@ -131,34 +167,5 @@ describe("errorHandler", () => {
     });
 
     expect((await app.request("/reject")).status).toBe(500);
-  });
-
-  test("leaves successful responses alone", async () => {
-    const { logger } = capturingLogger();
-    const app = new Hono();
-    app.onError(errorHandler(logger));
-    app.get("/fine", (c) => c.json({ ok: true }));
-
-    expect((await app.request("/fine")).status).toBe(200);
-  });
-});
-
-describe("getRequestID", () => {
-  test("returns the id set by the middleware", async () => {
-    const { logger } = capturingLogger();
-    const app = new Hono();
-    app.use("*", requestContext(logger));
-    app.get("/id", (c) => c.json({ id: getRequestID(c) }));
-
-    const res = await app.request("/id", { headers: { "X-Request-ID": "known-id" } });
-    expect(await res.json()).toEqual({ id: "known-id" });
-  });
-
-  test("returns an empty string when nothing set one", async () => {
-    const app = new Hono();
-    app.get("/id", (c) => c.json({ id: getRequestID(c) }));
-
-    const res = await app.request("/id");
-    expect(await res.json()).toEqual({ id: "" });
   });
 });

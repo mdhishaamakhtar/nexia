@@ -1,138 +1,116 @@
 import { describe, test, expect } from "vitest";
 import { Hono } from "hono";
 import pino from "pino";
-import { createRateLimiter, rateLimitConfigFromValues } from "../middleware/rate-limit";
-import { createAuthRateLimiter } from "../middleware/auth-rate-limit";
-import { createChatRateLimiter } from "../middleware/chat-rate-limit";
-import type { Config } from "../config/config";
-import type { Logger } from "../logging/logger";
+import { clientAddress, createRateLimiter, type RateLimitOptions } from "./rate-limit";
 
-const nopLogger = pino({ level: "silent" });
+const logger = pino({ level: "silent" });
 
-const testCfg: Config = {
-  server: {
-    port: 8080,
-    mode: "test",
-    jwt_secret: "test",
-    jwt_expiry_minutes: 30,
-    cors_origins: [],
-    cookie_domain: "",
-    auth_rate_limit_requests: 5,
-    auth_rate_limit_window_seconds: 30,
-    auth_rate_limit_burst: 5,
-    chat_rate_limit_requests: 4,
-    chat_rate_limit_window_seconds: 90,
-    chat_rate_limit_burst: 4,
-  },
-  db: {} as Config["db"],
-  ai: {} as Config["ai"],
-  email: {} as Config["email"],
-};
+/** A limiter on a manual clock, keyed by the `x-who` header. */
+function limitedApp(opts: Partial<RateLimitOptions> = {}) {
+  let clock = 1_000_000;
+  const app = new Hono();
+  app.use(
+    "*",
+    createRateLimiter({
+      name: "test",
+      message: "Too many",
+      requests: 6,
+      windowSeconds: 60,
+      burst: 2,
+      key: (c) => c.req.header("x-who") ?? "anon",
+      logger,
+      now: () => clock,
+      ...opts,
+    })
+  );
+  app.post("/x", (c) => c.json({ ok: true }));
+  const hit = (who = "a") => app.request("/x", { method: "POST", headers: { "x-who": who } });
+  return { hit, advance: (ms: number) => (clock += ms) };
+}
 
-describe("rateLimitConfigFromValues", () => {
-  test("uses defaults when overrides are zero/negative", () => {
-    const cfg = rateLimitConfigFromValues(10, 10, 10, 0, 0, 0);
-    expect(cfg.requests).toBe(10);
-    expect(cfg.burst).toBe(10);
-    expect(cfg.windowSeconds).toBe(10);
+describe("createRateLimiter", () => {
+  test("allows the burst, then answers 429 with Retry-After", async () => {
+    const { hit } = limitedApp();
+
+    expect((await hit()).status).toBe(200);
+    expect((await hit()).status).toBe(200);
+
+    const limited = await hit();
+    expect(limited.status).toBe(429);
+    expect(await limited.json()).toEqual({ error: { code: "RATE_LIMITED", message: "Too many" } });
+    // 6 per 60s refills one token every 10s.
+    expect(limited.headers.get("Retry-After")).toBe("10");
   });
 
-  test("clamps burst to requests", () => {
-    const cfg = rateLimitConfigFromValues(10, 10, 10, 5, 99, 30);
-    expect(cfg.requests).toBe(5);
-    expect(cfg.burst).toBe(5);
+  test("refills at the configured rate", async () => {
+    const { hit, advance } = limitedApp();
+    await hit();
+    await hit();
+    expect((await hit()).status).toBe(429);
+
+    advance(10_000);
+    expect((await hit()).status).toBe(200);
+    expect((await hit()).status).toBe(429);
   });
 
-  test("uses overrides when positive", () => {
-    const cfg = rateLimitConfigFromValues(10, 10, 10, 5, 3, 30);
-    expect(cfg.requests).toBe(5);
-    expect(cfg.burst).toBe(3);
-    expect(cfg.windowSeconds).toBe(30);
+  test("keeps separate buckets per key", async () => {
+    const { hit } = limitedApp();
+    await hit("a");
+    await hit("a");
+    expect((await hit("a")).status).toBe(429);
+    expect((await hit("b")).status).toBe(200);
   });
 
-  test("ignores negative overrides", () => {
-    const cfg = rateLimitConfigFromValues(10, 10, 10, -1, -2, 0);
-    expect(cfg.requests).toBe(10);
-    expect(cfg.burst).toBe(10);
-    expect(cfg.windowSeconds).toBe(10);
+  test("never lets the burst exceed the refill rate", async () => {
+    const { hit } = limitedApp({ requests: 1, burst: 5 });
+    expect((await hit()).status).toBe(200);
+    expect((await hit()).status).toBe(429);
+  });
+
+  test("sweeping idle buckets keeps the active ones", async () => {
+    const { hit, advance } = limitedApp();
+    await hit("idle");
+    advance(30_000);
+    await hit("busy");
+    await hit("busy");
+    // A full window after "idle" was last seen, but only half for "busy".
+    advance(31_000);
+    expect((await hit("busy")).status).toBe(200);
+    expect((await hit("busy")).status).toBe(200);
+    expect((await hit("busy")).status).toBe(429);
+  });
+
+  test("forgets idle buckets after a window, which behaves like a full bucket", async () => {
+    const { hit, advance } = limitedApp();
+    await hit();
+    await hit();
+    advance(61_000);
+    expect((await hit()).status).toBe(200);
+    expect((await hit()).status).toBe(200);
   });
 });
 
-describe("rate limiter", () => {
-  test("rejects requests beyond burst", async () => {
+describe("clientAddress", () => {
+  async function addressOf(headers: Record<string, string>, header: string) {
     const app = new Hono();
-    app.use(
-      "*",
-      createRateLimiter(
-        nopLogger,
-        "test",
-        "Too many",
-        {
-          requests: 2,
-          burst: 2,
-          windowSeconds: 60,
-        },
-        "/test"
-      )
+    app.get("/ip", (c) => c.text(clientAddress(c, header)));
+    const res = await app.request("/ip", { headers });
+    return res.text();
+  }
+
+  test("reads the proxy's header when one is configured", async () => {
+    expect(await addressOf({ "x-real-ip": "203.0.113.7" }, "x-real-ip")).toBe("203.0.113.7");
+    expect(await addressOf({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" }, "x-forwarded-for")).toBe(
+      "203.0.113.7"
     );
-    app.post("/test", (c) => c.json({ ok: true }));
-
-    // First two should pass
-    for (let i = 0; i < 2; i++) {
-      const res = await app.request("/test", { method: "POST" });
-      expect(res.status).toBe(200);
-    }
-
-    // Third should be rate limited
-    const res = await app.request("/test", { method: "POST" });
-    expect(res.status).toBe(429);
-    const body = (await res.json()) as { error: { code: string; message: string } };
-    expect(body.error.code).toBe("RATE_LIMITED");
-    expect(body.error.message).toBe("Too many");
-    expect(res.headers.get("Retry-After")).toBeTruthy();
-    expect(res.headers.get("X-RateLimit-Limit")).toBeTruthy();
-  });
-});
-
-describe("authRateLimiter", () => {
-  test("config uses defaults and clamps burst", () => {
-    const app = new Hono();
-    const mw = createAuthRateLimiter(nopLogger, testCfg);
-    app.use("*", mw);
-    app.post("/auth/login", (c) => c.json({ ok: true }));
-
-    // Should allow up to 5 requests (burst=5)
-    // Just verify it's callable
-    expect(mw).toBeDefined();
   });
 
-  test("nil config uses defaults", () => {
-    const mw = createAuthRateLimiter(nopLogger, null as unknown as Config);
-    expect(mw).toBeDefined();
+  test("falls back to the socket when the proxy header is absent", async () => {
+    expect(await addressOf({}, "x-real-ip")).toBe("unknown");
   });
-});
 
-describe("chatRateLimiter", () => {
-  test("config uses defaults and clamps burst", () => {
-    const mw = createChatRateLimiter(nopLogger, testCfg);
-    expect(mw).toBeDefined();
-  });
-});
-
-describe("rate limiter panics on nil logger", () => {
-  test("throws on nil logger", () => {
-    expect(() =>
-      createRateLimiter(
-        null as unknown as Logger,
-        "auth",
-        "msg",
-        {
-          requests: 1,
-          burst: 1,
-          windowSeconds: 60,
-        },
-        "/auth"
-      )
-    ).toThrow("auth rate limit requires a logger");
+  test("ignores client-sent headers when no proxy header is configured", async () => {
+    // Without a trusted proxy, X-Forwarded-For is whatever the client wrote.
+    expect(await addressOf({ "x-forwarded-for": "1.2.3.4" }, "")).toBe("unknown");
   });
 });

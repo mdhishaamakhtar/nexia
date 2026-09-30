@@ -86,21 +86,13 @@ describe("createApp", () => {
     expect(res.status).toBe(401);
   });
 
-  test("brings up the queue when Gemini and Redis are both configured", async () => {
+  test("starts the embedding worker when a Gemini key is configured", async () => {
+    // A fresh database has nothing stale, so the worker's first pass makes no
+    // call to Gemini (which MSW would refuse).
     const { app } = await boot({
-      dbName: "bootstrap_with_queue",
-      ai: { gemini_api_key: "test-key", redis_url: inject("redisUrl") },
+      dbName: "bootstrap_with_worker",
+      ai: { gemini_api_key: "test-key", opencode_api_key: "test-key" },
     });
-
-    expect((await app.request("/api/v1/healthz")).status).toBe(200);
-  });
-
-  test("skips the queue when Redis is not configured", async () => {
-    const { app } = await boot({
-      dbName: "bootstrap_no_redis",
-      ai: { gemini_api_key: "test-key", redis_url: "" },
-    });
-
     expect((await app.request("/api/v1/healthz")).status).toBe(200);
   });
 
@@ -111,7 +103,7 @@ describe("createApp", () => {
   test("shutdown closes cleanly and is safe to await", async () => {
     const bootstrap = await boot({
       dbName: "bootstrap_shutdown",
-      ai: { gemini_api_key: "test-key", redis_url: inject("redisUrl") },
+      ai: { gemini_api_key: "test-key" },
     });
 
     await bootstrap.shutdown();

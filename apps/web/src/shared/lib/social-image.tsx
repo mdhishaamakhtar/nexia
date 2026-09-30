@@ -1,51 +1,171 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { BRAND_COLORS, markSvg } from "@/shared/brand/mark";
 
 export const socialImageSize = {
   width: 1200,
   height: 630,
 } as const;
 
-export const socialImageAlt = "Nexia social preview";
+export const socialImageAlt = "Nexia: capture the people who matter most";
 
-const siteName = "Nexia";
 const siteDomain = "nexia.hishaam.dev";
-const siteDescription =
-  "Your personal digital slambook for friends, memories, and the little details you want to keep.";
 
 /*
- * The fonts are vendored into the repo rather than read out of node_modules.
- * Two reasons: the package manager decides whether a dependency lands in the
- * workspace or hoisted at the root, so no single node_modules path is correct;
- * and Next's file tracer can only follow a path it can read statically. A
- * candidate list or a resolved package root defeats it, and the tracer widens
- * to the whole source tree instead of the two files actually needed.
+ * The same vendored Nunito files the PDF export serves from /fonts, read from
+ * disk here. Next's file tracer can only follow a path it can read statically,
+ * so this stays one literal directory rather than anything resolved at runtime
+ * (a package root or a candidate list), which makes it trace the whole tree.
  */
-const FONT_DIR = join(process.cwd(), "src/assets/fonts");
+const FONT_DIR = join(process.cwd(), "public/fonts");
 
 function loadFont(filename: string): Promise<Buffer> {
   return readFile(join(FONT_DIR, filename));
 }
 
-/*
- * Optical margin corrections derived from Nunito TTF hmtx left-side-bearings.
- * Every glyph has invisible padding before its ink starts. At large sizes
- * this becomes visible misalignment. Values below shift each text element
- * left by its exact LSB so all ink edges align with geometric elements.
- *
- * Nunito Bold  N: lsb 77/1000em → 9.39px @122px
- * Nunito Regular generic: lsb 87/1000em → 2.96px @34px, 1.57px @18px
- * Nunito Bold  N: lsb 77/1000em → 2.16px @28px
- */
-const LSB_TITLE = -9.5; // Bold "N" at 122px
-const LSB_BODY = -3; // Regular at 34px
-const LSB_META = -1.5; // Regular at 18px
+// The app's tokens (globals.css), as literals: this renders outside the page.
+const C = {
+  ...BRAND_COLORS,
+  text2: "#57534e",
+  border: "rgba(120, 98, 74, 0.24)",
+  lavender: "#c4b5fd",
+  lavenderInk: "#5b21b6",
+  lavenderBg: "rgba(196, 181, 253, 0.22)",
+  lavenderBorder: "rgba(91, 33, 182, 0.22)",
+  peachSoft: "#ffedd5",
+  peachLine: "rgba(124, 45, 18, 0.24)",
+  peachInk: "#7c2d12",
+};
+
+function svgSrc(svg: string): string {
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
+/** The washi strip, notched at both ends like `.washi-tape`. */
+function tapeSrc(color: string): string {
+  return svgSrc(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 26"><polygon points="5,0 95,0 100,13 95,26 5,26 0,13" fill="${color}"/></svg>`
+  );
+}
+
+/** Lucide's "music" glyph, in the song well's ink. */
+const musicSrc = svgSrc(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${C.peachInk}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`
+);
+
+// One of the landing page's sample people, so the preview shows the product.
+// One card, not a stack: at link-preview size a second card is just clutter.
+const CARD = {
+  initial: "A",
+  name: "Alex Chen",
+  meta: "Gemini · Friend",
+  tags: ["coffee-lover", "bookworm"],
+  song: { name: "Yellow", artist: "Coldplay" },
+};
+
+const CARD_WIDTH = 330;
+
+function Card() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 774,
+        top: 176,
+        width: CARD_WIDTH,
+        display: "flex",
+        flexDirection: "column",
+        gap: 22,
+        padding: "36px 32px 32px",
+        borderRadius: 28,
+        background: C.paper,
+        border: `1.5px solid ${C.border}`,
+        transform: "rotate(-2.5deg)",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not the browser */}
+      <img
+        src={tapeSrc(C.tape)}
+        width={104}
+        height={26}
+        alt=""
+        style={{
+          position: "absolute",
+          top: -13,
+          left: (CARD_WIDTH - 104) / 2,
+          transform: "rotate(-2deg)",
+        }}
+      />
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 16,
+            background: C.lavender,
+            color: C.lavenderInk,
+            fontSize: 26,
+            fontWeight: 800,
+            transform: "rotate(-3deg)",
+          }}
+        >
+          {CARD.initial}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ fontSize: 23, fontWeight: 700, color: C.ink }}>{CARD.name}</div>
+          <div style={{ fontSize: 16, color: C.inkMuted }}>{CARD.meta}</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        {CARD.tags.map((tag) => (
+          <div
+            key={tag}
+            style={{
+              display: "flex",
+              padding: "5px 13px",
+              borderRadius: 999,
+              background: C.lavenderBg,
+              border: `1px solid ${C.lavenderBorder}`,
+              color: C.lavenderInk,
+              fontSize: 15,
+              fontWeight: 700,
+            }}
+          >
+            #{tag}
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          padding: "14px 16px",
+          borderRadius: 16,
+          background: C.peachSoft,
+          border: `1px solid ${C.peachLine}`,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not the browser */}
+        <img src={musicSrc} width={20} height={20} alt="" />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.ink }}>{CARD.song.name}</div>
+          <div style={{ fontSize: 14, color: C.text2 }}>{CARD.song.artist}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export async function createSocialImage() {
-  const [nunitoRegular, nunitoBold] = await Promise.all([
-    loadFont("Nunito_400Regular.ttf"),
-    loadFont("Nunito_700Bold.ttf"),
+  const [regular, bold, extraBold] = await Promise.all([
+    loadFont("Nunito-Regular.ttf"),
+    loadFont("Nunito-Bold.ttf"),
+    loadFont("Nunito-ExtraBold.ttf"),
   ]);
 
   return new ImageResponse(
@@ -54,297 +174,77 @@ export async function createSocialImage() {
         width: "100%",
         height: "100%",
         display: "flex",
-        background: "#fff7ed",
-        color: "#1f2937",
+        position: "relative",
+        background: C.page,
         fontFamily: "Nunito",
+        color: C.ink,
       }}
     >
       <div
         style={{
           display: "flex",
-          flex: 1,
-          position: "relative",
-          overflow: "hidden",
-          background: "#fff7ed",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: 700,
+          padding: "80px 0 76px 96px",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            inset: 32,
-            borderRadius: 36,
-            background: "rgba(255,255,255,0.84)",
-            border: "1px solid rgba(148,163,184,0.22)",
-          }}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- rendered by Satori, not the browser */}
+          <img src={svgSrc(markSvg())} width={48} height={48} alt="" />
+          <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.025em" }}>Nexia</div>
+        </div>
 
-        <div
-          style={{
-            position: "absolute",
-            top: 24,
-            left: "50%",
-            width: 148,
-            height: 28,
-            borderRadius: 999,
-            background: "#fdba74",
-            opacity: 0.78,
-            transform: "translateX(-50%) rotate(-2deg)",
-          }}
-        />
-
-        <div
-          style={{
-            display: "flex",
-            flex: 1,
-            position: "relative",
-            padding: "64px 72px 58px",
-            flexDirection: "column",
-            justifyContent: "space-between",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              <div
-                style={{
-                  width: 46,
-                  height: 46,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "relative",
-                  borderRadius: 16,
-                  background: "#ffffff",
-                  border: "1px solid rgba(148,163,184,0.24)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    position: "relative",
-                    width: 18,
-                    height: 20,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      width: 4,
-                      height: 20,
-                      borderRadius: 999,
-                      background: "#1f2937",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 0,
-                      top: 0,
-                      width: 4,
-                      height: 20,
-                      borderRadius: 999,
-                      background: "#1f2937",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 7,
-                      top: -1,
-                      width: 4,
-                      height: 22,
-                      borderRadius: 999,
-                      background: "#1f2937",
-                      transform: "rotate(-31deg)",
-                      transformOrigin: "center",
-                    }}
-                  />
-                </div>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 18,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "#6b7280",
-                    marginLeft: LSB_META,
-                  }}
-                >
-                  Digital Slambook
-                </div>
-                <div
-                  style={{
-                    fontSize: 28,
-                    fontWeight: 700,
-                    letterSpacing: "-0.04em",
-                    marginLeft: -2,
-                  }}
-                >
-                  {siteName}
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              {["friends", "memories", "lookup"].map((label, index) => {
-                const backgrounds = ["#fdba74", "#c4b5fd", "#93c5fd"];
-                const widths = [88, 104, 88];
-
-                return (
-                  <div
-                    key={label}
-                    style={{
-                      width: widths[index],
-                      height: 40,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 999,
-                      fontSize: 16,
-                      fontWeight: 600,
-                      lineHeight: 1,
-                      color: "#1f2937",
-                      background: backgrounds[index],
-                    }}
-                  >
-                    <div style={{ display: "flex", transform: "translateY(-1px)" }}>{label}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
+        <div style={{ display: "flex", flexDirection: "column", gap: 30 }}>
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 20,
-              maxWidth: 760,
+              fontSize: 58,
+              fontWeight: 800,
+              lineHeight: 1.1,
+              letterSpacing: "-0.03em",
+              marginLeft: -3,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 122,
-                  lineHeight: 0.88,
-                  fontWeight: 700,
-                  letterSpacing: "-0.08em",
-                  marginLeft: LSB_TITLE,
-                }}
-              >
-                NEXIA
-              </div>
-              <div
-                style={{
-                  fontSize: 34,
-                  lineHeight: 1.22,
-                  color: "#374151",
-                  maxWidth: 690,
-                  marginLeft: LSB_BODY,
-                }}
-              >
-                {siteDescription}
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-              }}
-            >
-              <div
-                style={{
-                  width: 96,
-                  height: 2,
-                  background: "#c4b5fd",
-                }}
-              />
-              <div
-                style={{
-                  fontSize: 18,
-                  color: "#6b7280",
-                }}
-              >
-                Manage people. Remember details. Ask later.
-              </div>
-            </div>
+            <div>Capture the people</div>
+            <div style={{ color: C.inkMuted }}>who matter most.</div>
           </div>
-
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
+              flexDirection: "column",
+              fontSize: 23,
+              lineHeight: 1.55,
+              color: C.text2,
             }}
           >
-            <div
-              style={{
-                fontSize: 18,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: "#6b7280",
-                marginLeft: LSB_META,
-              }}
-            >
-              Personal • Warm • Playful
-            </div>
-            <div
-              style={{
-                fontSize: 18,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "#374151",
-              }}
-            >
-              {siteDomain}
-            </div>
+            <div>Their songs, their quirks, the stories.</div>
+            <div>Keep them in one slambook, then just ask.</div>
           </div>
         </div>
+
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: C.inkMuted,
+          }}
+        >
+          {siteDomain}
+        </div>
       </div>
+
+      <Card />
     </div>,
     {
       ...socialImageSize,
       fonts: [
-        {
-          name: "Nunito",
-          data: nunitoRegular,
-          style: "normal",
-          weight: 400,
-        },
-        {
-          name: "Nunito",
-          data: nunitoBold,
-          style: "normal",
-          weight: 700,
-        },
+        { name: "Nunito", data: regular, style: "normal", weight: 400 },
+        { name: "Nunito", data: bold, style: "normal", weight: 700 },
+        { name: "Nunito", data: extraBold, style: "normal", weight: 800 },
       ],
     }
   );

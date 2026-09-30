@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { relationshipTypeSchema } from "./enums";
 import { profileInputSchema, profileOutputSchema, profileSummarySchema } from "./profile";
 
 export const CHAT_TOOL_NAMES = [
@@ -12,44 +13,48 @@ export const CHAT_TOOL_NAMES = [
 
 export type ChatToolName = (typeof CHAT_TOOL_NAMES)[number];
 
+/** Tools that write. The chat UI asks the person to approve each call first. */
+export const WRITE_TOOL_NAMES = [
+  "createProfile",
+  "updateProfile",
+] as const satisfies readonly ChatToolName[];
+
+/**
+ * The most messages of history the server will look at. Older turns are
+ * dropped rather than rejected, so a long conversation keeps working.
+ */
+export const CHAT_HISTORY_LIMIT = 40;
+
 export const ragSearchInputSchema = z.object({
-  query: z.string(),
-  limit: z.number().max(10).optional().default(5),
+  query: z.string().trim().min(1).max(500),
+  limit: z.number().int().min(1).max(10).optional().default(5),
 });
 
 export const searchProfilesInputSchema = z.object({
-  search: z.string().optional(),
-  relationship_type: z.string().optional(),
-  page: z.number().optional().default(1),
-  limit: z.number().max(100).optional().default(10),
+  search: z.string().trim().max(150).optional(),
+  relationship_type: relationshipTypeSchema.optional(),
+  page: z.number().int().min(1).optional().default(1),
+  limit: z.number().int().min(1).max(50).optional().default(10),
 });
 
 export const getProfileInputSchema = z.object({
-  id: z.number(),
+  id: z.number().int().positive(),
 });
 
 export const listProfilesInputSchema = z.object({
-  page: z.number().optional().default(1),
-  limit: z.number().max(100).optional().default(10),
+  page: z.number().int().min(1).optional().default(1),
+  limit: z.number().int().min(1).max(50).optional().default(10),
 });
 
 export const createProfileToolInputSchema = profileInputSchema;
 
 // Updates are PATCH-style: the agent sends only the fields it wants to change.
 // `.partial()` makes every profile field optional so the model never has to
-// restate `full_name`/`relationship_type` just to edit one detail. Omitted
-// fields mean "leave unchanged" — see mapProfileToRepoUpdate in profile-service.
+// restate `full_name`/`relationship_type` just to edit one detail.
 export const updateProfileToolInputSchema = z.object({
-  id: z.number(),
+  id: z.number().int().positive(),
   profile: profileInputSchema.partial(),
 });
-
-export type RagSearchInput = z.infer<typeof ragSearchInputSchema>;
-export type SearchProfilesInput = z.infer<typeof searchProfilesInputSchema>;
-export type GetProfileInput = z.infer<typeof getProfileInputSchema>;
-export type ListProfilesInput = z.infer<typeof listProfilesInputSchema>;
-export type CreateProfileToolInput = z.infer<typeof createProfileToolInputSchema>;
-export type UpdateProfileToolInput = z.infer<typeof updateProfileToolInputSchema>;
 
 // ── Tool output contract ───────────────────────────────────────────────
 // The shapes every chat tool returns. The backend builds these and the chat
@@ -59,9 +64,8 @@ export type UpdateProfileToolInput = z.infer<typeof updateProfileToolInputSchema
 /** Soft failure shape a tool returns instead of throwing (e.g. unavailable). */
 export const toolErrorOutputSchema = z.object({ error: z.string() });
 
-/** One `ragSearch` hit: a full profile snapshot plus its match metadata. */
+/** One `ragSearch` hit: the live profile plus how closely it matched. */
 export const ragSearchResultSchema = profileOutputSchema.extend({
-  profile_id: z.number(),
   score: z.number(),
 });
 export const ragSearchOutputSchema = z.array(ragSearchResultSchema);
@@ -87,7 +91,6 @@ export const writeProfileToolOutputSchema = z.object({
 });
 
 export type ToolErrorOutput = z.infer<typeof toolErrorOutputSchema>;
-export type RagSearchResult = z.infer<typeof ragSearchResultSchema>;
 export type RagSearchOutput = z.infer<typeof ragSearchOutputSchema>;
 export type ProfileListToolOutput = z.infer<typeof profileListToolOutputSchema>;
 export type GetProfileToolOutput = z.infer<typeof getProfileToolOutputSchema>;

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Nexia Development Utility Script
-# Handles Docker-based environment management for: postgres, redis, backend, frontend
+# Handles Docker-based environment management for: postgres, backend, frontend
 
 # Color codes for better readability
 BLUE='\033[0;34m'
@@ -20,7 +20,7 @@ usage() {
     echo "  rb      - Build & Restart Backend (Ensures infra is up)"
     echo "  rf      - Build & Restart Frontend (Ensures backend/infra is up)"
     echo "  ra      - Build & Restart All services"
-    echo "  infra   - Restart Postgres & Redis (Keeps data)"
+    echo "  infra   - Restart Postgres (Keeps data)"
     echo "  wipe    - RESTART INFRA & WIPE VOLUMES (Deletes all DB data/embeddings)"
     echo "  stop    - Stop all services"
     echo "  start   - Start all services (detached)"
@@ -56,16 +56,18 @@ case "$1" in
         echo -e "${GREEN}All systems rebuilt and restarted.${NC}"
         ;;
     infra)
-        echo -e "${YELLOW}Restarting Infrastructure (Postgres/Redis)...${NC}"
-        docker compose restart postgres redis
+        echo -e "${YELLOW}Restarting Infrastructure (Postgres)...${NC}"
+        docker compose up -d postgres
+        docker compose restart postgres
         echo -e "${GREEN}Infrastructure restarted.${NC}"
         ;;
     wipe)
-        echo -e "${RED}!!! WARNING: THIS WILL WIPE THE DATABASE (POSTGRES & REDIS) !!!${NC}"
+        echo -e "${RED}!!! WARNING: THIS WILL WIPE THE DATABASE !!!${NC}"
         read -p "Are you sure? (y/N) " confirm
         if [[ $confirm == [yY] ]]; then
-            docker compose down -v postgres redis
-            docker compose up -d postgres redis
+            docker compose rm -sfv postgres
+            docker volume rm -f nexia_postgres_data
+            docker compose up -d postgres
             echo -e "${GREEN}Infrastructure wiped and restarted fresh.${NC}"
         else
             echo "Operation cancelled."

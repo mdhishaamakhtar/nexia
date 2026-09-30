@@ -45,19 +45,9 @@ export function lastEmail(): SentEmail | undefined {
   return sentEmails.at(-1);
 }
 
-/** Pulls the token out of a verification link in a captured email body. */
+/** Pulls the token out of the link in a captured verification or reset email. */
 export function tokenFromEmail(email: SentEmail | undefined): string {
   const match = email?.html.match(/token=([A-Za-z0-9%._-]+)/);
   if (!match?.[1]) throw new Error("no token found in email body");
   return decodeURIComponent(match[1]);
-}
-
-/**
- * Reset emails print the raw token for the user to copy rather than embedding
- * it in the link, so it is matched as a bare 64-hex run instead.
- */
-export function resetTokenFromEmail(email: SentEmail | undefined): string {
-  const match = email?.html.match(/>([a-f0-9]{64})</);
-  if (!match?.[1]) throw new Error("no reset token found in email body");
-  return match[1];
 }

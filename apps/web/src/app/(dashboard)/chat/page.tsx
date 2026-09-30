@@ -8,12 +8,16 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { useNexiaChat } from "@/features/chat/hooks/use-nexia-chat";
+import Button from "@/components/atoms/Button";
+import ConfirmDialog from "@/components/molecules/ConfirmDialog";
+import { useNexiaChat } from "@/features/chat/chat-provider";
+import { describeChatError } from "@/features/chat/lib/errors";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ChatHeader } from "@/features/chat/components/chat-header";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
 import { ChatMessage } from "@/features/chat/components/chat-message";
 import { NexiaAvatar } from "@/shared/ui/AIIcons";
+import { EASE_OUT, enter } from "@/shared/ui/motion";
 
 function ThinkingIndicator() {
   return (
@@ -21,13 +25,11 @@ function ThinkingIndicator() {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.3, ease: EASE_OUT }}
       className="flex w-full items-center gap-2 pl-0.5"
     >
       <NexiaAvatar size={18} />
-      <span className="text-[13px] font-bold" style={{ color: "var(--text-3)" }}>
-        Thinking
-      </span>
+      <span className="text-[13px] font-bold text-text-3">Thinking</span>
       <span className="flex items-center gap-1" aria-hidden="true">
         <span className="streaming-dot" style={{ animationDelay: "0ms" }} />
         <span className="streaming-dot" style={{ animationDelay: "150ms" }} />
@@ -39,50 +41,58 @@ function ThinkingIndicator() {
 
 export default function ChatPage() {
   const [input, setInput] = useState("");
-  const { messages, status, sendMessage, regenerate, stop, clear } = useNexiaChat();
+  const [confirmingNew, setConfirmingNew] = useState(false);
+  const {
+    messages,
+    status,
+    error,
+    sendMessage,
+    regenerate,
+    stop,
+    clear,
+    addToolApprovalResponse,
+    clearError,
+  } = useNexiaChat();
 
-  // Chat is the one screen that owns the viewport. Sizing this column to
-  // `100dvh` was not enough on a phone: the document still had a scroller of
-  // its own, so a flick that ran past either end of the transcript chained
-  // into the page and dragged the browser's URL bar with it — two scrolls
-  // fighting over one gesture, and the composer sliding out from under your
-  // thumb. Removing the document scroller for as long as chat is mounted
-  // leaves exactly one thing on screen that scrolls.
+  // Chat is the one screen that owns the viewport: see `.app-screen` in
+  // globals.css for why sizing the column to 100dvh alone is not enough.
   useEffect(() => {
     document.documentElement.classList.add("app-screen");
+    document.title = "Ask Nexia | Nexia";
     return () => document.documentElement.classList.remove("app-screen");
   }, []);
 
   const isBusy = status === "submitted" || status === "streaming";
   const lastMessage = messages.at(-1);
   const lastPart = lastMessage?.role === "assistant" ? lastMessage.parts.at(-1) : undefined;
-  // The assistant is "actively writing" only when its message currently ends in
-  // a non-empty text part. In every other busy state — before the first token,
-  // and crucially in the gaps between tool calls mid-stream — show the thinking
-  // row so it never looks frozen. No avatar duplication: the message's own
-  // signature avatar only renders once it has text, when this is hidden.
+  // "Thinking" shows whenever the reply is busy but not visibly writing text,
+  // including the gaps between tool calls, so it never looks frozen.
   const assistantWriting = lastPart?.type === "text" && !!lastPart.text;
   const showThinking = isBusy && !assistantWriting;
+  const problem = status === "error" ? describeChatError(error) : null;
 
   const submit = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || isBusy) return;
-    sendMessage({ text: trimmed });
+    if (status === "error") clearError();
+    void sendMessage({ text: trimmed });
     setInput("");
   };
 
   return (
-    // Matches the `reading` shell width and gutters exactly, but can't use
-    // PageShell: this column also owns the viewport height so the composer
-    // pins to the bottom while only the transcript scrolls.
     <main
+      id="main"
       className="mx-auto flex w-full flex-col overflow-hidden px-(--gutter) pt-2 sm:pt-3"
+      // The `reading` shell's width and gutters, plus the viewport height.
       style={{
         height: "calc(100dvh - var(--navbar-h))",
         maxWidth: "calc(var(--shell-reading) + var(--gutter) * 2)",
       }}
     >
-      <ChatHeader onClear={clear} canClear={messages.length > 0} />
+      <ChatHeader
+        hasConversation={messages.length > 0}
+        onNewConversation={() => setConfirmingNew(true)}
+      />
 
       <div className="min-h-0 flex-1">
         <Conversation>
@@ -90,18 +100,12 @@ export default function ChatPage() {
             {messages.length === 0 ? (
               <ChatEmptyState onPrompt={submit} />
             ) : (
-              // No AnimatePresence around the list: the empty state must unmount
-              // instantly when the first message arrives, or its centred
-              // full-height exit displaces the new bubble to mid-screen before
-              // snapping it to the top.
               messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <ChatMessage message={message} />
+                <motion.div key={message.id} {...enter(0, 8)}>
+                  <ChatMessage
+                    message={message}
+                    onApproval={(id, approved) => void addToolApprovalResponse({ id, approved })}
+                  />
                 </motion.div>
               ))
             )}
@@ -110,25 +114,25 @@ export default function ChatPage() {
               {showThinking && <ThinkingIndicator key="thinking" />}
             </AnimatePresence>
 
-            {status === "error" && (
+            {problem && (
               <motion.div
                 role="alert"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-3 rounded-2xl border px-4 py-3"
-                style={{ borderColor: "var(--red-border)", background: "var(--red-bg)" }}
+                {...enter(0, 4)}
+                className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-red-border bg-red-bg px-4 py-3"
               >
-                <AlertCircle size={16} style={{ color: "var(--red-ink)" }} aria-hidden="true" />
-                <p className="flex-1 text-[13px] font-bold" style={{ color: "var(--red-ink)" }}>
-                  Something went wrong
+                <AlertCircle className="h-4 w-4 shrink-0 text-red-ink" aria-hidden="true" />
+                <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-red-ink">
+                  {problem.message}
                 </p>
-                <button
-                  onClick={() => regenerate()}
-                  className="rounded-lg px-3 py-2 text-xs font-bold transition-colors hover:bg-(--red-bg-hover)"
-                  style={{ color: "var(--red-ink)" }}
-                >
-                  Retry
-                </button>
+                {problem.retry ? (
+                  <Button variant="ghost" size="sm" onClick={() => void regenerate()}>
+                    Try again
+                  </Button>
+                ) : (
+                  <Button variant="ghost" size="sm" onClick={clear}>
+                    New conversation
+                  </Button>
+                )}
               </motion.div>
             )}
           </ConversationContent>
@@ -148,6 +152,21 @@ export default function ChatPage() {
           status={status}
         />
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmingNew}
+        eyebrow="New conversation"
+        title="Start over?"
+        description="This conversation will be cleared. Your profiles aren't affected."
+        confirmLabel="Start over"
+        tone="primary"
+        onConfirm={() => {
+          if (isBusy) void stop();
+          clear();
+          setConfirmingNew(false);
+        }}
+        onCancel={() => setConfirmingNew(false)}
+      />
     </main>
   );
 }

@@ -6,7 +6,7 @@ export function createChatModel(cfg: Config): LanguageModel | null {
   if (!cfg.ai.opencode_api_key) return null;
 
   const provider = createOpenAICompatible({
-    name: "opencode-go",
+    name: "opencode",
     baseURL: cfg.ai.opencode_base_url,
     apiKey: cfg.ai.opencode_api_key,
   });

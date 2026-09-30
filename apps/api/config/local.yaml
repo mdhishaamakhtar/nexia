@@ -12,6 +12,7 @@ server:
   cors_origins:
     - "http://localhost:3000"
   cookie_domain: ""
+  client_ip_header: ""
 
 db:
   host: localhost
@@ -27,10 +28,10 @@ db:
 
 ai:
   gemini_api_key: ""
-  redis_url: "127.0.0.1:6379"
   opencode_api_key: ""
   opencode_base_url: "https://opencode.ai/zen/v1"
-  chat_model: "deepseek-v4-flash-free"
+  chat_model: "space-bunny-free"
+  embedding_interval_seconds: 30
 
 email:
   resend_api_key: ""

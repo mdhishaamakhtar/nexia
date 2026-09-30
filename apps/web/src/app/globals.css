@@ -1,11 +1,4 @@
 @import "tailwindcss";
-@plugin "tailwindcss-animate";
-
-@theme {
-  --font-sans: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  /* The only non-Nunito face in the product, and only inside markdown code. */
-  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    NEXIA DESIGN TOKENS — "The Tidy Memory Scrapbook"
@@ -27,45 +20,42 @@
   color-scheme: light;
 
   /* ── Surfaces ──
-     page → surface → surface-2 (sunk: inputs, nested rows) → surface-3 (hover) */
+     page → surface → surface-2 (sunk: wells, nested rows) → surface-3 (hover) */
   --page: #fff7ed;
   --surface: #ffffff;
   --surface-2: #fbf7f1;
   --surface-3: #f4ede3;
 
-  /* ── Ink ──
-     A warm neutral ramp. Cool slate greys on a warm cream page read as a
-     subtle mismatch, and the old values sat right on the 4.5:1 line.
-     Contrast on --page: 14.3:1 / 7.2:1 / 5.3:1 */
+  /* ── Ink ── a warm neutral ramp. Contrast on --page: 14.3:1 / 7.2:1 / 5.3:1 */
   --text-1: #292524;
   --text-2: #57534e;
   --text-3: #6f6660;
 
   /* ── Lines ──
      Warm hairlines, not slate. With shadows removed these carry ALL of the
-     app's separation, so they are a little stronger than a decorative border
-     would be. Changing them changes how every edge in the product reads. */
+     app's separation. `--field-line` is the one exception to "hairline": a
+     white field on white paper is identified by its edge alone, so that edge
+     has to clear the 3:1 non-text contrast floor (3.4:1 on white, 3.0:1 on the peach well). */
   --border: rgba(120, 98, 74, 0.24);
   --border-mid: rgba(120, 98, 74, 0.38);
+  --field-line: #968879;
 
   /* ── Accent surfaces ── tints only, never a foreground */
   --peach: #fdba74;
   --lavender: #c4b5fd;
   --blue: #93c5fd;
 
-  /* ── Accent washes ──
-     The pale opaque paper behind chips, badges, and section headers. These are
-     what keep a profile from reading as one long grey form: the export has
-     always had them, the screen did not. Opaque, not alpha, so a wash reads the
-     same on --surface and on --page. */
+  /* ── Accent washes ── opaque, so a wash reads the same on any surface */
   --peach-soft: #ffedd5;
   --lavender-soft: #ede9fe;
   --blue-soft: #dbeafe;
+  --green-soft: #edf7f0;
 
   /* Hairlines for the washes above — the accent's own ink at low alpha. */
   --peach-line: rgba(124, 45, 18, 0.24);
   --lavender-line: rgba(91, 33, 182, 0.24);
   --blue-line: rgba(30, 64, 175, 0.24);
+  --green-line: rgba(21, 128, 61, 0.26);
 
   /* ── Accent inks ── foreground-safe against paper (all ≥4.5:1) */
   --peach-ink: #7c2d12;
@@ -74,9 +64,8 @@
   --green-ink: #15803d;
   --red-ink: #c81e1e;
 
-  /* --blue-ink is tuned for white paper, where it measures 4.8:1. On
-     --blue-soft it drops to 3.8:1 and fails, so text sitting on the blue wash
-     uses this deeper blue instead (7.0:1). The two are not interchangeable. */
+  /* --blue-ink is tuned for white paper (4.8:1). On --blue-soft, --surface-3
+     or --blue it falls below 4.5:1, so text there uses this (7.0:1+). */
   --blue-ink-deep: #1e40af;
 
   /* ── State tints ── */
@@ -89,43 +78,28 @@
   /* ── Focus ── one visible ring, everywhere */
   --focus: #3b6fd4;
 
-  /* ── Overlay ── a plain warm scrim; modals do not blur the page.
-     At 0.42 the scrim composited to a mid tone (#a59f99) that was too close to
-     the paper it was meant to be pushing back, so dialogs never read as lifted.
-     0.55 dims the page properly and gives the card something to sit against. */
+  /* ── Overlay ── a plain warm scrim; modals do not blur the page. */
   --overlay: rgba(41, 37, 36, 0.55);
 
   /* ── Lines on the scrim ──
-     A hairline is only visible when it is darker than BOTH surfaces it divides.
-     On the page that is automatic: a card's line is darker than its own fill
-     and darker than the cream behind it. On the overlay it is not — the scrim
-     composites to a mid tone, so a normal 1px card line ends up *lighter* than
-     the scrim and dissolves into the card's silhouette instead of drawing an
-     edge. That is why a dialog reusing a card's border looks like it has none.
-
-     Dialogs therefore carry a heavier, darker line than the same surface would
-     on the page: 2px, and an ink strong enough to read against a mid grey. */
+     A hairline is only visible when it is darker than BOTH surfaces it
+     divides. On the scrim a normal card line ends up lighter than the scrim
+     and dissolves, so dialogs and popovers carry this heavier line. */
   --line-float: rgba(120, 98, 74, 0.55);
   --lavender-line-float: rgba(91, 33, 182, 0.55);
 
-  /* Nexia Intel mark — deeper blue so the white glyph clears 3:1 */
+  /* Assistant mark — deeper blue so the white glyph clears 3:1 */
   --nexia-mark: #5b8def;
 
-  /* ── Layout ──
-     Two column widths and ONE gutter scale. Every full-width surface in
-     the app derives its horizontal edges from these, which is what keeps
-     the navbar aligned with page content. See `.shell` below. */
+  /* ── Layout ── two column widths and ONE gutter scale. See `.shell`. */
   --shell-wide: 72rem; /* 1152px — browse grids, landing, navbar */
   --shell-reading: 48rem; /* 768px — detail, forms, chat */
   --gutter: 1.25rem; /* 20px */
   --navbar-h: 3.5rem; /* 56px — fits 44px touch targets */
 
   /* ── Motion ── ease-out only; nothing overshoots */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 140ms;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
   --dur: 220ms;
-
-  --radius: 0.75rem;
 }
 
 @media (min-width: 640px) {
@@ -140,115 +114,408 @@
   }
 }
 
-/* ── Base ── */
-body {
-  background-color: var(--page);
-  color: var(--text-1);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  min-height: 100dvh;
-}
+/* Every token as a Tailwind colour, so components write `text-text-2` or
+   `bg-peach-soft` instead of an inline style. `inline` keeps :root as the
+   single source of truth: the utilities reference the variables above. */
+@theme inline {
+  --font-sans:
+    var(--font-nunito), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* The only non-Nunito face in the product, and only inside markdown code. */
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
 
-/* One focus treatment for the whole app. Components must not remove it. */
-:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-line: var(--border);
+  --color-line-mid: var(--border-mid);
+  --color-line-float: var(--line-float);
+  --color-field-line: var(--field-line);
+  --color-peach: var(--peach);
+  --color-lavender: var(--lavender);
+  --color-blue: var(--blue);
+  --color-peach-soft: var(--peach-soft);
+  --color-lavender-soft: var(--lavender-soft);
+  --color-blue-soft: var(--blue-soft);
+  --color-green-soft: var(--green-soft);
+  --color-peach-line: var(--peach-line);
+  --color-lavender-line: var(--lavender-line);
+  --color-lavender-line-float: var(--lavender-line-float);
+  --color-blue-line: var(--blue-line);
+  --color-green-line: var(--green-line);
+  --color-peach-ink: var(--peach-ink);
+  --color-lavender-ink: var(--lavender-ink);
+  --color-blue-ink: var(--blue-ink);
+  --color-blue-ink-deep: var(--blue-ink-deep);
+  --color-green-ink: var(--green-ink);
+  --color-red-ink: var(--red-ink);
+  --color-red-bg: var(--red-bg);
+  --color-red-bg-hover: var(--red-bg-hover);
+  --color-red-border: var(--red-border);
+  --color-overlay: var(--overlay);
 
-/* Chat composer: the whole card — textarea plus the send row — is one field.
-   The textarea fills the card edge to edge, so its own ring pokes past the
-   border and the 2px radius above squares the corners off. Move the ring to
-   the card: it wraps the whole box and follows the card's own rounding.
-   (These rules are unlayered, so they beat the utilities.) */
-.composer {
-  border-color: var(--border);
-}
-
-/* Flush against the card's edge, exactly like `.field` above: the inset ring
-   sits on top of the hairline instead of floating outside it, so the card
-   gains one crisp blue edge rather than a border with a halo around it. */
-.composer:has(#chat-input:focus) {
-  border-color: var(--focus);
-  outline: 2px solid var(--focus);
-  outline-offset: -1px;
-}
-#chat-input:focus-visible {
-  outline: none;
-}
-/* The send/stop button still rings on its own — it's a separate target — but
-   the base rule's 2px radius would square off a round button. */
-.composer button:focus-visible {
-  border-radius: 9999px;
-}
-
-/* Prevent form elements from overflowing their containers on iOS */
-input,
-textarea,
-select {
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
-/* iOS date input: strip default chrome, keep the whole field tappable */
-input[type="date"] {
-  appearance: none;
-  -webkit-appearance: none;
-  min-height: 1.5em;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator {
-  position: absolute;
-  inset: 0;
-  width: auto;
-  height: auto;
-  background: transparent;
-  color: transparent;
-  cursor: pointer;
+  /* Tailwind's own `ease-out` becomes ours, so `ease-out` means one curve. */
+  --ease-out: var(--ease-out-soft);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LAYOUT SHELL
-
-   `.shell` is the single source of truth for horizontal alignment.
-   Because max-width includes the gutters, two shells of different
-   widths still share identical padding, and a `--shell-wide` navbar
-   lines up exactly with `--shell-wide` page content at every breakpoint.
+   BASE
    ═══════════════════════════════════════════════════════════════════ */
 
-.shell {
-  width: 100%;
-  margin-inline: auto;
-  padding-inline: var(--gutter);
-  max-width: calc(var(--shell-w, var(--shell-wide)) + var(--gutter) * 2);
+@layer base {
+  body {
+    background-color: var(--page);
+    color: var(--text-1);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+
+  /* One focus treatment for the whole app. Components must not remove it. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  input,
+  textarea,
+  select {
+    max-width: 100%;
+  }
+
+  /* No native clear button on search fields: the app draws its own. */
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-mid);
+    border-radius: 999px;
+  }
 }
 
-.shell-wide {
-  --shell-w: var(--shell-wide);
-}
+/* ═══════════════════════════════════════════════════════════════════
+   COMPONENTS
 
-.shell-reading {
-  --shell-w: var(--shell-reading);
-}
+   Everything here sits in the components layer, BELOW utilities. That is
+   the point: `className="washi-tape opacity-0"` must mean opacity 0. These
+   classes used to be unlayered, which let them silently beat every utility
+   written next to them.
+   ═══════════════════════════════════════════════════════════════════ */
 
-/* Dashboard pages sit below the navbar; `min-h-screen` would overshoot
-   by exactly the navbar height and force a scrollbar on every page. */
-.page-body {
-  min-height: calc(100dvh - var(--navbar-h));
+@layer components {
+  /* ── Layout shell ──
+     `.shell` is the single source of truth for horizontal alignment. Because
+     max-width includes the gutters, two shells of different widths still
+     share identical padding, and a wide navbar lines up with wide content. */
+  .shell {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+    max-width: calc(var(--shell-w, var(--shell-wide)) + var(--gutter) * 2);
+  }
+  .shell-wide {
+    --shell-w: var(--shell-wide);
+  }
+  .shell-reading {
+    --shell-w: var(--shell-reading);
+  }
+
+  /* Dashboard pages sit below the navbar; `min-h-screen` would overshoot by
+     exactly the navbar height and force a scrollbar on every page. */
+  .page-body {
+    min-height: calc(100dvh - var(--navbar-h));
+  }
+
+  /* ── Materials ── flat: a white sheet and a warm hairline, nothing else. */
+  .paper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  /* A quieter inset surface. Nested `.paper` inside `.paper` is never right. */
+  .paper-sunk {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+  /* Popovers (menus, the calendar) float over content and over the scrim,
+     so they carry the heavier float line. */
+  .paper-float {
+    background: var(--surface);
+    border: 1.5px solid var(--line-float);
+  }
+
+  /* ── Fields ──
+     WHITE, not tinted: a field is a hole punched in the paper, defined by its
+     edge. 16px on phones is not a style choice — iOS Safari zooms the page on
+     focus for anything smaller. Width is always the caller's. */
+  .field {
+    min-height: 2.75rem; /* 44px touch target */
+    font-size: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--field-line);
+    border-radius: 0.75rem;
+    color: var(--text-1);
+    transition: border-color var(--dur) var(--ease-out-soft);
+  }
+  @media (min-width: 640px) {
+    .field {
+      font-size: 0.9375rem;
+    }
+  }
+  .field::placeholder {
+    color: var(--text-3);
+  }
+  .field:hover:not(:disabled):not(:focus) {
+    border-color: var(--text-3);
+  }
+  .field:focus,
+  .field:focus-visible,
+  .field[aria-expanded="true"] {
+    border-color: var(--focus);
+    outline: 2px solid var(--focus);
+    outline-offset: -1px;
+  }
+  .field:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .field-error,
+  .field-error:focus {
+    border-color: var(--red-ink);
+    outline-color: var(--red-ink);
+  }
+
+  /* ── Sticker chips ── */
+  .sticker-chip {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-2);
+  }
+  .sticker-tag {
+    background: var(--lavender-bg);
+    border: 1px solid var(--lavender-border);
+    color: var(--lavender-ink);
+    border-radius: 999px;
+  }
+
+  /* ── Washi tape ── one material, two jobs.
+     `.washi-tape` PINS: rotated, pasted across the top edge of a surface.
+     `.tape-mark` MARKS: the same strip laid flat in a heading row.
+     Both are decoration; both are aria-hidden at every call site. */
+  .washi-tape,
+  .tape-mark {
+    background: var(--lavender);
+    clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
+    pointer-events: none;
+  }
+  .washi-tape {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    width: 60px;
+    height: 20px;
+    transform: translateX(-50%) rotate(-2deg);
+    opacity: 0.7;
+    z-index: 20;
+  }
+  .tape-mark {
+    display: block;
+    flex-shrink: 0;
+    width: 26px;
+    height: 10px;
+  }
+
+  /* ── Type scale ── five roles, and nothing outside them. */
+  .t-display {
+    font-size: clamp(2.5rem, 1.6rem + 4vw, 4.25rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+  .t-page-title {
+    font-size: clamp(1.75rem, 1.3rem + 1.8vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+  }
+  .t-section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  /* Small all-caps label for every section header and field label. */
+  .t-label {
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-3);
+  }
+  .t-body {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  /* ── Touch targets ──
+     Keeps a small glyph small while its hit area meets the 44px floor. The
+     ::after box is centred on the control and catches the tap. */
+  .hit-44 {
+    position: relative;
+  }
+  .hit-44::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  /* ── Loading and ambient motion ── */
+  .shimmer {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    animation: shimmer 1s var(--ease-out-soft) infinite alternate;
+  }
+  .streaming-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--blue-ink);
+    animation: streaming-dot 1.2s var(--ease-out-soft) infinite;
+  }
+
+  /* ── Chat composer ──
+     The whole card — textarea plus the send row — is one field, so the focus
+     ring lives on the card, flush with its edge, not on the textarea. */
+  .composer {
+    border-color: var(--field-line);
+  }
+  .composer:has(#chat-input:focus) {
+    border-color: var(--focus);
+    outline: 2px solid var(--focus);
+    outline-offset: -1px;
+  }
+  #chat-input:focus-visible {
+    outline: none;
+  }
+
+  /* ── Chat markdown ── */
+  .chat-markdown {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .chat-markdown p {
+    margin: 0;
+  }
+  .chat-markdown p + p {
+    margin-top: 0.5rem;
+  }
+  .chat-markdown ul,
+  .chat-markdown ol {
+    margin: 0.5rem 0;
+    padding-left: 1.25rem;
+  }
+  .chat-markdown ul {
+    list-style: disc;
+  }
+  .chat-markdown ol {
+    list-style: decimal;
+  }
+  .chat-markdown li + li {
+    margin-top: 0.2rem;
+  }
+  .chat-markdown li::marker {
+    color: var(--text-3);
+  }
+  .chat-markdown strong {
+    font-weight: 700;
+  }
+  .chat-markdown em {
+    font-style: italic;
+  }
+  .chat-markdown h1,
+  .chat-markdown h2,
+  .chat-markdown h3 {
+    font-weight: 700;
+    margin: 0.6rem 0 0.25rem;
+    line-height: 1.3;
+  }
+  .chat-markdown h1:first-child,
+  .chat-markdown h2:first-child,
+  .chat-markdown h3:first-child {
+    margin-top: 0;
+  }
+  .chat-markdown h1 {
+    font-size: 1.1em;
+  }
+  .chat-markdown h2 {
+    font-size: 1.05em;
+  }
+  .chat-markdown h3 {
+    font-size: 1em;
+  }
+  .chat-markdown code {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 0.1em 0.3em;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+    font-family: var(--font-mono);
+  }
+  .chat-markdown pre {
+    margin: 0.55rem 0;
+    border-radius: 0.75rem;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    padding: 0.8rem 0.95rem;
+    overflow-x: auto;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+  .chat-markdown pre code {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    font-size: inherit;
+  }
+  .chat-markdown blockquote {
+    border-left: 2px solid var(--border-mid);
+    padding-left: 0.75rem;
+    margin: 0.4rem 0;
+    color: var(--text-3);
+  }
+  .chat-markdown a {
+    color: var(--blue-ink);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .chat-markdown hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 0.9rem 0;
+  }
 }
 
 /* ── App-screen lock ──
-   Chat is the one screen that owns the viewport: the transcript is meant to be
-   the only thing that scrolls. Sizing it to `100dvh` is not enough on a phone.
-   The document still has a scroll container, so a flick that runs past the top
-   or bottom of the transcript chains into the page and drags the browser's own
-   URL bar — two scrolls fighting over one gesture. Killing the document
-   scroller removes the competition outright (and, as a side effect, holds
-   `dvh` still, since the toolbar has nothing left to collapse for).
-
-   Applied by the chat page while it is mounted; every other page scrolls
-   normally. `overscroll-behavior` on the inner scroller stops the chain at the
-   transcript's own edges. */
+   Chat is the one screen that owns the viewport: the transcript is meant to
+   be the only thing that scrolls. Removing the document scroller for as long
+   as chat is mounted stops a flick past either end of the transcript chaining
+   into the page and dragging the browser's own URL bar. */
 html.app-screen,
 html.app-screen body {
   height: 100%;
@@ -256,185 +523,11 @@ html.app-screen body {
   overscroll-behavior: none;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   MATERIALS
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* The one card/panel surface.
-   Completely flat — no shadow anywhere in this product. Separation comes from
-   white paper sitting on the warm cream page plus a single warm hairline. If a
-   surface doesn't read clearly, the fix is contrast or spacing, not a shadow. */
-.paper {
-  background: var(--surface);
-  border: 1px solid var(--border);
+/* A modal is open: the page behind it stays put. */
+html.modal-open,
+html.modal-open body {
+  overflow: hidden;
 }
-
-/* A quieter inset surface for nested rows, wells, and grouped fields.
-   Nested `.paper` inside `.paper` is never correct — use this instead. */
-.paper-sunk {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-}
-
-/* ── Fields ──
-   16px on mobile is not a style choice: iOS Safari zooms the viewport on
-   focus for anything smaller. Drops to 15px once a pointer is likely. */
-/* Fields are WHITE, not tinted.
-   A cream-tinted input sitting on a white card reads as muddy and washed out —
-   the field has to look like a hole punched in the paper, not a slightly
-   different shade of it. Definition comes from the stronger border instead.
-
-   Deliberately sets no width: this class is unlayered, so a `width` here would
-   beat every Tailwind sizing utility (`sm:w-44`, `flex-1`) on the same element.
-   Callers own their width. */
-.field {
-  min-height: 2.75rem; /* 44px touch target */
-  font-size: 1rem;
-  background: var(--surface);
-  border: 1px solid var(--border-mid);
-  border-radius: 0.75rem;
-  color: var(--text-1);
-  transition: border-color var(--dur) var(--ease-out);
-}
-
-@media (min-width: 640px) {
-  .field {
-    font-size: 0.9375rem;
-  }
-}
-
-.field::placeholder {
-  color: var(--text-3);
-}
-
-.field:hover:not(:disabled):not(:focus) {
-  border-color: var(--text-3);
-}
-
-.field:focus,
-.field:focus-visible {
-  border-color: var(--focus);
-  outline: 2px solid var(--focus);
-  outline-offset: -1px;
-}
-
-.field:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.field-error,
-.field-error:focus {
-  border-color: var(--red-ink);
-  outline-color: var(--red-ink);
-}
-
-/* ── Sticker chips ── */
-.sticker-chip {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-2);
-}
-
-.sticker-tag {
-  background: var(--lavender-bg);
-  border: 1px solid var(--lavender-border);
-  color: var(--lavender-ink);
-  border-radius: 999px;
-}
-
-/* ── Washi tape ──
-   One material, two jobs, and they must share a silhouette or the second one
-   reads as a stray coloured rectangle rather than tape.
-
-   `.washi-tape` PINS: rotated, pasted across the top edge of a surface to hold
-   it down. One per surface.
-
-   `.tape-mark` MARKS: the same torn-end strip laid flat in a heading row to
-   open a section — the on-screen twin of the strip the PDF export draws before
-   every heading. It sits in the text flow instead of over an edge, so it is a
-   flag, not a fastening, and a page may carry one per section.
-
-   Both are decoration; both are aria-hidden at every call site. */
-.washi-tape,
-.tape-mark {
-  background: var(--lavender);
-  clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
-  pointer-events: none;
-}
-
-.washi-tape {
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  width: 60px;
-  height: 20px;
-  transform: translateX(-50%) rotate(-2deg);
-  opacity: 0.7;
-  z-index: 20;
-}
-
-/* Full strength, unlike the pinned strip: at 26px wide a 70% wash of peach on
-   cream is barely a colour at all. */
-.tape-mark {
-  display: block;
-  flex-shrink: 0;
-  width: 26px;
-  height: 10px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   TYPE SCALE
-
-   Five roles, and nothing outside them. Before this existed the app had
-   five different h1 treatments across six pages.
-   ═══════════════════════════════════════════════════════════════════ */
-
-.t-display {
-  font-size: clamp(2.5rem, 1.6rem + 4vw, 4.25rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-}
-
-.t-page-title {
-  font-size: clamp(1.75rem, 1.3rem + 1.8vw, 2.5rem);
-  font-weight: 800;
-  line-height: 1.12;
-  letter-spacing: -0.02em;
-}
-
-.t-section-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-}
-
-/* Small all-caps metadata label. Used for every section header and field
-   label in the app — do not hand-roll the size/tracking again. */
-.t-label {
-  font-size: 0.6875rem; /* 11px */
-  font-weight: 700;
-  line-height: 1.2;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-3);
-}
-
-.t-body {
-  font-size: 0.9375rem;
-  line-height: 1.6;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   ANIMATIONS
-
-   Entrances are ease-out and never overshoot. There is no CSS
-   transition on `transform` for any element Framer Motion animates —
-   the two fight each other frame by frame and smear the spring.
-   ═══════════════════════════════════════════════════════════════════ */
 
 @keyframes shimmer {
   0% {
@@ -443,26 +536,6 @@ html.app-screen body {
   100% {
     opacity: 1;
   }
-}
-
-.shimmer {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  animation: shimmer 1s var(--ease-out) infinite alternate;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.floating {
-  animation: float 6s var(--ease-out) infinite;
 }
 
 @keyframes streaming-dot {
@@ -476,169 +549,19 @@ html.app-screen body {
   }
 }
 
-.streaming-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--blue-ink);
-  animation: streaming-dot 1.2s var(--ease-out) infinite;
-}
-
-@keyframes tool-ellipsis {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-.tool-ellipsis {
-  animation: tool-ellipsis 1.4s var(--ease-out) infinite;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   CHAT MARKDOWN
-   ═══════════════════════════════════════════════════════════════════ */
-
-.chat-markdown {
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-.chat-markdown p {
-  margin: 0;
-}
-.chat-markdown p + p {
-  margin-top: 0.5rem;
-}
-.chat-markdown ul,
-.chat-markdown ol {
-  margin: 0.5rem 0;
-  padding-left: 1.25rem;
-}
-.chat-markdown ul {
-  list-style: disc;
-}
-.chat-markdown ol {
-  list-style: decimal;
-}
-.chat-markdown li + li {
-  margin-top: 0.2rem;
-}
-.chat-markdown li::marker {
-  color: var(--text-3);
-}
-.chat-markdown strong {
-  font-weight: 700;
-}
-.chat-markdown em {
-  font-style: italic;
-}
-.chat-markdown h1,
-.chat-markdown h2,
-.chat-markdown h3 {
-  font-weight: 700;
-  margin: 0.6rem 0 0.25rem;
-  line-height: 1.3;
-}
-.chat-markdown h1:first-child,
-.chat-markdown h2:first-child,
-.chat-markdown h3:first-child {
-  margin-top: 0;
-}
-.chat-markdown h1 {
-  font-size: 1.1em;
-}
-.chat-markdown h2 {
-  font-size: 1.05em;
-}
-.chat-markdown h3 {
-  font-size: 1em;
-}
-.chat-markdown code {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  padding: 0.1em 0.3em;
-  border-radius: 0.25rem; /* xs */
-  font-size: 0.85em;
-  font-family: var(--font-mono);
-}
-.chat-markdown pre {
-  margin: 0.55rem 0;
-  border-radius: 0.75rem; /* md */
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  padding: 0.8rem 0.95rem;
-  overflow-x: auto;
-  font-size: 0.82em;
-  line-height: 1.55;
-}
-.chat-markdown pre code {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  font-size: inherit;
-}
-.chat-markdown blockquote {
-  border-left: 2px solid var(--border-mid);
-  padding-left: 0.75rem;
-  margin: 0.4rem 0;
-  color: var(--text-3);
-}
-.chat-markdown a {
-  color: var(--blue-ink);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.chat-markdown hr {
-  border: 0;
-  border-top: 1px solid var(--border);
-  margin: 0.9rem 0;
-}
-
-/* User bubbles sit on peach; retint links and code so they stay readable */
-.is-user .chat-markdown a {
-  color: var(--peach-ink);
-}
-.is-user .chat-markdown code {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: rgba(124, 45, 18, 0.18);
-}
-.is-user .chat-markdown blockquote {
-  border-color: rgba(124, 45, 18, 0.3);
-  color: var(--peach-ink);
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   UTILITIES
-   ═══════════════════════════════════════════════════════════════════ */
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-mid);
-  border-radius: 999px;
-}
-
 /* ── Motion sensitivity ──
-   Framer Motion is handled by <MotionConfig reducedMotion="user"> in
-   shared/providers/query-provider.tsx. This covers the CSS side only.
-   Looping decoration stops; state feedback keeps its final appearance. */
+   Framer Motion follows the OS setting through <MotionConfig reducedMotion="user">.
+   This covers the CSS side: looping decoration stops, spinners hold still,
+   and state changes still happen, just without travel. */
 @media (prefers-reduced-motion: reduce) {
   .shimmer,
-  .floating,
-  .tool-ellipsis,
-  .streaming-dot {
+  .streaming-dot,
+  .animate-spin {
     animation: none;
   }
   .shimmer {
     opacity: 0.85;
   }
-  .tool-ellipsis,
   .streaming-dot {
     opacity: 1;
   }
@@ -646,5 +569,6 @@ html.app-screen body {
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

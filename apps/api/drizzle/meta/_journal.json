@@ -22,6 +22,27 @@
       "when": 1781471225607,
       "tag": "0002_complex_polaris",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790793348745,
+      "tag": "0003_profile_lists_add",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790793354244,
+      "tag": "0004_profile_lists_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790793407031,
+      "tag": "0005_profile_lists_finish",
+      "breakpoints": true
     }
   ]
 }

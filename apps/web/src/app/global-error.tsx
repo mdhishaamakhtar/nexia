@@ -1,5 +1,12 @@
 "use client";
 
+import "./globals.css";
+
+/**
+ * The last resort, when the root layout itself failed: it has to bring its
+ * own <html> and stylesheet. It never shows the raw error, which is written
+ * for developers and can carry internals; the digest is enough to find it.
+ */
 export default function GlobalError({
   error,
   reset,
@@ -10,58 +17,28 @@ export default function GlobalError({
   return (
     <html lang="en">
       <body>
-        <div
-          style={{
-            minHeight: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-            background: "#FFF7ED",
-            color: "#1f2937",
-            fontFamily: "Nunito, system-ui, sans-serif",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "560px",
-              background: "rgba(255,255,255,0.88)",
-              border: "1px solid rgba(148,163,184,0.28)",
-              borderRadius: "16px",
-              padding: "24px",
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: "20px" }}>Application error</h2>
-            <p style={{ marginTop: "10px", color: "#374151" }}>
-              A critical error occurred. Try again.
+        <main className="flex min-h-dvh items-center justify-center px-5">
+          <div className="paper relative w-full max-w-md rounded-3xl px-7 pb-7 pt-9 text-center">
+            <span
+              className="washi-tape"
+              style={{ width: 92, height: 22, background: "var(--peach)" }}
+              aria-hidden="true"
+            />
+            <p className="t-label mb-2">Something broke</p>
+            <h1 className="t-section-title text-text-1">Nexia couldn&apos;t load</h1>
+            <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-text-2">
+              Nothing you saved has been lost. Try again in a moment.
             </p>
             <button
+              type="button"
               onClick={reset}
-              style={{
-                marginTop: "14px",
-                border: "1px solid rgba(124,58,237,0.2)",
-                background: "#FDBA74",
-                color: "#1f2937",
-                borderRadius: "999px",
-                padding: "8px 14px",
-                cursor: "pointer",
-              }}
+              className="mt-6 inline-flex min-h-11 items-center rounded-xl border border-peach-line bg-peach px-5 text-sm font-semibold text-peach-ink"
             >
-              Retry
+              Try again
             </button>
-            <pre
-              style={{
-                marginTop: "14px",
-                whiteSpace: "pre-wrap",
-                color: "#6b7280",
-                fontSize: "12px",
-              }}
-            >
-              {error.message}
-            </pre>
+            {error.digest && <p className="mt-4 text-xs text-text-3">Reference: {error.digest}</p>}
           </div>
-        </div>
+        </main>
       </body>
     </html>
   );

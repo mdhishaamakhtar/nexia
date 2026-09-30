@@ -57,7 +57,7 @@ describe("createEmbeddingGenerator", () => {
 
   test("rejects a wrongly-sized vector rather than storing it", async () => {
     // pgvector's column is fixed at 3072; a short vector would fail at insert
-    // time inside a queue worker, far from the cause.
+    // time inside the background embedding worker, far from the cause.
     state.embedding = vectorOf(768);
     const generator = createEmbeddingGenerator("test-key");
 
