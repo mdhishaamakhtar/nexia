@@ -2,8 +2,9 @@ import { createMiddleware } from "hono/factory";
 import { getCookie } from "hono/cookie";
 import { timingSafeEqual } from "node:crypto";
 import type { AppEnv } from "./auth";
+import { CSRF_COOKIE_NAME } from "../utils/session";
+import { respondError } from "../utils/http";
 
-export const CSRF_COOKIE_NAME = "nexia_csrf";
 export const CSRF_HEADER_NAME = "X-CSRF-Token";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -21,19 +22,19 @@ export function csrfMiddleware() {
 
     const cookieToken = getCookie(c, CSRF_COOKIE_NAME);
     if (!cookieToken) {
-      return c.json({ error: { code: "CSRF_TOKEN_MISSING", message: "CSRF token required" } }, 403);
+      return respondError(c, 403, "CSRF_TOKEN_MISSING", "CSRF token required");
     }
 
     const headerToken = c.req.header(CSRF_HEADER_NAME);
     if (!headerToken) {
-      return c.json({ error: { code: "CSRF_TOKEN_MISSING", message: "CSRF token required" } }, 403);
+      return respondError(c, 403, "CSRF_TOKEN_MISSING", "CSRF token required");
     }
 
     const cookieBuf = Buffer.from(cookieToken);
     const headerBuf = Buffer.from(headerToken);
 
     if (cookieBuf.length !== headerBuf.length || !timingSafeEqual(cookieBuf, headerBuf)) {
-      return c.json({ error: { code: "CSRF_TOKEN_INVALID", message: "Invalid CSRF token" } }, 403);
+      return respondError(c, 403, "CSRF_TOKEN_INVALID", "Invalid CSRF token");
     }
 
     return next();

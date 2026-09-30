@@ -1,70 +1,94 @@
 import React from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
-import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 type Variant = "primary" | "secondary" | "destructive" | "ghost";
-type Size = "sm" | "md";
-
-interface ButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
-  children: React.ReactNode;
-  variant?: Variant;
-  size?: Size;
-  isLoading?: boolean;
-}
+type Size = "sm" | "md" | "lg" | "icon";
 
 /**
- * The app's only button. Every call to action goes through it — six pages used
- * to hand-roll their own, which is how a white-on-light-blue CTA at 1.8:1
- * contrast ended up as the primary action on the profiles page.
+ * The app's only button — and, with `href`, the only button-shaped link. Six
+ * pages used to hand-roll their own, which is how a white-on-light-blue CTA at
+ * 1.8:1 once became the primary action on the profiles page.
  *
- * Primary is peach with peach ink (8.6:1). The soft accent tints are never used
- * as a text or icon colour anywhere; see the token block in globals.css.
+ * Primary is peach with peach ink (5.6:1) and a peach hairline. The soft accent
+ * tints are never a text or icon colour anywhere; see globals.css.
+ *
+ * Press feedback is a CSS scale on the one ease-out curve. No spring: DESIGN.md
+ * rules out overshoot, and a CSS transition costs nothing per button.
  */
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-(--peach) text-(--peach-ink) border-(--lavender-border) hover:brightness-[0.97]",
-  secondary:
-    "bg-(--surface) text-(--text-2) border-(--border) hover:bg-(--surface-2) hover:text-(--text-1)",
-  destructive: "bg-(--red-bg) text-(--red-ink) border-(--red-border) hover:bg-(--red-bg-hover)",
-  ghost: "bg-transparent text-(--text-2) border-transparent hover:bg-(--surface-2)",
+  primary: "bg-peach text-peach-ink border-peach-line hover:brightness-[0.97]",
+  secondary: "bg-surface text-text-2 border-line-mid hover:bg-surface-2 hover:text-text-1",
+  destructive: "bg-red-bg text-red-ink border-red-border hover:bg-red-bg-hover",
+  ghost: "bg-transparent text-text-2 border-transparent hover:bg-surface-2 hover:text-text-1",
 };
 
-// Both sizes clear the 44px touch-target floor.
+// Every size clears the 44px touch-target floor.
 const SIZES: Record<Size, string> = {
   sm: "min-h-11 gap-1.5 px-3.5 text-[13px]",
   md: "min-h-11 gap-2 px-5 text-sm",
+  lg: "min-h-12 gap-2 px-8 text-sm font-bold",
+  icon: "h-11 w-11 shrink-0",
 };
 
-export default function Button({
-  children,
-  className,
-  variant = "primary",
-  size = "md",
-  isLoading,
-  disabled,
-  ...props
-}: ButtonProps) {
-  const inert = disabled || isLoading;
+const BASE =
+  "relative inline-flex cursor-pointer select-none items-center justify-center rounded-xl border font-semibold " +
+  "transition-[transform,background-color,color,filter] duration-150 ease-out active:scale-[0.98] " +
+  "disabled:pointer-events-none disabled:opacity-45 aria-disabled:pointer-events-none aria-disabled:opacity-45";
 
+interface CommonProps {
+  children: React.ReactNode;
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+}
+
+type ButtonProps = CommonProps &
+  Omit<React.ComponentProps<"button">, "className" | "children"> & {
+    href?: undefined;
+    isLoading?: boolean;
+  };
+
+type LinkProps = CommonProps &
+  Omit<React.ComponentProps<typeof Link>, "className" | "children"> & {
+    href: string;
+  };
+
+export function buttonClasses(variant: Variant = "primary", size: Size = "md", className?: string) {
+  return cn(BASE, VARIANTS[variant], SIZES[size], className);
+}
+
+export default function Button(props: ButtonProps | LinkProps) {
+  if (props.href !== undefined) {
+    const { children, variant, size, className, ...link } = props as LinkProps;
+    return (
+      <Link {...link} className={buttonClasses(variant, size, className)}>
+        {children}
+      </Link>
+    );
+  }
+
+  const {
+    children,
+    variant,
+    size,
+    className,
+    isLoading,
+    disabled,
+    type = "button",
+    ...rest
+  } = props as ButtonProps;
   return (
-    <motion.button
-      whileHover={inert ? undefined : { scale: 1.015 }}
-      whileTap={inert ? undefined : { scale: 0.985 }}
-      transition={{ type: "spring", stiffness: 600, damping: 26 }}
-      disabled={inert}
+    <button
+      type={type}
+      disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
-      className={cn(
-        "relative inline-flex cursor-pointer items-center justify-center rounded-xl border font-semibold",
-        "transition-colors duration-150",
-        "disabled:cursor-not-allowed disabled:opacity-45",
-        VARIANTS[variant],
-        SIZES[size],
-        className
-      )}
-      {...props}
+      className={buttonClasses(variant, size, className)}
+      {...rest}
     >
       {isLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
       {children}
-    </motion.button>
+    </button>
   );
 }

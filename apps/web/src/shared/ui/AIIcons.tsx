@@ -25,7 +25,7 @@ export function NexiaIcon({ className, size = 24 }: { className?: string; size?:
 }
 
 /**
- * The Nexia Intel avatar — a flat "die-cut sticker" squircle holding the spark
+ * The assistant's avatar — a flat "die-cut sticker" squircle holding the spark
  * glyph. A thin white keyline gives it the cut-out-sticker feel that matches the
  * scrapbook surface, with no inset shadow (kept deliberately flat). `tilt` adds a
  * touch of hand-placed personality.
@@ -62,28 +62,5 @@ export function NexiaAvatar({
     >
       <NexiaIcon size={Math.round(size * 0.5)} />
     </span>
-  );
-}
-
-export function StickerSparkle({ className, size = 24 }: { className?: string; size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"
-        fill="currentColor"
-        stroke="var(--border-mid)"
-        strokeWidth="1"
-      />
-      <circle cx="18" cy="18" r="2" fill="var(--peach)" />
-      <circle cx="5" cy="5" r="1.5" fill="var(--lavender)" />
-    </svg>
   );
 }

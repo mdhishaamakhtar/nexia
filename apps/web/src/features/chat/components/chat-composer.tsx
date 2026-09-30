@@ -1,18 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { ArrowUp, Square } from "lucide-react";
 import type { ChatStatus } from "ai";
+import { cn } from "@/lib/utils";
 
 const MAX_TEXTAREA_HEIGHT = 176; // ~7 lines before it starts scrolling
 
+/** True on touch-first devices, where Enter should make a new line. */
+function useCoarsePointer(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia("(pointer: coarse)");
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(pointer: coarse)").matches,
+    () => false
+  );
+}
+
 /**
- * Nexia's chat composer.
- *
- * This replaces the vendored ai-elements `PromptInput`, which carried ~1,200
- * lines of attachment uploads, screenshot capture, action menus, and model
- * pickers that Nexia's chat has no use for — plus a stack of shadcn primitives
- * whose own token layer fought this app's. Nexia sends text; this sends text.
+ * Nexia's chat composer. On a keyboard, Enter sends and Shift+Enter makes a
+ * new line. On a phone there is no Shift+Enter, so Enter makes a new line and
+ * the send button sends.
  */
 export function ChatComposer({
   value,
@@ -28,10 +39,10 @@ export function ChatComposer({
   status: ChatStatus;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const coarse = useCoarsePointer();
   const isBusy = status === "submitted" || status === "streaming";
   const canSend = value.trim().length > 0 && !isBusy;
 
-  // Grow with content up to a cap, then scroll inside.
   const resize = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -41,12 +52,7 @@ export function ChatComposer({
 
   useLayoutEffect(resize, [value, resize]);
 
-  // A single mount measurement isn't trustworthy: measuring before the
-  // stylesheet or webfont has applied reads a scrollHeight from unstyled text
-  // and locks the box open at max height. Re-measure once fonts settle, and on
-  // viewport resize since a narrower box rewraps the text.
-  // (A ResizeObserver on the textarea itself would feed back into its own
-  // height changes, so this watches the window instead.)
+  // Re-measure once fonts settle and when the viewport rewraps the text.
   useEffect(() => {
     void document.fonts?.ready.then(resize);
     window.addEventListener("resize", resize);
@@ -54,8 +60,7 @@ export function ChatComposer({
   }, [resize]);
 
   const submit = () => {
-    if (!canSend) return;
-    onSubmit(value);
+    if (canSend) onSubmit(value);
   };
 
   return (
@@ -64,11 +69,7 @@ export function ChatComposer({
         e.preventDefault();
         submit();
       }}
-      // The border colour lives on `.composer` in globals.css, not inline: an
-      // inline value would outrank the focus rule and the ring could never
-      // recolour the edge.
-      className="composer rounded-2xl border transition-colors duration-200"
-      style={{ background: "var(--surface)" }}
+      className="composer rounded-2xl border bg-surface transition-colors duration-200"
     >
       <label htmlFor="chat-input" className="sr-only">
         Ask Nexia about your people
@@ -81,35 +82,33 @@ export function ChatComposer({
         placeholder="Ask about your people…"
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
-          // Enter sends; Shift+Enter is a newline. Never hijack an IME commit.
-          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+          if (e.key === "Enter" && !e.shiftKey && !coarse && !e.nativeEvent.isComposing) {
             e.preventDefault();
             submit();
           }
         }}
-        // 16px prevents iOS Safari from zooming the viewport on focus. The
-        // focus ring lives on the .composer card in globals.css — this textarea
-        // fills the card, so the ring wraps the whole box, not the field.
-        className="block w-full resize-none bg-transparent px-4 pt-3.5 text-[16px] leading-[1.5] placeholder:text-(--text-3)"
-        style={{ color: "var(--text-1)", maxHeight: MAX_TEXTAREA_HEIGHT }}
+        // 16px keeps iOS Safari from zooming the page on focus.
+        className="block w-full resize-none bg-transparent px-4 pt-3.5 text-[16px] leading-[1.5] text-text-1 placeholder:text-text-3"
+        style={{ maxHeight: MAX_TEXTAREA_HEIGHT }}
       />
 
-      <div className="flex items-center justify-between gap-3 px-3 pb-3 pt-2">
-        <p className="truncate text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+      <div className="flex items-center justify-between gap-3 px-3 pb-2.5 pt-1.5">
+        <p className="truncate text-xs font-semibold text-text-3" aria-live="polite">
           {status === "submitted"
             ? "Thinking…"
             : status === "streaming"
-              ? "Responding…"
-              : "Shift + Enter for a new line"}
+              ? "Answering…"
+              : coarse
+                ? ""
+                : "Enter to send · Shift+Enter for a new line"}
         </p>
 
         {isBusy ? (
           <button
             type="button"
             onClick={onStop}
-            aria-label="Stop generating"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-(--surface-3)"
-            style={{ background: "var(--surface-2)", color: "var(--text-2)" }}
+            aria-label="Stop the reply"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-2 transition-colors hover:bg-surface-3"
           >
             <Square className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
           </button>
@@ -117,9 +116,10 @@ export function ChatComposer({
           <button
             type="submit"
             disabled={!canSend}
-            aria-label="Send message"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-[filter,opacity] hover:brightness-[0.97] disabled:opacity-35"
-            style={{ background: "var(--peach)", color: "var(--peach-ink)" }}
+            aria-label="Send"
+            className={cn(
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-peach-line bg-peach text-peach-ink transition-[filter,opacity] hover:brightness-[0.97] disabled:opacity-40"
+            )}
           >
             <ArrowUp className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
           </button>

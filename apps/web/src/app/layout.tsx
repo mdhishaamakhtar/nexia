@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -7,7 +7,7 @@ import { ToastProvider } from "@/shared/ui/toast";
 
 const nunito = Nunito({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-nunito",
   weight: ["400", "500", "600", "700", "800"],
 });
 
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Nexia — Your Digital Slambook",
+        alt: "Nexia: capture the people who matter most",
       },
     ],
   },
@@ -57,14 +57,21 @@ export const metadata: Metadata = {
   },
 };
 
+// Tints the mobile browser's toolbar to match the white navbar under it.
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${nunito.variable} antialiased`}>
+    // The font variable sits on <html> so `--font-sans`, which refers to it,
+    // resolves on :root and not just inside <body>.
+    <html lang="en" className={nunito.variable}>
+      <body className="antialiased">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

@@ -29,18 +29,14 @@ The product should feel playful, warm, polished, and confident. It should feel p
 
 ### Current Theme System
 
-- **Primary UI typeface:** `Nunito` with weights 400, 500, 600, 700, and 800.
-- **Fallback stack:** `-apple-system`, `BlinkMacSystemFont`, `"Segoe UI"`, `system-ui`, `sans-serif`.
-- **Base page background:** `#fff7ed`.
-- **Raised paper/background surface:** `#ffffff`.
-- **Glass surface:** `rgba(255, 255, 255, 0.72)`.
-- **Borders:** `rgba(148, 163, 184, 0.28)` with a stronger midpoint at `rgba(148, 163, 184, 0.45)`.
-- **Primary text:** `#1f2937`.
-- **Secondary text:** `#374151`.
-- **Muted text:** `#6b7280`.
-- **Soft fills:** `rgba(255, 255, 255, 0.62)` and hover fill `rgba(255, 255, 255, 0.9)`.
-- **Accent colors already in use:** blue `#93c5fd`, lavender `#c4b5fd`, peach `#fdba74`, green `#22c55e`, red `#ff3b30`.
-- **Surface feel:** translucent paper/glass panels, rounded corners, sticker chips, paper scraps, and washi tape accents.
+DESIGN.md holds the exact tokens and the rules for using them; this is the short version.
+
+- **Typeface:** `Nunito` (400–800) with a system sans fallback. The wordmark is Nunito ExtraBold.
+- **Page:** warm cream `#fff7ed`. **Paper:** opaque white `#ffffff`, separated by warm hairlines. No glass, no blur, no shadows.
+- **Ink:** a warm neutral ramp: `#292524`, `#57534e`, `#6f6660`.
+- **Accents:** peach `#fdba74` (the one action, and the logo's tape), lavender `#c4b5fd` (people: avatars, tags, quotes), blue `#93c5fd` (the assistant). Accents are surfaces only; text uses their `-ink` shades.
+- **The mark:** a pinned note, the same object as every card in the app: white paper, a strip of peach washi tape, an "N" in ink, set down slightly crooked. The files live in `docs/brand`.
+- **Surface feel:** flat paper sheets, rounded corners, sticker chips, and one strip of washi tape per surface.
 
 ### Existing UI Cues To Preserve
 

@@ -1,0 +1,35 @@
+# The browser end-to-end suite (apps/web/e2e). Its own ports and database, so
+# it never touches a dev server or dev data; no AI or email keys, so every run
+# behaves the same. `apps/web/playwright.config.ts` starts the API with it.
+server:
+  port: 8181
+  mode: debug
+  jwt_secret: "e2e-secret-not-for-anything-real-00000"
+  jwt_expiry_minutes: 60
+  auth_rate_limit_requests: 1000
+  auth_rate_limit_window_seconds: 10
+  auth_rate_limit_burst: 1000
+  chat_rate_limit_requests: 1000
+  chat_rate_limit_window_seconds: 60
+  chat_rate_limit_burst: 1000
+  cors_origins:
+    - "http://localhost:3100"
+  cookie_domain: ""
+  client_ip_header: ""
+
+db:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: password
+  name: nexia_e2e
+  ssl_mode: disable
+  run_migrations: true
+
+ai:
+  gemini_api_key: ""
+  opencode_api_key: ""
+
+email:
+  resend_api_key: ""
+  app_base_url: "http://localhost:3100"

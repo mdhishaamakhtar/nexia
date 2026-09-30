@@ -1,62 +1,74 @@
-export function buildVerificationEmailHTML(verifyURL: string): string {
+/**
+ * Transactional emails, drawn with the app's own paper: cream page, one white
+ * sheet on a warm hairline, a strip of tape, peach for the one action. No
+ * shadow and no tilt — the app has neither, so its emails don't either.
+ * Everything is inline because mail clients strip <style>.
+ */
+
+const FONT = "'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+const INK_1 = "#292524";
+const INK_2 = "#57534e";
+const INK_3 = "#6f6660";
+const LINE = "#e7ddd1";
+
+export interface EmailContent {
+  subject: string;
+  html: string;
+  text: string;
+}
+
+interface Layout {
+  title: string;
+  preheader: string;
+  tape: string;
+  label: string;
+  body: string;
+  action: { label: string; url: string };
+  note: string;
+}
+
+function layout({ title, preheader, tape, label, body, action, note }: Layout): string {
+  // The web app serves the mark as a PNG (mail clients drop SVG), from the
+  // same origin the action link points at.
+  const mark = new URL("/icons/mark-96.png", action.url).href;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Verify your Nexia email</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <title>${title}</title>
 </head>
-<body style="margin:0;padding:0;background:#fff7ed;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <!-- Preheader -->
-  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">Verify your email to activate your Nexia account &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;</div>
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;padding:48px 16px;">
+<body style="margin:0;padding:0;background:#fff7ed;font-family:${FONT};">
+  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${preheader}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;padding:48px 16px;">
     <tr>
       <td align="center">
-        <!-- Card with slight tilt -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fffbf5;border-radius:24px;border:1px solid rgba(148,163,184,0.28);box-shadow:0 4px 24px rgba(0,0,0,0.06);transform:rotate(-0.5deg);padding:0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
           <tr>
-            <td style="position:relative;padding:40px 40px 0;">
-              <!-- Washi tape strip -->
-              <div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(-2deg);width:80px;height:18px;background:#c4b5fd;border-radius:4px;opacity:0.85;"></div>
-              <!-- Header -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="padding-bottom:24px;">
-                    <p style="margin:0;font-size:24px;font-weight:800;color:#1f2937;letter-spacing:-0.01em;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Nexia</p>
-                    <p style="margin:4px 0 0;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#6b7280;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">your digital slambook</p>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="height:18px;">
+              <div style="width:84px;height:18px;background:${tape};margin:0 auto -9px;"></div>
             </td>
           </tr>
           <tr>
-            <td style="border-top:1px solid rgba(148,163,184,0.2);padding:24px 40px 0;">
-              <!-- Sticker chip label -->
-              <p style="margin:0 0 16px;display:inline-block;">
-                <span style="background:rgba(196,181,253,0.25);color:#5b21b6;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Verify your email</span>
-              </p>
-              <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                Thanks for signing up! Click the button below to verify your email address and activate your Nexia account.
-              </p>
-              <p style="margin:0 0 20px;font-size:13px;color:#6b7280;line-height:1.5;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                This link expires in <strong style="color:#1f2937;">24 hours</strong> and can only be used once.
-              </p>
-              <table cellpadding="0" cellspacing="0" width="100%">
+            <td style="background:#ffffff;border:1px solid ${LINE};border-radius:24px;padding:36px 36px 28px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="padding-bottom:20px;">
-                    <a href="${verifyURL}" style="display:inline-block;background:#007aff;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;border-radius:12px;padding:14px 32px;letter-spacing:0.01em;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Verify Email Address</a>
+                  <td style="padding-right:10px;vertical-align:middle;"><img src="${mark}" width="32" height="32" alt="" style="display:block;border:0;" /></td>
+                  <td style="vertical-align:middle;"><p style="margin:0;font-size:24px;font-weight:800;color:${INK_1};letter-spacing:-0.01em;font-family:${FONT};">Nexia</p></td>
+                </tr>
+              </table>
+              <p style="margin:2px 0 24px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${INK_3};font-family:${FONT};">your digital slambook</p>
+              <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${INK_3};font-family:${FONT};">${label}</p>
+              <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:${INK_2};font-family:${FONT};">${body}</p>
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:12px;background:#fdba74;">
+                    <a href="${action.url}" style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:700;color:#7c2d12;text-decoration:none;font-family:${FONT};">${action.label}</a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:0 0 24px;font-size:12px;color:#6b7280;line-height:1.5;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                If you didn't create a Nexia account, you can safely ignore this email.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="border-top:1px solid rgba(148,163,184,0.2);padding:20px 40px;">
-              <p style="margin:0;font-size:12px;color:#6b7280;text-align:center;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">✦ Nexia · your digital slambook</p>
+              <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:${INK_3};font-family:${FONT};">${note}</p>
+              <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:${INK_3};word-break:break-all;font-family:${FONT};">If the button doesn't work, paste this into your browser:<br><a href="${action.url}" style="color:${INK_2};">${action.url}</a></p>
             </td>
           </tr>
         </table>
@@ -67,76 +79,34 @@ export function buildVerificationEmailHTML(verifyURL: string): string {
 </html>`;
 }
 
-export function buildPasswordResetEmailHTML(token: string, resetURL: string): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reset your Nexia password</title>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
-</head>
-<body style="margin:0;padding:0;background:#fff7ed;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <!-- Preheader -->
-  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">Reset your Nexia password — expires in 15 minutes &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;</div>
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fff7ed;padding:48px 16px;">
-    <tr>
-      <td align="center">
-        <!-- Card with slight tilt -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background:#fffbf5;border-radius:24px;border:1px solid rgba(148,163,184,0.28);box-shadow:0 4px 24px rgba(0,0,0,0.06);transform:rotate(-0.5deg);padding:0;">
-          <tr>
-            <td style="position:relative;padding:40px 40px 0;">
-              <!-- Washi tape strip (peach) -->
-              <div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%) rotate(-2deg);width:80px;height:18px;background:#fdba74;border-radius:4px;opacity:0.85;"></div>
-              <!-- Header -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="padding-bottom:24px;">
-                    <p style="margin:0;font-size:24px;font-weight:800;color:#1f2937;letter-spacing:-0.01em;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Nexia</p>
-                    <p style="margin:4px 0 0;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#6b7280;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">your digital slambook</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="border-top:1px solid rgba(148,163,184,0.2);padding:24px 40px 0;">
-              <!-- Sticker chip label -->
-              <p style="margin:0 0 16px;display:inline-block;">
-                <span style="background:rgba(196,181,253,0.25);color:#5b21b6;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Password reset</span>
-              </p>
-              <p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                We received a request to reset your Nexia password. Use the code below or click the button to set a new password.
-              </p>
-              <!-- Reset token box (lavender-tinted) -->
-              <p style="margin:0 0 8px;display:inline-block;">
-                <span style="background:rgba(196,181,253,0.25);color:#5b21b6;border-radius:999px;padding:3px 12px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Reset token</span>
-              </p>
-              <div style="background:rgba(196,181,253,0.12);border:1px solid rgba(196,181,253,0.4);border-radius:12px;padding:14px 16px;margin-bottom:20px;font-family:ui-monospace,'SF Mono','Fira Code',monospace;font-size:13px;color:#1f2937;letter-spacing:0.08em;word-break:break-all;">${token}</div>
-              <p style="margin:0 0 20px;font-size:13px;color:#6b7280;line-height:1.5;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                This link expires in <strong style="color:#1f2937;">15 minutes</strong> and can only be used once.
-              </p>
-              <table cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                  <td align="center" style="padding-bottom:20px;">
-                    <a href="${resetURL}" style="display:inline-block;background:#007aff;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;border-radius:12px;padding:14px 32px;letter-spacing:0.01em;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">Reset Password</a>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:0 0 24px;font-size:12px;color:#6b7280;line-height:1.5;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                If you didn't request a password reset, you can safely ignore this email.
-              </p>
-            </td>
-          </tr>
-          <tr>
-            <td style="border-top:1px solid rgba(148,163,184,0.2);padding:20px 40px;">
-              <p style="margin:0;font-size:12px;color:#6b7280;text-align:center;font-family:'Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">✦ Nexia · your digital slambook</p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+export function verificationEmail(verifyURL: string): EmailContent {
+  return {
+    subject: "Verify your Nexia email address",
+    html: layout({
+      title: "Verify your Nexia email",
+      preheader: "One click to open your slambook.",
+      tape: "#c4b5fd",
+      label: "Verify your email",
+      body: "Thanks for starting a slambook. Confirm this is your address and you can sign in.",
+      action: { label: "Verify my email", url: verifyURL },
+      note: "The link works once and expires in 24 hours. If you didn't sign up for Nexia, you can ignore this email.",
+    }),
+    text: `Verify your Nexia email address\n\nOpen this link to confirm your address:\n${verifyURL}\n\nThe link works once and expires in 24 hours. If you didn't sign up for Nexia, ignore this email.`,
+  };
+}
+
+export function passwordResetEmail(resetURL: string): EmailContent {
+  return {
+    subject: "Reset your Nexia password",
+    html: layout({
+      title: "Reset your Nexia password",
+      preheader: "Choose a new password. The link expires in 15 minutes.",
+      tape: "#fdba74",
+      label: "Password reset",
+      body: "Someone asked to reset the password for this Nexia account. If it was you, choose a new one.",
+      action: { label: "Choose a new password", url: resetURL },
+      note: "The link works once and expires in 15 minutes. Resetting signs you out everywhere else. If you didn't ask for this, you can ignore this email.",
+    }),
+    text: `Reset your Nexia password\n\nOpen this link to choose a new password:\n${resetURL}\n\nThe link works once and expires in 15 minutes. If you didn't ask for this, ignore this email.`,
+  };
 }

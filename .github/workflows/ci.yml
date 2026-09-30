@@ -32,7 +32,7 @@ jobs:
       - name: Format check
         run: npm run format:check
 
-      # Testcontainers starts Postgres and Redis against the runner's Docker
+      # Testcontainers starts Postgres against the runner's Docker
       # daemon, so the integration suite runs the same way it does locally.
       - name: Test with coverage gate
         run: npm run test:coverage
@@ -64,3 +64,47 @@ jobs:
 
       - name: Build web
         run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    # The suite drops and recreates its own `nexia_e2e` database here, then
+    # starts the API bundle and a production web build against it.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser journeys
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7

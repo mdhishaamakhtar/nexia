@@ -34,5 +34,10 @@ COPY apps/api/config apps/api/config
 COPY apps/api/drizzle apps/api/drizzle
 
 WORKDIR /repo/apps/api
+# The image's unprivileged user: the app reads its bundle, config and
+# migrations and never writes to disk.
+USER node
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
+  CMD wget -qO- http://127.0.0.1:8080/api/v1/healthz >/dev/null || exit 1
 CMD ["node", "dist/index.js"]

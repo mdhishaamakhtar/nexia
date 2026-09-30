@@ -1,24 +1,24 @@
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { describe, test, expect, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import type { ProfileOutput } from "@nexia/shared";
-import { profileEmbeddings } from "../../src/db/schema";
+import pino from "pino";
+import { profileEmbeddings, profiles } from "../../src/db/schema";
 import { EmbeddingRepository } from "../../src/repositories/embedding";
-import { buildEmbeddingText } from "../../src/services/embedding-service";
+import { ProfileRepository } from "../../src/repositories/profile";
+import { EmbeddingService, buildEmbeddingText } from "../../src/services/embedding-service";
+import { EmbeddingWorker } from "../../src/services/embedding-worker";
 import { createHarness, type Harness } from "../helpers/harness";
 import { bearerAuth, call, profileInput, seedUser } from "../helpers/factories";
-import { waitFor, waitUntilGone } from "../helpers/wait";
+import { createFakeEmbeddingGenerator } from "../helpers/embeddings";
+import { waitFor } from "../helpers/wait";
 
 let h: Harness;
 
 beforeAll(() => {
-  h = createHarness({ withQueue: true });
+  h = createHarness();
 });
 afterAll(async () => {
   await h.close();
-});
-beforeEach(async () => {
-  // Jobs outlive the database truncation, so clear them too.
-  await h.redis!.flushall();
 });
 
 async function storedEmbedding(profileId: number) {
@@ -29,91 +29,182 @@ async function storedEmbedding(profileId: number) {
   return row;
 }
 
+async function createProfile(headers: Record<string, string>, body: unknown): Promise<number> {
+  const res = await call<{ id: number }>(h.app, "POST", "/api/v1/profiles", { headers, body });
+  if (res.status !== 201) throw new Error(`create failed: ${res.status}`);
+  return res.body.id;
+}
+
 describe("embedding pipeline", () => {
-  test("creating a profile drives a job through to a pgvector row", async () => {
+  test("a new profile is embedded at its current revision", async () => {
     const user = await seedUser(h);
-    const headers = await bearerAuth(h, user.id);
+    const id = await createProfile(
+      await bearerAuth(h, user.id),
+      profileInput({ full_name: "Ada Lovelace" })
+    );
+    expect(await storedEmbedding(id)).toBeUndefined();
 
-    const created = await call<{ id: number }>(h.app, "POST", "/api/v1/profiles", {
-      headers,
-      body: profileInput({ full_name: "Ada Lovelace", bio: "counts things" }),
-    });
-    expect(created.status).toBe(201);
+    await h.embedPending();
 
-    const row = await waitFor(() => storedEmbedding(created.body.id), {
-      what: "the embedding row",
-    });
-
-    expect(row.userId).toBe(user.id);
-    expect(row.embedding).toHaveLength(3072);
-    // The payload is a full ProfileOutput snapshot, which is what RAG returns.
-    const payload = row.payload as ProfileOutput;
-    expect(payload.full_name).toBe("Ada Lovelace");
-    expect(payload.bio).toBe("counts things");
+    const row = await storedEmbedding(id);
+    expect(row!.userId).toBe(user.id);
+    expect(row!.embedding).toHaveLength(3072);
+    expect(row!.sourceRevision).toBe(1);
   });
 
-  test("updating a profile refreshes the stored snapshot", async () => {
+  test("an update marks the vector stale and the next pass refreshes it", async () => {
     const user = await seedUser(h);
     const headers = await bearerAuth(h, user.id);
+    const id = await createProfile(headers, profileInput({ full_name: "Before Update" }));
+    await h.embedPending();
+    h.embeddings!.calls.length = 0;
 
-    const created = await call<{ id: number }>(h.app, "POST", "/api/v1/profiles", {
-      headers,
-      body: profileInput({ full_name: "Before Update" }),
-    });
-    await waitFor(() => storedEmbedding(created.body.id), { what: "the initial embedding" });
-
-    await call(h.app, "PUT", `/api/v1/profiles/${created.body.id}`, {
+    await call(h.app, "PUT", `/api/v1/profiles/${id}`, {
       headers,
       body: profileInput({ full_name: "After Update" }),
     });
+    await h.embedPending();
 
-    await waitFor(
-      async () => {
-        const row = await storedEmbedding(created.body.id);
-        return (row?.payload as ProfileOutput | undefined)?.full_name === "After Update"
-          ? row
-          : null;
-      },
-      { what: "the refreshed snapshot" }
-    );
+    expect((await storedEmbedding(id))!.sourceRevision).toBe(2);
+    expect(h.embeddings!.calls).toEqual([expect.stringContaining("After Update")]);
   });
 
-  test("deleting a profile removes its vector", async () => {
+  test("a profile that is up to date is not embedded again", async () => {
     const user = await seedUser(h);
-    const headers = await bearerAuth(h, user.id);
+    await createProfile(await bearerAuth(h, user.id), profileInput());
+    await h.embedPending();
+    h.embeddings!.calls.length = 0;
 
-    const created = await call<{ id: number }>(h.app, "POST", "/api/v1/profiles", {
-      headers,
-      body: profileInput(),
-    });
-    await waitFor(() => storedEmbedding(created.body.id), { what: "the embedding row" });
-
-    await call(h.app, "DELETE", `/api/v1/profiles/${created.body.id}`, { headers });
-
-    await waitUntilGone(() => storedEmbedding(created.body.id), {
-      what: "the embedding row to be removed",
-    });
+    await h.embedPending();
+    expect(h.embeddings!.calls).toHaveLength(0);
   });
 
-  test("embeds the profile's flattened text, not just its name", async () => {
+  test("deleting a profile takes its vector with it", async () => {
     const user = await seedUser(h);
     const headers = await bearerAuth(h, user.id);
+    const id = await createProfile(headers, profileInput());
+    await h.embedPending();
 
-    await call(h.app, "POST", "/api/v1/profiles", {
-      headers,
-      body: profileInput({
-        full_name: "Grace Hopper",
-        tags: [{ tag: "compilers" }],
-        quotes: [{ quote: "dare and do" }],
-      }),
-    });
+    await call(h.app, "DELETE", `/api/v1/profiles/${id}`, { headers });
+    expect(await storedEmbedding(id)).toBeUndefined();
+  });
 
-    const text = await waitFor(
-      async () => h.embeddings!.calls.find((c) => c.includes("Grace Hopper")) ?? null,
-      { what: "the embedding request" }
+  test("works through more stale profiles than fit in one batch", async () => {
+    const user = await seedUser(h);
+    const headers = await bearerAuth(h, user.id);
+    for (let i = 0; i < 12; i++) await createProfile(headers, profileInput({ full_name: `P${i}` }));
+
+    await h.embedPending();
+    expect(await h.db.select().from(profileEmbeddings)).toHaveLength(12);
+  });
+
+  test("a provider failure backs that profile off without blocking the others", async () => {
+    // Its own harness: back-off is remembered per profile id in memory, and ids
+    // restart after every test's truncation.
+    const own = createHarness();
+    try {
+      const user = await seedUser(own);
+      const headers = await bearerAuth(own, user.id);
+      const create = async (full_name: string) =>
+        (
+          await call<{ id: number }>(own.app, "POST", "/api/v1/profiles", {
+            headers,
+            body: profileInput({ full_name }),
+          })
+        ).body.id;
+      const failing = await create("Fails First");
+      const fine = await create("Works Fine");
+
+      // The stale query returns the oldest first, so the first call is `failing`.
+      own.embeddings!.failNext();
+      await own.embedPending();
+
+      expect(await storedEmbedding(failing)).toBeUndefined();
+      expect(await storedEmbedding(fine)).toBeDefined();
+
+      // Still in its back-off window: the next pass leaves it alone.
+      own.embeddings!.calls.length = 0;
+      await own.embedPending();
+      expect(own.embeddings!.calls).toHaveLength(0);
+    } finally {
+      await own.close();
+    }
+  });
+
+  test("an older vector never overwrites a newer one", async () => {
+    const user = await seedUser(h);
+    const id = await createProfile(await bearerAuth(h, user.id), profileInput());
+    const repo = new EmbeddingRepository(h.db);
+    const vector = await h.embeddings!.generateEmbedding("x");
+
+    await repo.upsert({ profileId: id, userId: user.id, embedding: vector, revision: 5 });
+    await repo.upsert({ profileId: id, userId: user.id, embedding: vector, revision: 3 });
+
+    expect((await storedEmbedding(id))!.sourceRevision).toBe(5);
+  });
+
+  test("the running worker picks up a save without being asked", async () => {
+    const service = new EmbeddingService(
+      new EmbeddingRepository(h.db),
+      createFakeEmbeddingGenerator(),
+      pino({ level: "silent" })
     );
-    expect(text).toContain("Interests/Tags: compilers");
-    expect(text).toContain("dare and do");
+    const worker = new EmbeddingWorker(service, pino({ level: "silent" }), 60_000);
+    const user = await seedUser(h);
+    const [row] = await h.db
+      .insert(profiles)
+      .values({ userId: user.id, fullName: "Background", relationshipType: "Friend" })
+      .returning({ id: profiles.id });
+
+    worker.start();
+    try {
+      await waitFor(() => storedEmbedding(row!.id), { what: "the worker to embed the profile" });
+    } finally {
+      await worker.stop();
+    }
+  });
+});
+
+describe("semantic search", () => {
+  test("ranks by similarity, answers from the live profile, and scopes to the owner", async () => {
+    const owner = await seedUser(h, { email: "owner-rag@example.com" });
+    const other = await seedUser(h, { email: "other-rag@example.com" });
+    const headers = await bearerAuth(h, owner.id);
+
+    const climber = await createProfile(
+      headers,
+      profileInput({ full_name: "Climber Person", bio: "loves climbing granite" })
+    );
+    const baker = await createProfile(
+      headers,
+      profileInput({ full_name: "Baker Person", bio: "loves sourdough bread" })
+    );
+    await h.embedPending();
+
+    const service = h.runtime.embeddingService!;
+    const hits = await service.search(owner.id, "climbing granite", 5);
+    expect(hits.map((r) => r.profileId)).toEqual([climber, baker]);
+    expect(hits[0]!.score).toBeGreaterThan(hits[1]!.score);
+
+    expect(await service.search(other.id, "climbing granite", 5)).toHaveLength(0);
+    expect(await service.search(owner.id, "anything", 1)).toHaveLength(1);
+  });
+});
+
+describe("loading search hits", () => {
+  test("no hits load no profiles", async () => {
+    const user = await seedUser(h);
+    expect(await new ProfileRepository(h.db).findByIds([], user.id)).toEqual([]);
+  });
+
+  test("hits keep their ranked order, and a vanished profile is skipped", async () => {
+    const user = await seedUser(h);
+    const headers = await bearerAuth(h, user.id);
+    const first = await createProfile(headers, profileInput({ full_name: "First" }));
+    const second = await createProfile(headers, profileInput({ full_name: "Second" }));
+
+    const loaded = await new ProfileRepository(h.db).findByIds([second, 999_999, first], user.id);
+    expect(loaded.map((p) => p.full_name)).toEqual(["Second", "First"]);
   });
 });
 
@@ -147,97 +238,47 @@ describe("buildEmbeddingText", () => {
     associated_song: null,
   };
 
-  test("omits optional sections that are empty", () => {
-    const text = buildEmbeddingText(base);
-    expect(text).toContain("Profile of Test Person");
-    expect(text).not.toContain("Pronouns:");
-    expect(text).not.toContain("Interests/Tags:");
-    expect(text).not.toContain("Birthday:");
+  test("leaves out every empty field", () => {
+    expect(buildEmbeddingText(base)).toBe("Profile of Test Person\nRelationship: Friend");
   });
 
-  test("formats the birthday as a readable date", () => {
+  test("formats the birthday without shifting it through a time zone", () => {
     const text = buildEmbeddingText({ ...base, birthday: "1990-04-01", zodiac_sign: "Aries" });
-    expect(text).toContain("Birthday: April 01, 1990");
-    expect(text).toContain("Zodiac Sign: Aries");
+    expect(text).toContain("Birthday: April 1, 1990");
+    expect(text).toContain("Zodiac sign: Aries");
   });
 
-  test("includes every populated collection", () => {
+  test("includes every populated field", () => {
     const text = buildEmbeddingText({
       ...base,
       pronouns: "she/her",
-      tags: [{ id: 1, profile_id: 1, tag: "climbing" }],
-      political_views: [{ id: 1, profile_id: 1, view: "green" }],
-      food_restrictions: [{ id: 1, profile_id: 1, restriction: "vegan" }],
-      movie_genres: [{ id: 1, profile_id: 1, genre: "noir" }],
-      book_genres: [{ id: 1, profile_id: 1, genre: "scifi" }],
-      hangout_places: [{ id: 1, profile_id: 1, place: "the pier" }],
-      quotes: [{ id: 1, profile_id: 1, quote: "onwards" }],
-      favorite_memories: [{ id: 1, profile_id: 1, memory: "the trip" }],
-      top_songs: [{ id: 1, profile_id: 1, name: "Song", artist: "Artist" }],
-      associated_song: { profile_id: 1, name: "Theme", artist: "Composer" },
+      notes: "allergic to peanuts",
+      tags: ["climbing", "jazz"],
+      political_views: ["green"],
+      food_restrictions: ["vegan"],
+      movie_genres: ["noir"],
+      book_genres: ["scifi"],
+      hangout_places: ["the pier"],
+      quotes: ["onwards"],
+      favorite_memories: ["the trip", "the rain"],
+      top_songs: [
+        { name: "Song", artist: "Artist" },
+        { name: "Untitled", artist: "" },
+      ],
+      associated_song: { name: "Theme", artist: "Composer" },
     });
 
     expect(text).toContain("Pronouns: she/her");
-    expect(text).toContain("Political Views: green");
-    expect(text).toContain("Food Restrictions: vegan");
-    expect(text).toContain("Favorite Movie Genres: noir");
-    expect(text).toContain("Favorite Book Genres: scifi");
-    expect(text).toContain("Favorite Hangout Places: the pier");
-    expect(text).toContain("Top Songs: Song by Artist");
-    expect(text).toContain("Associated Song: Theme by Composer");
+    expect(text).toContain("Notes: allergic to peanuts");
+    expect(text).toContain("Interests and tags: climbing, jazz");
+    expect(text).toContain("Political views: green");
+    expect(text).toContain("Food restrictions: vegan");
+    expect(text).toContain("Favorite movie genres: noir");
+    expect(text).toContain("Favorite book genres: scifi");
+    expect(text).toContain("Favorite hangout places: the pier");
+    expect(text).toContain("Top songs: Song by Artist, Untitled");
+    expect(text).toContain("Their song: Theme by Composer");
     expect(text).toContain('Quotes: "onwards"');
-    expect(text).toContain("Favorite Memories: the trip");
-  });
-});
-
-describe("EmbeddingRepository", () => {
-  test("ranks by cosine similarity and scopes to the owner", async () => {
-    const repo = new EmbeddingRepository(h.db, h.runtime.logger);
-    const owner = await seedUser(h, { email: "owner-rag@example.com" });
-    const other = await seedUser(h, { email: "other-rag@example.com" });
-    const headers = await bearerAuth(h, owner.id);
-
-    const climber = await call<{ id: number }>(h.app, "POST", "/api/v1/profiles", {
-      headers,
-      body: profileInput({ full_name: "Climber Person", bio: "loves climbing granite" }),
-    });
-    const baker = await call<{ id: number }>(h.app, "POST", "/api/v1/profiles", {
-      headers,
-      body: profileInput({ full_name: "Baker Person", bio: "loves sourdough bread" }),
-    });
-
-    await waitFor(() => storedEmbedding(climber.body.id), { what: "climber embedding" });
-    await waitFor(() => storedEmbedding(baker.body.id), { what: "baker embedding" });
-
-    const query = await h.embeddings!.generateEmbedding("climbing granite");
-    const results = await repo.searchContext(owner.id, query, 5);
-
-    expect(results).toHaveLength(2);
-    expect(results[0]!.profileId).toBe(climber.body.id);
-    expect(results[0]!.score).toBeGreaterThan(results[1]!.score);
-
-    // Another user's search sees nothing, even with the same query vector.
-    expect(await repo.searchContext(other.id, query, 5)).toHaveLength(0);
-  });
-
-  test("honours the result limit", async () => {
-    const repo = new EmbeddingRepository(h.db, h.runtime.logger);
-    const user = await seedUser(h, { email: "limit-rag@example.com" });
-    const headers = await bearerAuth(h, user.id);
-
-    const ids: number[] = [];
-    for (let i = 0; i < 3; i++) {
-      const res = await call<{ id: number }>(h.app, "POST", "/api/v1/profiles", {
-        headers,
-        body: profileInput({ full_name: `Person ${i}` }),
-      });
-      ids.push(res.body.id);
-    }
-    for (const id of ids) {
-      await waitFor(() => storedEmbedding(id), { what: `embedding ${id}` });
-    }
-
-    const query = await h.embeddings!.generateEmbedding("person");
-    expect(await repo.searchContext(user.id, query, 2)).toHaveLength(2);
+    expect(text).toContain("Favorite memories: the trip; the rain");
   });
 });

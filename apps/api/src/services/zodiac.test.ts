@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { deriveZodiac, applyDerivedZodiac } from "../services/zodiac";
+import { deriveZodiac, zodiacForBirthday } from "./zodiac";
 
 describe("deriveZodiac", () => {
   const cases = [
@@ -36,65 +36,21 @@ describe("deriveZodiac", () => {
   }
 });
 
-describe("applyDerivedZodiac", () => {
-  test("sets zodiac from birthday", () => {
-    const profile: {
-      birthday?: string | null | undefined;
-      zodiac_sign?: string | null | undefined;
-    } = { birthday: "2001-03-22" };
-    applyDerivedZodiac(profile);
-    expect(profile.zodiac_sign).toBe("Aries");
+describe("zodiacForBirthday", () => {
+  test("derives the sign from a stored date", () => {
+    expect(zodiacForBirthday("2001-03-22")).toBe("Aries");
+    expect(zodiacForBirthday("1998-03-14")).toBe("Pisces");
   });
 
-  test("null birthday → null zodiac", () => {
-    const profile: {
-      birthday?: string | null | undefined;
-      zodiac_sign?: string | null | undefined;
-    } = { birthday: null };
-    applyDerivedZodiac(profile);
-    expect(profile.zodiac_sign).toBeNull();
+  test("has no sign without a usable birthday", () => {
+    expect(zodiacForBirthday(null)).toBeNull();
+    expect(zodiacForBirthday("")).toBeNull();
+    expect(zodiacForBirthday("1990")).toBeNull();
+    expect(zodiacForBirthday("not-a-date")).toBeNull();
   });
 
-  test("undefined birthday → null zodiac", () => {
-    const profile: {
-      birthday?: string | null | undefined;
-      zodiac_sign?: string | null | undefined;
-    } = {};
-    applyDerivedZodiac(profile);
-    expect(profile.zodiac_sign).toBeNull();
-  });
-
-  test("yields no sign for a month outside 1-12", () => {
-    // Unreachable through the API (the date format is validated upstream) but
-    // the switch needs a defined answer rather than falling off the end.
-    expect(deriveZodiac(0, 1)).toBe("");
-    expect(deriveZodiac(13, 1)).toBe("");
-  });
-
-  test("sets null zodiac for an unparseable birthday", () => {
-    const profile: {
-      birthday?: string | null | undefined;
-      zodiac_sign?: string | null | undefined;
-    } = { birthday: "not-a-date" };
-    applyDerivedZodiac(profile);
-    expect(profile.zodiac_sign).toBeNull();
-  });
-
-  test("sets null zodiac when the date has too few parts", () => {
-    const profile: {
-      birthday?: string | null | undefined;
-      zodiac_sign?: string | null | undefined;
-    } = { birthday: "1990" };
-    applyDerivedZodiac(profile);
-    expect(profile.zodiac_sign).toBeNull();
-  });
-
-  test("sets null zodiac for empty birthday", () => {
-    const profile: {
-      birthday?: string | null | undefined;
-      zodiac_sign?: string | null | undefined;
-    } = { birthday: "" };
-    applyDerivedZodiac(profile);
-    expect(profile.zodiac_sign).toBeNull();
+  test("has no sign for a month outside 1-12", () => {
+    expect(deriveZodiac(0, 1)).toBeNull();
+    expect(deriveZodiac(13, 1)).toBeNull();
   });
 });

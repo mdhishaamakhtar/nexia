@@ -1,161 +1,96 @@
-import type { ProfileOutput, ProfileSummary, RelationshipType, ZodiacSign } from "@nexia/shared";
-import type {
-  profiles,
-  tags,
-  politicalViews,
-  foodRestrictions,
-  movieGenres,
-  bookGenres,
-  hangoutPlaces,
-  quotes,
-  favoriteMemories,
-  topSongs,
-  associatedSongs,
-} from "../db/schema";
+import type { ProfileInput, ProfileOutput, ProfileSummary, RelationshipType } from "@nexia/shared";
+import type { profiles } from "../db/schema";
+import { zodiacForBirthday } from "../services/zodiac";
 
-type ProfileRow = typeof profiles.$inferSelect;
-type TagRow = typeof tags.$inferSelect;
-type PoliticalViewRow = typeof politicalViews.$inferSelect;
-type FoodRestrictionRow = typeof foodRestrictions.$inferSelect;
-type MovieGenreRow = typeof movieGenres.$inferSelect;
-type BookGenreRow = typeof bookGenres.$inferSelect;
-type HangoutPlaceRow = typeof hangoutPlaces.$inferSelect;
-type QuoteRow = typeof quotes.$inferSelect;
-type FavoriteMemoryRow = typeof favoriteMemories.$inferSelect;
-type TopSongRow = typeof topSongs.$inferSelect;
-type AssociatedSongRow = typeof associatedSongs.$inferSelect;
+export type ProfileRow = typeof profiles.$inferSelect;
+type NewProfileRow = typeof profiles.$inferInsert;
+type ProfileRowPatch = Partial<Omit<NewProfileRow, "id" | "userId" | "createdAt">>;
 
-/** All child rows belonging to a single profile, as loaded from the DB. */
-export interface ProfileChildren {
-  tags: TagRow[];
-  politicalViews: PoliticalViewRow[];
-  foodRestrictions: FoodRestrictionRow[];
-  movieGenres: MovieGenreRow[];
-  bookGenres: BookGenreRow[];
-  hangoutPlaces: HangoutPlaceRow[];
-  quotes: QuoteRow[];
-  favoriteMemories: FavoriteMemoryRow[];
-  topSongs: TopSongRow[];
-  associatedSong: AssociatedSongRow | null;
-}
+/** The columns the list and search surfaces read. */
+export type ProfileSummaryRow = Pick<
+  ProfileRow,
+  "id" | "fullName" | "pronouns" | "relationshipType" | "birthday" | "tags"
+>;
 
-/** The lean profile + tags projection backing list/search surfaces. */
-export interface ProfileSummaryRow {
-  id: number;
-  relationshipType: string;
-  zodiacSign: string | null;
-  fullName: string;
-  pronouns: string | null;
-  tags: TagRow[];
-}
-
-/** Maps the lean relational projection into the snake_case `ProfileSummary`. */
 export function toProfileSummary(row: ProfileSummaryRow): ProfileSummary {
   return {
     id: row.id,
     full_name: row.fullName,
-    pronouns: row.pronouns ?? "",
+    pronouns: row.pronouns,
     relationship_type: row.relationshipType as RelationshipType,
-    zodiac_sign: (row.zodiacSign as ZodiacSign | null) ?? null,
-    tags: row.tags.map((t) => ({
-      id: t.id,
-      profile_id: t.profileId,
-      tag: t.tag ?? "",
-    })),
+    zodiac_sign: zodiacForBirthday(row.birthday),
+    tags: row.tags,
   };
 }
 
-export function emptyChildren(): ProfileChildren {
-  return {
-    tags: [],
-    politicalViews: [],
-    foodRestrictions: [],
-    movieGenres: [],
-    bookGenres: [],
-    hangoutPlaces: [],
-    quotes: [],
-    favoriteMemories: [],
-    topSongs: [],
-    associatedSong: null,
-  };
-}
-
-/**
- * Maps a Drizzle profile row plus its hydrated child rows into the snake_case
- * `ProfileOutput` API contract. Nullable text columns collapse to empty strings
- * to match the contract (which types them as required strings), mirroring the
- * Go GORM model's zero-value JSON behaviour.
- */
-export function toProfileOutput(row: ProfileRow, children: ProfileChildren): ProfileOutput {
+/** Maps a stored row into the snake_case `ProfileOutput` API contract. */
+export function toProfileOutput(row: ProfileRow): ProfileOutput {
   return {
     id: row.id,
     user_id: row.userId,
     full_name: row.fullName,
-    pronouns: row.pronouns ?? "",
+    pronouns: row.pronouns,
     relationship_type: row.relationshipType as RelationshipType,
-    bio: row.bio ?? "",
-    profession: row.profession ?? "",
-    long_term_goals: row.longTermGoals ?? "",
-    birthday: row.birthday ?? null,
-    zodiac_sign: (row.zodiacSign as ZodiacSign | null) ?? null,
-    music_preference: row.musicPreference ?? "",
-    favorite_movie: row.favoriteMovie ?? "",
-    favorite_book: row.favoriteBook ?? "",
-    notes: row.notes ?? "",
+    bio: row.bio,
+    profession: row.profession,
+    long_term_goals: row.longTermGoals,
+    birthday: row.birthday,
+    zodiac_sign: zodiacForBirthday(row.birthday),
+    music_preference: row.musicPreference,
+    favorite_movie: row.favoriteMovie,
+    favorite_book: row.favoriteBook,
+    notes: row.notes,
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
-    tags: children.tags.map((t) => ({
-      id: t.id,
-      profile_id: t.profileId,
-      tag: t.tag ?? "",
-    })),
-    political_views: children.politicalViews.map((v) => ({
-      id: v.id,
-      profile_id: v.profileId,
-      view: v.view ?? "",
-    })),
-    food_restrictions: children.foodRestrictions.map((r) => ({
-      id: r.id,
-      profile_id: r.profileId,
-      restriction: r.restriction ?? "",
-    })),
-    movie_genres: children.movieGenres.map((g) => ({
-      id: g.id,
-      profile_id: g.profileId,
-      genre: g.genre ?? "",
-    })),
-    book_genres: children.bookGenres.map((g) => ({
-      id: g.id,
-      profile_id: g.profileId,
-      genre: g.genre ?? "",
-    })),
-    hangout_places: children.hangoutPlaces.map((p) => ({
-      id: p.id,
-      profile_id: p.profileId,
-      place: p.place ?? "",
-    })),
-    quotes: children.quotes.map((q) => ({
-      id: q.id,
-      profile_id: q.profileId,
-      quote: q.quote ?? "",
-    })),
-    favorite_memories: children.favoriteMemories.map((m) => ({
-      id: m.id,
-      profile_id: m.profileId,
-      memory: m.memory ?? "",
-    })),
-    top_songs: children.topSongs.map((s) => ({
-      id: s.id,
-      profile_id: s.profileId,
-      name: s.name ?? "",
-      artist: s.artist ?? "",
-    })),
-    associated_song: children.associatedSong
-      ? {
-          profile_id: children.associatedSong.profileId,
-          name: children.associatedSong.name ?? "",
-          artist: children.associatedSong.artist ?? "",
-        }
-      : null,
+    tags: row.tags,
+    political_views: row.politicalViews,
+    food_restrictions: row.foodRestrictions,
+    movie_genres: row.movieGenres,
+    book_genres: row.bookGenres,
+    hangout_places: row.hangoutPlaces,
+    quotes: row.quotes,
+    favorite_memories: row.favoriteMemories,
+    top_songs: row.topSongs,
+    associated_song: row.associatedSong ?? null,
+  };
+}
+
+/**
+ * Maps any subset of the contract onto columns. A key left `undefined` stays
+ * `undefined`, and Drizzle's `.set()` skips those, so this one function serves
+ * both a full insert and a merge-style update.
+ */
+export function toProfilePatch(input: Partial<ProfileInput>): ProfileRowPatch {
+  return {
+    fullName: input.full_name,
+    pronouns: input.pronouns,
+    relationshipType: input.relationship_type,
+    bio: input.bio,
+    profession: input.profession,
+    longTermGoals: input.long_term_goals,
+    birthday: input.birthday,
+    musicPreference: input.music_preference,
+    favoriteMovie: input.favorite_movie,
+    favoriteBook: input.favorite_book,
+    notes: input.notes,
+    tags: input.tags,
+    politicalViews: input.political_views,
+    foodRestrictions: input.food_restrictions,
+    movieGenres: input.movie_genres,
+    bookGenres: input.book_genres,
+    hangoutPlaces: input.hangout_places,
+    quotes: input.quotes,
+    favoriteMemories: input.favorite_memories,
+    topSongs: input.top_songs,
+    associatedSong: input.associated_song,
+  };
+}
+
+export function toNewProfileRow(userId: number, input: ProfileInput): NewProfileRow {
+  return {
+    ...toProfilePatch(input),
+    userId,
+    fullName: input.full_name,
+    relationshipType: input.relationship_type,
   };
 }

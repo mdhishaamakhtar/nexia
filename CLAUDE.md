@@ -10,20 +10,20 @@ development workflows, and key decisions to follow when making changes.
 
 **Nexia** is a digital slambook / friend-profile scrapbook application. Users
 create rich profiles for their contacts (friends, family, colleagues, etc.) and
-query them via an AI chat assistant ("Nexia Intel") that uses RAG (Retrieval-
-Augmented Generation) over the stored profiles.
+query them via an AI chat assistant ("Ask Nexia") that uses RAG (Retrieval-
+Augmented Generation) over the stored profiles, and can add or update profiles
+once the user approves each change.
 
 **Tech stack at a glance**
 
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, TanStack Query v5, React Hook Form + Zod, Framer Motion |
-| Backend | Node 24, Hono, Drizzle ORM, BullMQ |
+| Backend | Node 24, Hono, Drizzle ORM (postgres.js) |
 | Database | PostgreSQL 17 + pgvector extension |
-| Queue | Redis 7 + BullMQ |
-| AI / Embeddings | Vercel AI SDK, Google Gemini (`gemini-embedding-001` for 3072-dim embeddings), OpenCode (chat model) |
+| AI / Embeddings | Vercel AI SDK v7, Google Gemini (`gemini-embedding-001` for 3072-dim embeddings), OpenCode Zen (chat model, `space-bunny-free` by default) |
 | Email | Resend API |
-| Testing | Vitest, Testcontainers (Postgres + Redis), MSW, `ai/test` mock models |
+| Testing | Vitest (API, shared, web in jsdom with Testing Library), Testcontainers (Postgres), MSW, `ai/test` mock models, Playwright (browser journeys) |
 | Container | Docker + Docker Compose |
 | Monorepo | npm workspaces |
 
@@ -52,11 +52,9 @@ nexia/
 │   │   │   ├── email/            # Resend email service + templates
 │   │   │   ├── logging/          # Pino structured logger
 │   │   │   ├── middleware/       # Auth, CSRF, rate limiting, request context
-│   │   │   ├── queue/            # BullMQ producer + worker
 │   │   │   ├── repositories/     # Drizzle data access layer
 │   │   │   ├── routes/           # Router setup (buildApp)
-│   │   │   ├── scripts/          # Embedding back-fill utility
-│   │   │   ├── services/         # Business logic (auth, profiles, embedding)
+│   │   │   ├── services/         # Business logic (auth, profiles, embedding worker)
 │   │   │   ├── utils/            # JWT, CSRF, validation helpers
 │   │   │   ├── app.ts            # wireApp (pure graph) + createApp (bootstrap)
 │   │   │   └── index.ts          # Entry point
@@ -69,6 +67,7 @@ nexia/
 │   │   ├── tsup.config.ts
 │   │   └── package.json
 │   └── web/                      # Next.js frontend application
+│       ├── scripts/              # brand-assets.ts (renders icons from the mark)
 │       └── src/
 │           ├── app/              # Next.js App Router pages
 │           ├── components/       # Atomic UI + ai-elements components
@@ -79,8 +78,8 @@ nexia/
 │   └── shared/                   # @nexia/shared — Zod schemas, types, enums
 │       └── src/
 ├── docs/
-│   └── superpowers/              # Migration plan docs (reference only)
-├── .github/workflows/ci.yml      # typecheck, lint, format, tests + coverage gate
+│   └── brand/                    # Logo mark, wordmark, social preview (rendered)
+├── .github/workflows/ci.yml      # typecheck, lint, format, tests + coverage gate, builds, e2e
 ├── docker-compose.yml            # Full-stack local Docker environment
 ├── nexia.sh                      # Dev CLI helper (wraps docker compose)
 ├── vitest.config.ts              # Three projects + istanbul coverage thresholds
@@ -105,8 +104,8 @@ loadConfig() → createLogger() → createDb() → runMigrations()
 ```
 
 **Consumer-defined interfaces:** Each service file declares the interfaces its
-dependencies must satisfy (e.g., `UserRepo`, `ProfileRepo`, `EmbeddingQueue`,
-`EmbeddingGenerator`, `EmailSender`). Repositories satisfy them implicitly via
+dependencies must satisfy (e.g., `UserRepo`, `ProfileRepo`,
+`EmbeddingScheduler`, `EmbeddingGenerator`, `EmailSender`). Repositories satisfy them implicitly via
 TypeScript structural typing.
 
 ### Request Flow
@@ -115,12 +114,14 @@ TypeScript structural typing.
 HTTP Request
   → CORS middleware (hono/cors)
   → requestContext middleware (request ID, structured logging, duration)
-  → [Public routes] auth rate limiter → auth controller
-  → [Protected routes] authMiddleware (JWT from Bearer header or nexia_token cookie)
+  → [Public auth routes] 16 KB body limit → auth rate limiter (per client address) → auth controller
+  → [Protected routes] authMiddleware (JWT from Bearer header or nexia_token cookie;
+     rejects tokens issued before the last password change; renews a cookie session
+     past half its life)
      → csrfMiddleware (double-submit cookie for cookie-auth only)
-     → [Chat] chat rate limiter → chat controller → ChatAgent
-     → [Profiles] profile controller → ProfileService
-  → JSON response
+     → [Chat] 1 MB body limit → chat rate limiter (per user) → chat controller → ChatAgent
+     → [Profiles] 256 KB body limit → profile controller → ProfileService
+  → JSON response; anything thrown is answered by errorHandler (app.onError)
 ```
 
 ### Authentication
@@ -128,11 +129,25 @@ HTTP Request
 - **Separate endpoints**: `POST /api/v1/auth/signup` (create account) and
   `POST /api/v1/auth/login` (authenticate). Email verification is required
   before login succeeds.
-- JWT tokens are HS256-signed (via `jose`), configurable expiry (default 1440 min = 24 h).
+- JWT tokens are HS256-signed (via `jose`, and verification is pinned to HS256),
+  configurable expiry (default 1440 min = 24 h). Cookie sessions slide: past half
+  their life, the next request re-issues them.
 - Tokens are accepted via `Authorization: Bearer <token>` header **or** the
-  `nexia_token` httpOnly cookie (the frontend uses the cookie path).
+  `nexia_token` httpOnly cookie (the frontend uses the cookie path). Cookies are
+  `SameSite=Lax`, and `Secure` in release mode.
+- Changing or resetting a password sets `users.password_changed_at`; tokens issued
+  before it are rejected, so a reset signs out every other session.
 - CSRF protection (double-submit cookie pattern) only applies to
   cookie-authenticated requests. Bearer-authenticated requests bypass CSRF.
+- Emails are trimmed and lower-cased by the shared `emailSchema` everywhere.
+- **No account enumeration.** Sign-up, forgot-password and resend-verification
+  answer the same way whether or not the address has an account; login says only
+  that the email and password don't match (and still runs a bcrypt compare for
+  unknown emails, so timing matches). Verification and reset emails are limited
+  to one a minute per account.
+- Verification and reset tokens are stored as SHA-256 hashes and claimed with one
+  atomic `UPDATE … RETURNING`, so a token works exactly once. Verifying an
+  already-verified address again succeeds (links get opened twice).
 
 ### Configuration
 
@@ -141,33 +156,35 @@ Config is loaded via YAML + Zod validation from `config/local.yaml` or
 overridden with env vars prefixed `NEXIA_` where dots become underscores:
 
 ```
-NEXIA_DB_PASSWORD  →  db.password
-NEXIA_AI_REDIS_URL →  ai.redis_url
+NEXIA_DB_PASSWORD               →  db.password
+NEXIA_SERVER_CLIENT_IP_HEADER   →  server.client_ip_header
 ```
+
+In release mode the loader refuses to start unless `server.jwt_secret` is at
+least 32 characters, `server.cors_origins` is set, and `email.app_base_url` is
+an `https://` URL.
 
 Key config sections:
 
 | Section | Fields |
 |---|---|
-| `server` | `port`, `mode`, `jwt_secret`, `jwt_expiry_minutes`, `cors_origins`, `cookie_domain`, auth/chat rate limit fields |
+| `server` | `port`, `mode`, `jwt_secret`, `jwt_expiry_minutes`, `cors_origins`, `cookie_domain`, `client_ip_header`, auth/chat rate limit fields |
 | `db` | `host`, `port`, `user`, `password`, `name`, `ssl_mode`, `run_migrations`, `max_open_conns`, `conn_max_lifetime_minutes`, `idle_timeout_seconds` |
-| `ai` | `gemini_api_key`, `redis_url`, `opencode_api_key`, `opencode_base_url`, `chat_model` |
+| `ai` | `gemini_api_key`, `opencode_api_key`, `opencode_base_url`, `chat_model`, `embedding_interval_seconds` |
 | `email` | `resend_api_key`, `from_address`, `app_base_url` |
 
 ### Rate Limiting
 
-Auth and chat routes use in-memory per-IP token buckets.
+Two in-memory token buckets, both built by `createRateLimiter` in
+`middleware/rate-limit.ts`:
 
-Auth route family:
-
-- `POST /api/v1/auth/signup`
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/forgot-password`
-- `POST /api/v1/auth/reset-password`
-
-Chat route family:
-
-- `POST /api/v1/chat`
+- **Auth** — the credential routes only (`signup`, `login`, `verify-email`,
+  `resend-verification`, `forgot-password`, `reset-password`), keyed by client
+  address. Behind a proxy the address comes from `server.client_ip_header`
+  (production: `x-real-ip`, which Railway sets); `X-Forwarded-For` is never
+  trusted, since a client can write it. `/auth/me` and `/auth/logout` are not
+  limited.
+- **Chat** — `POST /api/v1/chat`, keyed by **user id**, not address.
 
 Requests beyond the burst are rejected with HTTP 429 and `RATE_LIMITED`.
 This is in-memory only, so limits are per process, not global across replicas.
@@ -180,48 +197,71 @@ All routes are under `/api/v1`.
 |---|---|---|---|
 | GET | `/healthz` | No | Liveness probe |
 | GET | `/readyz` | No | Readiness probe (checks DB) |
-| POST | `/auth/signup` | No | Create account, sends verification email |
+| POST | `/auth/signup` | No | Create account, sends verification email (same 201 answer either way) |
 | POST | `/auth/login` | No | Authenticate, returns JWT + sets cookies |
-| GET | `/auth/verify-email` | No | Verify email address |
-| POST | `/auth/forgot-password` | No | Send password reset email |
-| POST | `/auth/reset-password` | No | Reset password with token |
+| GET | `/auth/verify-email` | No | Verify email address (`?token=`) |
+| POST | `/auth/resend-verification` | No | Send a fresh verification link (same answer either way) |
+| POST | `/auth/forgot-password` | No | Send password reset email (same answer either way) |
+| POST | `/auth/reset-password` | No | Reset password with token; signs out other sessions |
 | GET | `/auth/me` | Yes | Returns current user info |
 | POST | `/auth/logout` | Yes | Clears auth + CSRF cookies |
 | POST | `/chat` | Yes | AI chat with tool-calling agent (streaming) |
 | POST | `/profiles` | Yes | Create profile |
 | GET | `/profiles` | Yes | List profiles (paginated, filterable) |
 | GET | `/profiles/:id` | Yes | Get single profile |
-| PUT | `/profiles/:id` | Yes | Full replacement — omitted optional fields are cleared |
+| PUT | `/profiles/:id` | Yes | Full replacement — omitted optional fields are cleared; returns the profile |
 | DELETE | `/profiles/:id` | Yes | Delete profile; 404 if missing or not yours |
 
-`GET /profiles` accepts query params: `page`, `limit`, `search` (name substring),
-`relationship_type`.
+`GET /profiles` accepts query params: `page` (default 1), `limit` (1–100,
+default 24), `search` (name substring; `%` and `_` match literally),
+`relationship_type`. Results are ordered by name, case-insensitively.
 
 ### Testing
 
-**Framework:** Vitest, configured as three projects in the root
-`vitest.config.ts`.
+**Framework:** Vitest, configured as four projects in the root
+`vitest.config.ts`, plus Playwright for browser journeys.
 
-| Project | Location | Needs Docker? |
+| Project | Location | Needs |
 |---|---|---|
-| `shared` | `packages/shared/src/**/*.test.ts` | No |
-| `api-unit` | `apps/api/src/**/*.test.ts` (colocated) | No |
-| `api-integration` | `apps/api/tests/integration/**` | Yes |
+| `shared` | `packages/shared/src/**/*.test.ts` | nothing |
+| `api-unit` | `apps/api/src/**/*.test.ts` (colocated) | nothing |
+| `api-integration` | `apps/api/tests/integration/**` | Docker |
+| `web` | `apps/web/src/**/*.test.{ts,tsx}` (colocated; jsdom) | nothing |
+| Playwright | `apps/web/e2e/**` | Postgres running |
 
 ```bash
-npm test                   # everything
-npm run test:unit          # fast, no containers
-npm run test:integration    # containers only
-npm run test:coverage      # enforces the coverage gate
+npm test                   # every Vitest project
+npm run test:unit          # fast: shared, api-unit, web — no containers
+npm run test:integration   # containers only
+npm run test:coverage      # every Vitest project, one coverage report, gate enforced
+npm run test:e2e           # Playwright journeys
+npm run test:all           # test:coverage, then test:e2e — the whole lot
 npm run test:watch
 ```
 
+**Web tests (`web` project).** Components and logic are tested in jsdom with
+Testing Library, the way a person uses them: by role and accessible name, with
+`user-event` for typing and keys. `apps/web/vitest.config.ts` holds the jsdom
+and React settings; `apps/web/vitest.setup.ts` skips Framer animations and
+stubs what jsdom lacks (`scrollIntoView`, `ResizeObserver`, `matchMedia`).
+Network edges go through MSW (`apps/web/test/server.ts`, `mockApi()`), so
+`ky`, React Query and the AI SDK's chat stream all run for real; the chat tests
+answer with a genuine UI-message stream built with `createUIMessageStreamResponse`.
+Fixtures live in `apps/web/test/` (imported as `@test/...`), outside `src`, so
+they never count as subject code.
+
+Two jsdom habits worth knowing: React Query tells observers on the next tick
+(`waitFor` a status, don't read it straight after `act`); and Framer finishes
+exits on real frames, so a test that fakes the clock should fake only
+`setTimeout`/`clearTimeout` and return to real timers to watch something leave.
+
 **Integration-first.** Anything that crosses a boundary is tested against real
 infrastructure: Testcontainers starts one Postgres (`pgvector/pgvector:pg17`,
-the same image as docker-compose) and one Redis for the whole run, migrations
-are applied once, and tests are isolated by truncating every public table
-between cases. Integration files run sequentially, since they share those
-containers.
+the same image as docker-compose) for the whole run, migrations are applied
+once, and tests are isolated by truncating every public table between cases.
+Integration files run sequentially, since they share that container. The
+embedding worker's timer is not started in tests; `harness.embedPending()`
+drains it on demand.
 
 `tests/helpers/harness.ts` assembles the **real** application graph via
 `wireApp` — real repositories, real services, the real Hono router — and
@@ -241,99 +281,144 @@ rate-limit bucket maths. They are colocated with their subject. Do not write a
 unit test with hand-rolled repository fakes for something an integration test
 already proves; that pattern is what let a batch of real defects through.
 
+**Browser journeys (Playwright).** `apps/web/e2e/` drives the real stack in
+Chrome: the API bundle with `APP_ENV=e2e` (`apps/api/config/e2e.yaml`: port
+8181, its own `nexia_e2e` database, no AI or email keys) and a production build
+of the web app on port 3100. The database is dropped and recreated on every
+run. A `setup` project signs up the shared account, confirms it in SQL (the one
+step a browser can't take — the link only goes to the API log) and saves the
+signed-in state; the specs cover sign-in and its failures, making, finding,
+editing and deleting a profile through the custom controls, the unsaved-changes
+guard, the not-found note, and chat without a model. Postgres must be running.
+
+```bash
+npm run test:e2e                              # downloaded Chromium
+PLAYWRIGHT_CHANNEL=chrome npm run test:e2e    # or the installed Chrome
+```
+
+Assert on what people perceive: roles and accessible names, and toasts through
+their live region (`e2e/support/page.ts`).
+
 **Coverage gate:** 90% branches / functions / lines / statements, enforced by
-`@vitest/coverage-istanbul` over `apps/api/src` and `packages/shared/src`. Only
-genuinely untestable bootstrap is excluded (`index.ts`, `scripts/`,
-`db/schema.ts`). Do not hit the number by widening the exclude list.
+`@vitest/coverage-istanbul` over `apps/api/src`, `packages/shared/src` and
+`apps/web/src` together, in one report. Excluded: API bootstrap (`index.ts`,
+`db/schema.ts`); the web app's route files (`src/app/**`, which the Playwright
+journeys render for real); vendored `ai-elements`; and the two renderers that
+need a real canvas or the Next image runtime (`exportProfilePdf.ts`,
+`social-image.tsx`), which E2E exercises by downloading the PDF and fetching
+the social image. Playwright is not instrumented for coverage. Do not hit the number by widening the exclude list.
 
 ### Error Handling Convention
 
-Controllers use `respondWithServiceError(c, err)` which maps `ServiceError.kind`
-to HTTP status codes:
+Services throw a `ServiceError` (via the factories in `services/errors.ts`);
+controllers do not catch it. `errorHandler` in `middleware/request-context.ts`,
+registered with **`app.onError`**, maps it through `ERROR_RESPONSES`:
 
 | ErrorKind | HTTP | Error Code |
 |---|---|---|
-| `account_not_found` | 401 | `ACCOUNT_NOT_FOUND` |
+| `validation` | 400 | `VALIDATION_ERROR` (message passed through) |
 | `unauthorized` | 401 | `UNAUTHORIZED` |
-| `validation` | 400 | `VALIDATION_ERROR` |
+| `email_not_verified` | 403 | `EMAIL_NOT_VERIFIED` |
 | `not_found` | 404 | `NOT_FOUND` |
 | `ai_unavailable` | 503 | `AI_UNAVAILABLE` |
-| `email_not_verified` | 403 | `EMAIL_NOT_VERIFIED` |
-| `email_conflict` | 409 | `EMAIL_CONFLICT` |
-| (anything else) | 500 | `SERVER_ERROR` |
+| `email_unavailable` | 503 | `EMAIL_UNAVAILABLE` |
+
+Outside the services: an oversized body is 413 `PAYLOAD_TOO_LARGE`, a rate limit
+is 429 `RATE_LIMITED`, a failed CSRF check is 403 `CSRF_TOKEN_MISSING` or
+`CSRF_TOKEN_INVALID`, and anything
+else that escapes is logged with its stack and answered 500 `SERVER_ERROR` with
+a generic message. There is deliberately no `ACCOUNT_NOT_FOUND` or
+`EMAIL_CONFLICT`: both told a stranger whether an address has an account.
 
 Error responses always have the shape:
 ```json
 { "error": { "code": "NOT_FOUND", "message": "Resource not found" } }
 ```
 
-Anything that escapes a controller is caught by `errorHandler` in
-`middleware/request-context.ts`, registered with **`app.onError`** — not as
-middleware. Hono's dispatcher catches a throwing handler itself and routes it
-straight to the error handler, so a middleware wrapping `await next()` in
-try/catch never sees it. Keep it on `onError`, or unhandled failures silently
-revert to Hono's plain-text default and break the envelope above.
+Keep the handler on `onError`, not in a middleware: Hono's dispatcher catches a
+throwing handler itself and routes it straight to the error handler, so a
+middleware wrapping `await next()` in try/catch never sees it.
 
 ### Data Models
 
-**User**: `id`, `email` (unique), `password` (bcrypt hashed), `email_verified`, timestamps.
+**User**: `id`, `email` (unique, stored lower-case), `password` (bcrypt hashed),
+`email_verified`, `password_changed_at`, timestamps.
 
 **Profile**: Rich contact card for a person in the user's network. Belongs to a
-`User`. Has many child associations (all ON DELETE CASCADE):
+`User`. Scalar text fields are `NOT NULL DEFAULT ''` (empty means unset), and
+the lists live on the row itself — there are no child tables:
 
-| Association | Max | Notes |
+| Column | Type | Limit |
 |---|---|---|
-| `Tags` | unlimited | Personality/interest tags |
-| `PoliticalViews` | unlimited | |
-| `FoodRestrictions` | unlimited | |
-| `MovieGenres` | unlimited | |
-| `BookGenres` | unlimited | |
-| `HangoutPlaces` | unlimited | |
-| `Quotes` | unlimited | |
-| `TopSongs` | **3** | Enforced in service layer |
-| `AssociatedSong` | 1 | Has-one, not has-many |
+| `tags`, `political_views`, `food_restrictions`, `movie_genres`, `book_genres`, `hangout_places`, `quotes`, `favorite_memories` | `text[]` | per-field item count and length in `PROFILE_LIST_LIMITS` |
+| `top_songs` | `jsonb` array of `{ name, artist }` | **3** (`MAX_TOP_SONGS`) |
+| `associated_song` | `jsonb` `{ name, artist }` or null | 1 |
+
+Every limit lives in `@nexia/shared` (`profile.ts`), so the API, the chat tools
+and the form enforce the same ones. `profiles.revision` goes up by one on every
+write; the embedding worker uses it to tell what is stale.
 
 `RelationshipType` is an enum: `Friend`, `Family`, `Colleague`, `Classmate`,
 `Crush`, `Ex`, `Mentor`, `Other`.
 
-`ZodiacSign` is **derived automatically** from `Birthday` — never set it
-manually. `applyDerivedZodiac` in `services/zodiac.ts` handles this on every
-create/update.
+The zodiac sign is **derived on read** from `birthday` (`zodiacForBirthday` in
+`services/zodiac.ts`, called by `repositories/profile-mapper.ts`). It is not
+stored, and any `zodiac_sign` a client sends is dropped by the input schema.
 
-**profile_embeddings**: pgvector table storing a 3072-dim embedding and a
-full JSONB snapshot of the profile. Managed exclusively by the async queue
-worker, never by the profile repository.
+**profile_embeddings**: one 3072-dim vector per profile, with the
+`source_revision` it was computed from. It cascades with the profile, and only
+the embedding service writes to it; the profile repository never does.
 
-### Asynchronous Embedding Pipeline
+### Embedding Pipeline
 
-When a profile is created or updated, the service enqueues a `task:embedding`
-BullMQ task. The worker picks it up, flattens the full profile (with all
-preloaded associations) into text, calls `gemini-embedding-001`, then upserts
-the result into `profile_embeddings`.
+There is no queue. `EmbeddingWorker` (`services/embedding-worker.ts`) runs in
+the API process: every `ai.embedding_interval_seconds` (default 30), and
+immediately after any profile write (`ProfileService` calls `wake()`), it finds
+profiles whose embedding is missing or older than `profiles.revision`, flattens
+each into text, calls `gemini-embedding-001`, and upserts the vector with that
+revision. The upsert only ever moves a row forward, so a slow job can never
+overwrite a newer vector. A profile whose embedding fails is retried with an
+in-memory exponential backoff. Deleting a profile removes its vector by
+cascade.
 
-On profile delete, a `task:deletion` task removes the vector row asynchronously.
+Because staleness is read from the database, nothing is lost on a restart or a
+deploy, and there is no back-fill script: a profile created while Gemini was
+not configured is embedded as soon as a key is present.
 
-If `ai.redis_url` or `ai.gemini_api_key` is absent, the queue and Gemini
-client are null. The service layer skips embedding gracefully — all CRUD still
-works, but `/chat` returns 503.
+If `ai.gemini_api_key` is absent the worker does not start; all CRUD still
+works, and semantic search is unavailable. If `ai.opencode_api_key` is absent,
+`/chat` returns 503 `AI_UNAVAILABLE`.
 
 ### RAG Chat Flow
 
 `POST /chat` → `ChatAgent`:
-1. The AI SDK's `streamText` with tool-calling is used.
+1. The request is validated as UI messages (`safeValidateUIMessages`) and only
+   the last `CHAT_HISTORY_LIMIT` (40) are sent to the model. The AI SDK's
+   `streamText` runs with tool calling, at most 8 steps and 2000 output tokens,
+   and is aborted if the client disconnects.
 2. The agent has 6 tools: `ragSearch`, `searchProfiles`, `getProfile`,
-   `listProfiles`, `createProfile`, `updateProfile`.
-3. `ragSearch` generates a query embedding via `gemini-embedding-001`, searches
-   `profile_embeddings` with cosine similarity, filtered by `user_id`, returning
-   top-5 results with their JSONB payload.
-4. The system prompt instructs the agent to prefer RAG for fuzzy queries,
-   require user confirmation before writes, and never fabricate data.
+   `listProfiles`, `createProfile`, `updateProfile`, all scoped to the signed-in
+   user.
+3. `ragSearch` embeds the query with `gemini-embedding-001`, ranks
+   `profile_embeddings` by cosine similarity for that user, then loads the
+   **live** profiles for the top hits, so an answer never comes from a stale
+   snapshot.
+4. **Writes need the user's approval.** `createProfile` and `updateProfile` are
+   `needsApproval: true`: the stream stops with an approval request, the chat UI
+   shows the proposed change as a pinned note (Save / Not now), and the tool
+   runs only when the approval comes back. Approvals are signed with an HMAC
+   derived from the JWT secret, so a client cannot forge one.
+5. The system prompt tells the agent to prefer RAG for fuzzy questions, to call
+   the write tools directly (the approval step is the confirmation), and never
+   to invent details.
 
 ### Database Migrations
 
 Migrations live in `apps/api/drizzle/` using drizzle-kit naming. They run
-automatically at server startup. The migration runner detects if the database
-was previously managed by golang-migrate and baselines accordingly.
+automatically at server startup (unless `db.run_migrations` is false).
+`0003`–`0005` moved the profile lists from child tables onto the row in three
+steps — add the columns, back-fill them (a custom migration), then drop the old
+tables — so a failure part-way leaves the old data in place.
 
 Always create new migrations via `npm run db:generate -w api` from `apps/api/`.
 Never edit existing migration files.
@@ -388,6 +473,14 @@ Read **`DESIGN.md`** at the repo root before changing any UI. The short version:
 - **Material is flat opaque paper.** `.paper` / `.paper-sunk` plus a warm
   hairline. There is **no `backdrop-filter` and no `box-shadow` anywhere** —
   neither should be added. Form fields are white, not tinted.
+- **No native browser UI.** No `<select>`, date input, `alert()`, `confirm()` or
+  `title` tooltip: use `Select`, `DatePicker`, `ConfirmDialog`, `toast`, and
+  `Tooltip`. Every overlay is a "pinned note" built on `overlays/Dialog`.
+- **The logo** is `atoms/Logo` (`<Logo>` / `<LogoMark>`), drawn from
+  `shared/brand/mark.ts`. The favicon, app icons, manifest icons and
+  `docs/brand` are renders of that module: change it, then run
+  `npm run brand -w web` (pass `http://localhost:3000` to refresh the README's
+  social preview too). The Open Graph image is `shared/lib/social-image.tsx`.
 - **Type comes from five classes** in `globals.css`: `.t-display`,
   `.t-page-title`, `.t-section-title`, `.t-body`, `.t-label`.
 - **Soft accents are surface tints, never foregrounds.** Text and icons use the
@@ -401,26 +494,33 @@ Read **`DESIGN.md`** at the repo root before changing any UI. The short version:
 components/
   ai-elements/  — Vendored chat pieces, trimmed to what Nexia uses:
                   conversation.tsx, message.tsx (MessageResponse only)
-  atoms/        — Button, Field, Input, Textarea, Select, BackButton, AuthRedirect
+  atoms/        — Button, Field, Input, Textarea, Select, DatePicker, SearchField,
+                  Tooltip, Tape, Logo, BackButton, SignedInRedirect
+  overlays/     — Dialog (the one modal: focus trap, scrim, pinned-note sheet)
   layout/       — PageShell (container), AuthCard (unauthenticated page shell)
-  molecules/    — Navbar, CardProfilePreview, ConfirmDialog, QuoteModal
+  molecules/    — Navbar, CardProfilePreview, ConfirmDialog, QuoteModal, StatusNote
 
 features/
-  auth/api.ts         — Auth API calls
-  chat/api.ts         — Chat API calls (DefaultChatTransport)
+  auth/               — api.ts, ResendVerification, pending-email (sessionStorage)
+  chat/api.ts         — Transport (DefaultChatTransport; a 401 goes to sign-in)
+  chat/chat-provider  — ChatProvider (one Chat per dashboard session) + useNexiaChat
   chat/components/    — ChatHeader, ChatMessage, ChatEmptyState, ChatComposer,
-                        ToolActivity, ChatProfileCard
-  chat/hooks/         — useNexiaChat (wraps useChat with cache invalidation)
-  chat/lib/           — Tool metadata registry, markdown component overrides
-  profiles/api.ts     — Profile CRUD calls + form-value mapping
-  profiles/components — ProfileForm, FormActionBar, FieldArrayInput,
-                        ProfileFormSection, ZodiacIcon
+                        ToolActivity, WriteProposal, ChatProfileCard
+  chat/lib/           — Tool metadata, error descriptions, markdown overrides
+  profiles/api.ts     — Profile CRUD calls
+  profiles/hooks.ts   — Query keys and the list / detail / mutation hooks
+  profiles/form.ts    — Form schema (built from the shared schema) and mapping
+  profiles/sections.ts— Which fields each sheet section holds, labels, colours
+  profiles/components — ProfileForm, ProfileSheet, SheetSection, FormActionBar,
+                        Avatar, ZodiacIcon, fields/ (ChipList, TopSongs, TheirSong)
 
 shared/
-  api/client.ts       — ky instance (base URL + credentials + CSRF/401 hooks)
-  types/              — TypeScript types: Profile, API response shapes
+  api/                — client.ts (the ky instance), cookies.ts (CSRF cookie)
+  brand/mark.ts       — The logo's geometry and colours (single source)
+  hooks/              — useFocusTrap, useDismiss, useIsClamped, useLeaveGuard
+  lib/                — dates.ts (all date parsing/formatting), social-image.tsx
   providers/          — React Query + MotionConfig wrapper
-  ui/                 — Toast, AIIcons (NexiaIcon, NexiaAvatar)
+  ui/                 — toast, motion (EASE_OUT, SETTLE, enter), AIIcons
 ```
 
 There is no `components/ui/` directory. The shadcn primitives were removed along
@@ -431,12 +531,22 @@ the chat composer is now `features/chat/components/chat-composer.tsx`.
 
 All server state uses **TanStack Query** (`@tanstack/react-query`). Mutations
 invalidate relevant query keys on success. Do not use raw `useState` + `useEffect`
-for server data — use `useQuery` / `useMutation`.
+for server data — use `useQuery` / `useMutation`. A side-effecting GET fired on
+page load (confirming an email) is a `useQuery`, not a mutation in an effect: a
+mutation started from an effect loses its observer under React's development
+double-mount and never leaves "pending".
+
+The profile list keeps its search and relationship filter in the URL
+(`?q=&type=`), so a filtered view survives navigation and can be bookmarked.
 
 ### Forms
 
-Forms use **React Hook Form** + **Zod** via `@hookform/resolvers/zod`. Field
-arrays (tags, songs, genres, etc.) use `useFieldArray`.
+Forms use **React Hook Form** + **Zod** via `@hookform/resolvers/zod`. The
+profile form's schema is assembled from the shared `profileInputSchema`, so its
+limits cannot drift from the API's. List fields are plain string arrays edited
+as chips; what is typed in an add box but not yet added is kept in the form
+(`drafts`) and folded in on save, so it is never silently lost. Leaving with
+unsaved changes asks first (`useLeaveGuard` + `ConfirmDialog`).
 
 ### API Client
 
@@ -444,19 +554,27 @@ arrays (tags, songs, genres, etc.) use `useFieldArray`.
 - Base URL from `NEXT_PUBLIC_BACKEND_URL` env var — browser calls the backend
   **directly** (no Vercel proxy). Falls back to `http://localhost:8080`.
 - `credentials: "include"` so the `nexia_token` cookie is sent on every request.
+- Sends `X-CSRF-Token` from the CSRF cookie on writes; a 401 outside `/auth/*`
+  sends the browser to `/login?next=…`. `retry: 0` — React Query owns retries.
 
 ### Chat
 
-The chat UI uses the Vercel AI SDK's `useChat` hook with a `DefaultChatTransport`
-that streams to the backend. Components from `ai-elements` (conversation, message,
-prompt-input) provide the chat interface. Tool calls from the AI agent are
-rendered as activity chips via `ToolActivity`.
+`ChatProvider` (in the dashboard layout) holds one AI SDK `Chat` for the
+session, so a conversation survives moving between pages; `useNexiaChat()`
+reads it. The chat sends automatically once every pending write has an answer
+(`lastAssistantMessageIsCompleteWithApprovalResponses`). Tool calls render
+through `ToolActivity`: lookups as quiet notes or profile cards, and writes as a
+`WriteProposal` note the user saves or declines. A finished reply invalidates
+the profile queries, so a change made in chat shows up everywhere.
 
 ### Auth
 
-`AuthContext` (root layout) manages `isAuthenticated`, `login`, and `logout`.
-The `(dashboard)/layout.tsx` enforces auth for all dashboard routes — there is
-no separate `ProtectedRoute` component.
+`AuthContext` (root layout) exposes `status` (`loading`, `signed-in`,
+`signed-out`, or `unreachable` when the API cannot be reached), `signedIn`,
+`signOut` and `retry`. The session is a React Query (`["session"]`) against
+`/auth/me`. The `(dashboard)/layout.tsx` enforces auth for all dashboard routes
+— there is no separate `ProtectedRoute` component — and sends a signed-out
+visitor to `/login?next=…`.
 
 ---
 
@@ -471,8 +589,8 @@ no separate `ProtectedRoute` component.
 ### Local Development (hybrid: infra in Docker, services native)
 
 ```bash
-# Start only Postgres + Redis
-docker compose up -d postgres redis
+# Start only Postgres
+docker compose up -d postgres
 # OR
 ./nexia.sh infra
 
@@ -504,6 +622,7 @@ npm run format             # Prettier write
 npm run format:check       # Prettier check
 npm test                   # Run all tests
 npm run test:coverage      # Run tests with the 90% gate enforced
+npm run test:e2e           # Browser journeys (needs Postgres running)
 
 # Per workspace
 npm run dev:api            # API dev server (tsx watch)
@@ -519,8 +638,8 @@ npm run build              # Build web for production
 | `./nexia.sh rb` | Rebuild + restart backend container |
 | `./nexia.sh rf` | Rebuild + restart frontend container |
 | `./nexia.sh ra` | Rebuild + restart all services |
-| `./nexia.sh infra` | Restart Postgres + Redis (data preserved) |
-| `./nexia.sh wipe` | Destroy + recreate Postgres + Redis volumes (data lost) |
+| `./nexia.sh infra` | Restart Postgres (data preserved) |
+| `./nexia.sh wipe` | Destroy + recreate the Postgres volume (data lost) |
 | `./nexia.sh stop` | Stop all services |
 | `./nexia.sh start [-b]` | Start all services detached (optional rebuild) |
 
@@ -549,15 +668,21 @@ npm run db:generate -w api    # Generate new migration from schema changes
 
 Migrations run automatically at server startup.
 
-### Embedding Back-fill
+### Brand Assets
 
-If profiles exist without embeddings (e.g., after Redis was wiped or Gemini
-was not configured at creation time), re-queue all profiles:
+The favicon, app icons, manifest icons and `docs/brand` are rendered from
+`apps/web/src/shared/brand/mark.ts`:
 
 ```bash
-cd apps/api
-npm run sync -w api
+npm run brand -w web                          # icons and docs/brand SVGs
+npm run brand -w web -- http://localhost:3000 # also the README social preview
 ```
+
+### Emails in development
+
+With no `email.resend_api_key`, nothing is sent: the API logs each
+verification and reset link instead (`email disabled; verification link`), so
+sign-up can be finished locally from the API log.
 
 ---
 
@@ -577,11 +702,12 @@ npm run sync -w api
 4. **No hard-coded secrets**: use env vars with the `NEXIA_` prefix.
 5. **Migration discipline**: always generate migrations via `npm run db:generate -w api`.
    Never edit existing migration files.
-6. **Zodiac sign**: never set `zodiac_sign` directly on a Profile; it is always
-   derived by `applyDerivedZodiac` in the service layer from `birthday`.
-7. **Top songs limit**: max 3 is enforced in the service layer, not the DB or
-   controller.
-8. **Tests**: integration-first against real Postgres/Redis via testcontainers;
+6. **Zodiac sign**: never store or accept a zodiac sign; it is derived from
+   `birthday` when a profile is read (`zodiacForBirthday`).
+7. **Limits live in `@nexia/shared`**: list sizes, text lengths and the three
+   top songs are enforced by the shared schemas, so the API, the chat tools and
+   the form agree. Don't re-check them in a service.
+8. **Tests**: integration-first against real Postgres via testcontainers;
    colocated unit tests only for pure, branch-dense logic. See the Testing
    section above. Reach for an integration test before a fake.
 9. **Password hashing goes through the `PasswordHasher` port** injected into
@@ -592,10 +718,11 @@ npm run sync -w api
     fields are cleared) and the chat agent's `updateProfile` tool merges. They
     are separate service methods on purpose — collapsing them back into one is
     what previously made `PUT` silently ignore omitted fields.
-9. **Structured logging**: all logging goes through pino. Use child loggers for
+11. **Structured logging**: all logging goes through pino. Use child loggers for
    components. Never use `console.log` in production code.
-10. **Graceful degradation**: the embedding pipeline is entirely optional.
-    Queue enqueue failures are logged but never propagate to the caller.
+12. **Graceful degradation**: the embedding pipeline is entirely optional.
+    Embedding failures are logged and retried with backoff; they never fail the
+    profile write that triggered them.
 
 ### Frontend (TypeScript / Next.js)
 
@@ -607,9 +734,12 @@ npm run sync -w api
    create additional ky/fetch instances.
 6. **Cookie auth**: the frontend relies on `withCredentials: true`. Don't
    switch to localStorage tokens without a coordinated backend change.
-7. **TypeScript strict**: don't use `any`. Define types in `src/shared/types/`
-   or `packages/shared/`.
-8. **Lint and format after every change**: run `npm run lint && npm run format`
+7. **TypeScript strict**: don't use `any`. Types that describe API data come from
+   `@nexia/shared` directly; don't re-alias them in the web app.
+8. **Test what you build**: a component or hook gets a colocated `*.test.tsx`
+   that drives it by role and name; a new page or flow gets a Playwright
+   journey in `apps/web/e2e/`.
+9. **Lint and format after every change**: run `npm run lint && npm run format`
    from the root after any frontend file is modified. Do this before marking a
    task complete or committing.
 
@@ -642,6 +772,7 @@ npm run sync -w api
 | `NEXIA_SERVER_JWT_EXPIRY_MINUTES` | `server.jwt_expiry_minutes` | `1440` | No |
 | `NEXIA_SERVER_CORS_ORIGINS` | `server.cors_origins` | `http://localhost:3000` | No |
 | `NEXIA_SERVER_COOKIE_DOMAIN` | `server.cookie_domain` | _(empty)_ | No |
+| `NEXIA_SERVER_CLIENT_IP_HEADER` | `server.client_ip_header` | _(empty: socket address)_ | Behind a proxy (prod: `x-real-ip`) |
 | `NEXIA_DB_HOST` | `db.host` | `localhost` | Yes |
 | `NEXIA_DB_PORT` | `db.port` | `5432` | No |
 | `NEXIA_DB_USER` | `db.user` | `postgres` | Yes |
@@ -649,8 +780,10 @@ npm run sync -w api
 | `NEXIA_DB_NAME` | `db.name` | `nexia_db` | Yes |
 | `NEXIA_DB_SSL_MODE` | `db.ssl_mode` | `disable` | No |
 | `NEXIA_AI_GEMINI_API_KEY` | `ai.gemini_api_key` | _(empty)_ | For AI/chat |
-| `NEXIA_AI_REDIS_URL` | `ai.redis_url` | `127.0.0.1:6379` | For AI/chat |
-| `NEXIA_AI_OPENCODE_API_KEY` | `ai.opencode_api_key` | _(empty)_ | For AI/chat |
+| `NEXIA_AI_OPENCODE_API_KEY` | `ai.opencode_api_key` | _(empty)_ | For chat |
+| `NEXIA_AI_OPENCODE_BASE_URL` | `ai.opencode_base_url` | `https://opencode.ai/zen/v1` | No |
+| `NEXIA_AI_CHAT_MODEL` | `ai.chat_model` | `space-bunny-free` | No |
+| `NEXIA_AI_EMBEDDING_INTERVAL_SECONDS` | `ai.embedding_interval_seconds` | `30` | No |
 | `NEXIA_EMAIL_RESEND_API_KEY` | `email.resend_api_key` | _(empty)_ | For email |
 | `NEXIA_EMAIL_APP_BASE_URL` | `email.app_base_url` | `http://localhost:3000` | No |
 

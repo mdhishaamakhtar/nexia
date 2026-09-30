@@ -11,12 +11,14 @@ colors:
   text-3: "#6f6660"
   border: "#78624a2e"
   border-mid: "#78624a52"
+  field-line: "#968879"
   peach: "#fdba74"
   lavender: "#c4b5fd"
   blue: "#93c5fd"
   peach-soft: "#ffedd5"
   lavender-soft: "#ede9fe"
   blue-soft: "#dbeafe"
+  green-soft: "#edf7f0"
   peach-line: "#7c2d123d"
   lavender-line: "#5b21b63d"
   blue-line: "#1e40af3d"
@@ -138,7 +140,7 @@ components:
     rounded: "{rounded.md}"
     padding: "0 20px"
   field:
-    backgroundColor: "{colors.surface-2}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.text-1}"
     typography: "{typography.control}"
     rounded: "{rounded.md}"
@@ -188,6 +190,10 @@ and from nothing else. See §5: the product is flat and carries no shadows at al
 - Small tape and sticker motifs used for hierarchy, never as wallpaper.
 - Nunito throughout, with compact all-caps labels and calm body text.
 - Ease-out motion that never overshoots.
+
+**The mark is a pinned note.** The logo is the same object as everything else in
+the app: a white card with one strip of peach washi tape across its top edge,
+an "N" in ink on it, set down a few degrees crooked. See "Logo" in §6.
 
 ## 2. Layout
 
@@ -240,7 +246,7 @@ A warm scrapbook neutral system with three soft accent roles.
 
 - **Warm Page Cream** (`page`): the application background. Always light.
 - **Clean Paper** (`surface`): cards, panels, bars, the navbar.
-- **Sunk Paper** (`surface-2`): inputs, nested rows, wells, chip fills.
+- **Sunk Paper** (`surface-2`): nested rows, wells, chip fills. Never a field.
 - **Pressed Paper** (`surface-3`): hover fills and active nav states.
 
 ### Ink
@@ -252,7 +258,8 @@ mismatch against warm cream, and the old tertiary sat right on the 4.5:1 line.
 ### Accents
 
 - **Pressed Peach** (`peach`): primary actions, tape, the FAB, chat send.
-- **Keepsake Lavender** (`lavender`): avatar tiles, tape, tag chips.
+- **Keepsake Lavender** (`lavender`): avatar tiles (every avatar, everywhere:
+  the grid, the sheet, chat cards, the PDF), tape, tag chips, quotes.
 - **Lookup Blue** (`blue`): AI touchpoints and small navigational emphasis.
 
 Each accent also has a **wash** — `peach-soft`, `lavender-soft`, `blue-soft` —
@@ -376,18 +383,41 @@ close to the paper it was meant to be pushing back.
 - **Buttons** — one component, `atoms/Button.tsx`, four variants (`primary`,
   `secondary`, `destructive`, `ghost`) and two sizes. Both sizes clear 44px.
   Nothing hand-rolls a button.
-- **Fields** — `atoms/Input`, `atoms/Textarea`, `atoms/Select`, all built on
-  `atoms/Field` for the shared label / error / `aria-describedby` wiring.
-  Fields are **white**, not tinted: a cream-tinted input on a white card reads
-  as muddy, and a field should look like a hole punched in the paper rather
-  than a slightly different shade of it. Definition comes from `border-mid`.
-  The `.field` class deliberately sets **no width** — it is unlayered CSS and
-  would otherwise beat every Tailwind sizing utility on the same element. Size
-  a field from its wrapper, not the control. A button sitting **beside** a field
+- **Logo** — `atoms/Logo.tsx`: `<Logo>` is the mark with "Nexia" beside it in
+  Nunito ExtraBold (navbar, landing nav and footer); `<LogoMark>` is the mark
+  alone (above the sign-in card, the not-found and error pages). The geometry
+  lives once, in `shared/brand/mark.ts`, and everything is drawn from it: the
+  React logo, the social preview (`shared/lib/social-image.tsx`), and the
+  static files — `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`,
+  `public/icons/*` (manifest icons, the email mark) and `docs/brand/*` — which
+  `npm run brand -w web` re-renders. The "N" and the wordmark are outlined
+  paths, so no icon depends on a font loading. The mark is never recoloured,
+  re-tilted or given a background of its own on the page; app icons put it on
+  a `page` square. The chat assistant keeps its own avatar (the blue spark
+  squircle): the mark is the product, the spark is the thing you talk to.
+- **Fields** — `atoms/Input`, `atoms/Textarea`, `atoms/Select`,
+  `atoms/DatePicker`, all built on `atoms/Field` for the shared label / hint /
+  error / `aria-describedby` wiring. Fields are **white**, not tinted: a
+  cream-tinted input on a white card reads as muddy, and a field should look
+  like a hole punched in the paper rather than a slightly different shade of
+  it. Their edge is `field-line` (`#968879`), not `border-mid`: a control's
+  boundary is non-text UI and needs 3:1 against the paper, which the
+  translucent hairlines do not reach. Component classes live in
+  `@layer components`, so a utility on the same element always wins; still,
+  size a field from its wrapper, not the control. A button sitting **beside** a field
   takes its height from the row (`self-stretch` plus `min-h-11`), never a hard
   `h-11`: `.field` is a 44px *minimum* plus its own padding and line box, so it
   computes taller than 44px, and every fixed-height add button in the profile
   form sat a pixel short of the input next to it.
+- **No native pickers or dialogs.** The browser's `<select>`, date input,
+  `alert()` / `confirm()`, and `title` tooltips all render in the operating
+  system's style, not the paper's. `atoms/Select` is a WAI-ARIA listbox (arrow
+  keys, Home / End, typeahead, flips above when there is no room below);
+  `atoms/DatePicker` is a calendar with day, month and year views, a keyboard
+  grid, and a year view first when empty, since a birthday is decades back;
+  `atoms/Tooltip` labels icon buttons on hover and keyboard focus. Their
+  popovers are `.paper-float` (the 1.5px float line). On a phone the calendar
+  reaches out to the card's edges, not the screen's.
 - **Back button** — `atoms/BackButton`. Its hover pill aligns to the content
   column; it is never pulled left with a negative margin to align the arrow
   glyph, because the fill then spills past the card edge on hover.
@@ -410,12 +440,30 @@ close to the paper it was meant to be pushing back.
 - **Profile sheet section** — `features/profiles/components/SheetSection.tsx`,
   shared by the detail page and the form. Tape mark, `.t-section-title`, then a
   hairline running out to the sheet's edge; more air above the heading than
-  below it. Section titles and tape colours live in
-  `features/profiles/sections.ts` so read, edit, and export cannot drift.
+  below it. Section titles, tape colours, and which fields each section holds
+  live in `features/profiles/sections.ts`, so read, edit, and export cannot
+  drift.
+- **Pinned notes** — every overlay and interruption is one family, built from
+  the same four parts: a flat sheet, one strip of tape across its top edge, an
+  eyebrow label over a title, and its actions bottom right.
+  `overlays/Dialog.tsx` is the one modal (focus moves in and is trapped, Escape
+  and the scrim close it unless `dismissible` is false, the page stops
+  scrolling, focus returns on close, and a closing scrim stops taking clicks the
+  moment it starts to fade). `ConfirmDialog` builds on it — peach tape when the
+  action destroys something, lavender otherwise, and focus lands on Cancel.
+  `QuoteModal` is a quote or memory pinned up on its own. `StatusNote` is the
+  in-page version for empty, not-found and error states. Toasts are small
+  slips pinned under the navbar: lavender tape for done, peach for a problem,
+  announced through separate polite and assertive live regions, paused while
+  hovered or focused, and never more than three at once.
 - **Quote bubble** — a `lavender-soft` card with the quotation mark hung in its
   left gutter at `.t-page-title` scale. Reserved for things the person actually
   **said**: it is the one device meaning "their words, not yours", which is why
-  memories, notes, and the bio are plain wells and prose instead.
+  memories, notes, and the bio are plain wells and prose instead. Opened, the
+  words are the point: they are set large (20–24px, semibold) and signed with
+  the person's name under a short rule, and everything else steps back to a
+  label. A memory opens on the plain well, unsigned, labelled with who it is
+  shared with.
 - **Form action bar** — `features/profiles/components/FormActionBar.tsx`. A
   viewport-anchored bar, not a floating pill: it reports dirty state, disables
   save until something actually changed, and guards against navigating away with
@@ -423,9 +471,13 @@ close to the paper it was meant to be pushing back.
 
 ## 7. Motion
 
-One easing curve: `--ease-out` (`cubic-bezier(0.22, 1, 0.36, 1)`). Entrances
-fade and rise a few pixels. Nothing overshoots — the old
-`cubic-bezier(0.175, 0.885, 0.32, 1.275)` back-out was removed.
+One easing curve: `--ease-out` (`cubic-bezier(0.22, 1, 0.36, 1)`), exported to
+Framer Motion as `EASE_OUT` from `shared/ui/motion.ts`. Entrances fade and rise
+a few pixels (`enter()`). Nothing overshoots — the old
+`cubic-bezier(0.175, 0.885, 0.32, 1.275)` back-out was removed, and the one
+spring (`SETTLE`, for cards lifting and settling) is critically damped, so it
+arrives without bouncing. The logo tips a few degrees further when its link is
+hovered; that is the whole of its animation.
 
 Framer Motion respects the OS setting through `<MotionConfig reducedMotion="user">`
 in `shared/providers/query-provider.tsx`; the CSS side is handled by the
@@ -459,3 +511,8 @@ in `shared/providers/query-provider.tsx`; the CSS side is handled by the
 - **Don't** give a button beside a field a fixed height.
 - **Don't** animate the same property in both CSS and Framer Motion.
 - **Don't** use emoji as an icon system — the app uses Lucide.
+- **Don't** use a native `<select>`, date input, `alert()`, `confirm()` or
+  `title` tooltip — use `Select`, `DatePicker`, `ConfirmDialog`, a toast, or
+  `Tooltip`.
+- **Don't** redraw, recolour or re-tilt the logo in place — change
+  `shared/brand/mark.ts` and re-render with `npm run brand -w web`.

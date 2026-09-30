@@ -1,36 +1,28 @@
 import { Hono } from "hono";
-import { toUIMessageStream, createUIMessageStreamResponse } from "ai";
-import type { UIMessage } from "ai";
+import { createUIMessageStreamResponse, toUIMessageStream } from "ai";
+import { z } from "zod";
 import type { ChatAgent } from "../ai/agent";
-import { respondWithServiceError, respondError } from "../utils/http";
-import { getUserId } from "../middleware/auth";
+import type { AppEnv } from "../middleware/auth";
+import { parseJsonBody } from "../utils/validation";
+
+/** The envelope only; each message is validated against the tool schemas by the agent. */
+const chatRequestSchema = z.object({
+  messages: z.array(z.unknown()).min(1, "messages array is required").max(500),
+});
 
 export function createChatController(agent: ChatAgent) {
-  const app = new Hono();
+  const app = new Hono<AppEnv>();
 
   app.post("/", async (c) => {
-    const userId = getUserId(c);
-    if (!userId) return respondError(c, 401, "UNAUTHORIZED", "Authentication required");
-
-    let body: { messages?: unknown };
-    try {
-      body = await c.req.json();
-    } catch {
-      return respondError(c, 400, "BAD_REQUEST", "Invalid JSON body");
-    }
-
-    if (!Array.isArray(body.messages) || body.messages.length === 0) {
-      return respondError(c, 400, "VALIDATION_ERROR", "messages array is required");
-    }
-
-    try {
-      const result = await agent.respond({ userId, messages: body.messages as UIMessage[] });
-      return createUIMessageStreamResponse({
-        stream: toUIMessageStream({ stream: result.stream }),
-      });
-    } catch (err) {
-      return respondWithServiceError(c, err);
-    }
+    const { messages } = await parseJsonBody(c, chatRequestSchema);
+    const result = await agent.respond({
+      userId: c.get("userId"),
+      messages,
+      abortSignal: c.req.raw.signal,
+    });
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({ stream: result.stream }),
+    });
   });
 
   return app;

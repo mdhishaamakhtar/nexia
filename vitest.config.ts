@@ -1,10 +1,11 @@
 import { defineConfig } from "vitest/config";
 
 /**
- * Three projects so unit feedback stays fast: `shared` and `api-unit` are pure
- * and run in parallel, while `api-integration` is the only one that pays for
+ * Four projects so unit feedback stays fast: `shared`, `api-unit` and `web`
+ * need nothing running, while `api-integration` is the only one that pays for
  * Docker containers. Coverage is configured once, at the root, so thresholds
- * apply to the union of every project's run.
+ * apply to the union of every project's run. (`web` keeps its jsdom and React
+ * settings in `apps/web/vitest.config.ts`.)
  */
 export default defineConfig({
   test: {
@@ -30,7 +31,7 @@ export default defineConfig({
           include: ["tests/integration/**/*.test.ts"],
           globalSetup: ["./tests/setup/global.ts"],
           setupFiles: ["./tests/setup/each.ts"],
-          // Every file shares one Postgres and one Redis, and isolation comes
+          // Every file shares one Postgres, and isolation comes
           // from truncating between tests — which only holds if no two files
           // are in flight at once.
           fileParallelism: false,
@@ -39,20 +40,32 @@ export default defineConfig({
           hookTimeout: 300_000,
         },
       },
+      "./apps/web/vitest.config.ts",
     ],
     coverage: {
       provider: "istanbul",
       reporter: ["text", "lcov"],
-      include: ["apps/api/src/**", "packages/shared/src/**"],
+      include: [
+        "apps/api/src/**/*.ts",
+        "packages/shared/src/**/*.ts",
+        "apps/web/src/**/*.{ts,tsx}",
+      ],
       exclude: [
-        "**/*.test.ts",
+        "**/*.test.{ts,tsx}",
         // Process bootstrap: binds a port and installs signal handlers, so it
         // cannot be exercised in-process. Its logic is one call to createApp().
         "apps/api/src/index.ts",
-        // One-shot operational script, not part of the served application.
-        "apps/api/src/scripts/**",
         // Declarative Drizzle table/relation definitions — no behaviour.
         "apps/api/src/db/schema.ts",
+        // Next.js routes are exercised by the Playwright journeys (apps/web/e2e),
+        // which render them for real; unit tests cover what they are built from.
+        "apps/web/src/app/**",
+        // Vendored ai-elements primitives, not ours (also outside lint).
+        "apps/web/src/components/ai-elements/**",
+        // Renderers that need a real canvas or the Next image runtime. The E2E
+        // suite downloads the PDF and fetches the social image instead.
+        "apps/web/src/features/profiles/exportProfilePdf.ts",
+        "apps/web/src/shared/lib/social-image.tsx",
       ],
       thresholds: {
         branches: 90,

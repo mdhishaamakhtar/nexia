@@ -1,5 +1,5 @@
 import type { Hono } from "hono";
-import type { ProfileInput } from "@nexia/shared";
+import type { ProfilePayload } from "@nexia/shared";
 import { users } from "../../src/db/schema";
 import { generateToken } from "../../src/utils/jwt";
 import { createBcryptHasher } from "../../src/services/password-hasher";
@@ -78,12 +78,12 @@ export async function loginSession(h: Harness, email: string, password: string):
   };
 }
 
-export function profileInput(overrides: Partial<ProfileInput> = {}): ProfileInput {
+export function profileInput(overrides: Partial<ProfilePayload> = {}): ProfilePayload {
   return {
     full_name: "Alice Example",
     relationship_type: "Friend",
     ...overrides,
-  } as ProfileInput;
+  };
 }
 
 interface RequestOptions {

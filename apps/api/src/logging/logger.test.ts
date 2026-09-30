@@ -4,10 +4,10 @@ import { configSchema, type Config } from "../config/config";
 
 function cfg(mode: "debug" | "release" | "test"): Config {
   return configSchema.parse({
-    server: { jwt_secret: "test-secret", mode },
+    server: { jwt_secret: "x".repeat(32), mode, cors_origins: ["https://nexia.example"] },
     db: { host: "h", user: "u", password: "p", name: "n" },
     ai: {},
-    email: {},
+    email: { app_base_url: "https://nexia.example" },
   });
 }
 

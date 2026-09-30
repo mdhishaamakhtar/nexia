@@ -10,8 +10,8 @@
     "node": ">=24"
   },
   "overrides": {
-    "zod-validation-error": "^4.0.2",
-    "shiki": "^3.19.0"
+    "shiki": "^3.19.0",
+    "zod-validation-error": "^4.0.2"
   },
   "scripts": {
     "dev:api": "npm run dev --workspace api",
@@ -25,9 +25,11 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:unit": "vitest run --project shared --project api-unit",
+    "test:unit": "vitest run --project shared --project api-unit --project web",
     "test:integration": "vitest run --project api-integration",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "npm run test:e2e --workspace web",
+    "test:all": "npm run test:coverage && npm run test:e2e"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

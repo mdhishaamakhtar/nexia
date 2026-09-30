@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { compress } from "hono/compress";
 import { cors } from "hono/cors";
 import type { Config } from "../config/config";
@@ -7,39 +8,51 @@ import type { ProfileService } from "../services/profile-service";
 import type { ChatAgent } from "../ai/agent";
 import type { Logger } from "../logging/logger";
 import type { DB } from "../db/client";
-import type { UserLookup } from "../middleware/auth";
 import { requestContext, errorHandler } from "../middleware/request-context";
-import { authMiddleware, type AppEnv } from "../middleware/auth";
+import { authMiddleware, type AppEnv, type SessionLookup } from "../middleware/auth";
 import { csrfMiddleware } from "../middleware/csrf";
-import { createAuthRateLimiter } from "../middleware/auth-rate-limit";
-import { createChatRateLimiter } from "../middleware/chat-rate-limit";
-import { createAuthController } from "../controllers/auth-controller";
-import { createSessionController } from "../controllers/auth-controller";
+import { clientAddress, createRateLimiter } from "../middleware/rate-limit";
+import { createAuthController, createSessionController } from "../controllers/auth-controller";
 import { createProfileController } from "../controllers/profile-controller";
 import { createChatController } from "../controllers/chat-controller";
+import { respondError } from "../utils/http";
 
 interface BuildDeps {
   config: Config;
   logger: Logger;
   db: DB;
-  userLookup: UserLookup;
+  sessions: SessionLookup;
   authService: AuthService;
   profileService: ProfileService;
   chatAgent: ChatAgent;
 }
 
-export function buildApp(deps: BuildDeps) {
-  const { config, logger, db, userLookup, authService, profileService, chatAgent } = deps;
+const KB = 1024;
 
-  const app = new Hono();
+/** A JSON 413 in the same envelope as every other error. */
+function limitBody(maxSize: number) {
+  return bodyLimit({
+    maxSize,
+    onError: (c) => respondError(c, 413, "PAYLOAD_TOO_LARGE", "That request is too large"),
+  });
+}
+
+export function buildApp(deps: BuildDeps) {
+  const { config, logger, db, sessions, authService, profileService, chatAgent } = deps;
+  const { server } = config;
+
+  const app = new Hono<AppEnv>();
 
   app.use(
     "*",
     cors({
-      origin: config.server.cors_origins,
+      origin: server.cors_origins,
       credentials: true,
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowHeaders: ["Origin", "Content-Type", "Authorization", "X-CSRF-Token"],
+      // Lets the browser reuse a preflight for ten minutes instead of asking
+      // again before nearly every write.
+      maxAge: 600,
     })
   );
   app.use("*", compress());
@@ -57,27 +70,50 @@ export function buildApp(deps: BuildDeps) {
     }
   });
 
-  // Public auth routes (rate-limited per IP)
-  const authGroup = new Hono();
-  authGroup.use("*", createAuthRateLimiter(logger, config));
-  authGroup.route("/", createAuthController(authService, config));
-  app.route("/api/v1/auth", authGroup);
+  // Public auth routes. The limiter counts per client address; behind a proxy
+  // that address comes from the header the proxy sets.
+  const authLimit = createRateLimiter({
+    name: "auth",
+    message: "Too many attempts. Wait a few seconds and try again.",
+    requests: server.auth_rate_limit_requests,
+    windowSeconds: server.auth_rate_limit_window_seconds,
+    burst: server.auth_rate_limit_burst,
+    key: (c) => clientAddress(c, server.client_ip_header),
+    logger,
+  });
+  app.use("/api/v1/auth/*", limitBody(16 * KB));
+  app.route("/api/v1/auth", createAuthController(authService, config, authLimit));
 
-  // Protected routes (auth + CSRF)
+  // Everything below needs a signed-in user.
   const protectedApp = new Hono<AppEnv>();
-  protectedApp.use("*", authMiddleware(config, userLookup));
+  protectedApp.use("*", authMiddleware(config, sessions));
   protectedApp.use("*", csrfMiddleware());
 
   protectedApp.route("/auth", createSessionController(config));
 
-  // Chat (auth + CSRF + chat rate limit)
-  const chatGroup = new Hono();
-  chatGroup.use("*", createChatRateLimiter(logger, config));
-  chatGroup.route("/", createChatController(chatAgent));
-  protectedApp.route("/chat", chatGroup);
+  // Chat is limited per user: the route is authenticated, so the address adds
+  // nothing but the risk of sharing a budget behind one NAT.
+  const chat = new Hono<AppEnv>();
+  chat.use("*", limitBody(1024 * KB));
+  chat.use(
+    "*",
+    createRateLimiter({
+      name: "chat",
+      message: "You're sending messages quickly. Give it a few seconds.",
+      requests: server.chat_rate_limit_requests,
+      windowSeconds: server.chat_rate_limit_window_seconds,
+      burst: server.chat_rate_limit_burst,
+      key: (c) => `user:${c.get("userId")}`,
+      logger,
+    })
+  );
+  chat.route("/", createChatController(chatAgent));
+  protectedApp.route("/chat", chat);
 
-  // Profiles CRUD
-  protectedApp.route("/profiles", createProfileController(profileService));
+  const profiles = new Hono<AppEnv>();
+  profiles.use("*", limitBody(256 * KB));
+  profiles.route("/", createProfileController(profileService));
+  protectedApp.route("/profiles", profiles);
 
   app.route("/api/v1", protectedApp);
 

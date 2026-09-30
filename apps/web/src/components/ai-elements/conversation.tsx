@@ -61,15 +61,10 @@ export const ConversationScrollButton = ({
       onClick={() => scrollToBottom()}
       aria-label="Scroll to latest message"
       className={cn(
-        "absolute bottom-4 left-1/2 flex h-9 w-9 -translate-x-1/2 items-center justify-center",
-        "rounded-full border transition-colors hover:bg-(--surface-2)",
+        "absolute bottom-4 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center",
+        "rounded-full border-[1.5px] border-line-float bg-surface text-text-2 transition-colors hover:bg-surface-2",
         className
       )}
-      style={{
-        background: "var(--surface)",
-        borderColor: "var(--border)",
-        color: "var(--text-2)",
-      }}
       {...props}
     >
       <ArrowDownIcon className="h-4 w-4" aria-hidden="true" />

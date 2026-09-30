@@ -87,12 +87,3 @@ export function mockChatModel(steps: MockStep[]): MockModelHandle {
 
   return { model, prompts, callCount: () => calls };
 }
-
-/** A model whose stream fails, for exercising error propagation. */
-export function failingChatModel(message = "model exploded"): MockLanguageModelV4 {
-  return new MockLanguageModelV4({
-    doStream: async () => {
-      throw new Error(message);
-    },
-  });
-}

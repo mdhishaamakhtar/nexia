@@ -1,23 +1,27 @@
-import React, { forwardRef } from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
 import Field, { useFieldIds } from "./Field";
 
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+interface TextareaProps extends React.ComponentProps<"textarea"> {
   label?: string;
   error?: string;
   hint?: string;
 }
 
-const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { label, error, hint, className, id: idProp, rows = 4, ...props },
-  ref
-) {
-  const { id, errorId, describedBy, invalid } = useFieldIds(idProp, !!error);
+export default function Textarea({
+  label,
+  error,
+  hint,
+  className,
+  id: idProp,
+  rows = 4,
+  ...props
+}: TextareaProps) {
+  const { id, errorId, hintId, describedBy, invalid } = useFieldIds(idProp, !!error, !!hint);
 
   return (
-    <Field id={id} label={label} error={error} errorId={errorId} hint={hint}>
+    <Field id={id} label={label} error={error} errorId={errorId} hint={hint} hintId={hintId}>
       <textarea
-        ref={ref}
         id={id}
         rows={rows}
         aria-invalid={invalid}
@@ -31,6 +35,4 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textare
       />
     </Field>
   );
-});
-
-export default Textarea;
+}

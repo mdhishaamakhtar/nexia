@@ -1,8 +1,6 @@
 import type { Context } from "hono";
 import type { ZodType } from "zod";
-import { respondError } from "./http";
-
-export type ParseResult<T> = { ok: true; data: T } | { ok: false; response: Response };
+import { errValidation, ServiceError, ErrorKind } from "../services/errors";
 
 function formatZodIssues(error: {
   issues: Array<{ path: PropertyKey[]; message: string }>;
@@ -12,26 +10,24 @@ function formatZodIssues(error: {
     .join("; ");
 }
 
+/** Validates `raw` against a schema, throwing a 400-mapped ServiceError on failure. */
+export function parseOrThrow<T>(schema: ZodType<T>, raw: unknown): T {
+  const result = schema.safeParse(raw);
+  if (!result.success) throw errValidation(formatZodIssues(result.error));
+  return result.data;
+}
+
 /**
- * Reads and validates a JSON request body against a zod schema. On failure it
- * returns a ready-to-send 400 response (invalid JSON → BAD_REQUEST, schema
- * mismatch → VALIDATION_ERROR) so callers can early-return.
+ * Reads and validates a JSON request body. Invalid JSON and schema mismatches
+ * both throw a validation ServiceError, which the error handler turns into a
+ * 400, so handlers stay a straight line: parse, call, respond.
  */
-export async function parseJsonBody<T>(c: Context, schema: ZodType<T>): Promise<ParseResult<T>> {
+export async function parseJsonBody<T>(c: Context, schema: ZodType<T>): Promise<T> {
   let raw: unknown;
   try {
     raw = await c.req.json();
   } catch {
-    return { ok: false, response: respondError(c, 400, "BAD_REQUEST", "Invalid JSON body") };
+    throw new ServiceError(ErrorKind.Validation, "The request body is not valid JSON");
   }
-
-  const result = schema.safeParse(raw);
-  if (!result.success) {
-    return {
-      ok: false,
-      response: respondError(c, 400, "VALIDATION_ERROR", formatZodIssues(result.error)),
-    };
-  }
-
-  return { ok: true, data: result.data };
+  return parseOrThrow(schema, raw);
 }

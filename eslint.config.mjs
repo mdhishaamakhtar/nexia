@@ -15,14 +15,15 @@ export default defineConfig([
   globalIgnores([
     "**/node_modules/**",
     "**/dist/**",
+    "coverage/**",
     "apps/web/.next/**",
     "apps/web/next-env.d.ts",
-    // Vendored shadcn/ai-elements primitives — not ours to lint.
+    "apps/web/playwright-report/**",
+    "apps/web/test-results/**",
+    "apps/web/e2e/.auth/**",
+    // Vendored ai-elements primitives — not ours to lint.
     "apps/web/src/components/ai-elements/**",
-    "apps/web/src/components/ui/**",
     "apps/api/drizzle/**",
-    // Legacy Go backend (kept only as porting reference).
-    "backend/**",
     // Tooling / docs / vendored skill bundles — not application source.
     ".agents/**",
     ".claude/**",

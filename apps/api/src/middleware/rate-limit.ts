@@ -1,114 +1,89 @@
-import type { MiddlewareHandler } from "hono";
-import type { Logger } from "../logging/logger";
+import type { Context, MiddlewareHandler } from "hono";
 import { getConnInfo } from "@hono/node-server/conninfo";
+import type { ErrorCode } from "@nexia/shared";
+import type { Logger } from "../logging/logger";
+import { respondError } from "../utils/http";
 
-export interface RateLimitConfig {
+export interface RateLimitOptions {
+  name: string;
+  /** Shown to the client with the 429. */
+  message: string;
   requests: number;
-  burst: number;
   windowSeconds: number;
+  burst: number;
+  /** Who a request counts against: an address, a user id. */
+  key: (c: Context) => string;
+  logger: Logger;
+  /** Injectable clock, for tests. */
+  now?: () => number;
 }
 
-const STALE_ENTRY_TTL_FACTOR = 10;
-
-interface VisitorEntry {
+interface Bucket {
   tokens: number;
-  lastSeen: number;
   lastRefill: number;
 }
 
-export function rateLimitConfigFromValues(
-  defaultRequests: number,
-  defaultBurst: number,
-  defaultWindowSeconds: number,
-  requests: number,
-  burst: number,
-  windowSeconds: number
-): RateLimitConfig {
-  return {
-    requests: requests > 0 ? requests : defaultRequests,
-    burst: Math.min(burst > 0 ? burst : defaultBurst, requests > 0 ? requests : defaultRequests),
-    windowSeconds: windowSeconds > 0 ? windowSeconds : defaultWindowSeconds,
-  };
+const RATE_LIMITED: ErrorCode = "RATE_LIMITED";
+
+/**
+ * The address a request came from. Behind a reverse proxy the socket address
+ * is the proxy's own, so every caller would share one bucket; `header` names
+ * the header the proxy writes the real address into. Only a header the proxy
+ * overwrites can be trusted — a client can send any header it likes.
+ */
+export function clientAddress(c: Context, header: string): string {
+  if (header) {
+    const value = c.req.header(header)?.split(",")[0]?.trim();
+    if (value) return value;
+  }
+  try {
+    return getConnInfo(c).remote.address ?? "unknown";
+  } catch {
+    // No socket: an in-process request (tests) or an adapter without one.
+    return "unknown";
+  }
 }
 
-export function createRateLimiter(
-  logger: Logger,
-  name: string,
-  message: string,
-  cfg: RateLimitConfig,
-  _pathPrefix: string
-): MiddlewareHandler {
-  if (!logger) {
-    throw new Error(`${name} rate limit requires a logger`);
-  }
-  const limiters = new Map<string, VisitorEntry>();
+/**
+ * A token bucket per key: `burst` requests at once, refilled at `requests` per
+ * `windowSeconds`. In memory, so limits are per process, not per deployment.
+ */
+export function createRateLimiter(opts: RateLimitOptions): MiddlewareHandler {
+  const { name, message, requests, windowSeconds, key, logger, now = Date.now } = opts;
+  const burst = Math.min(opts.burst, requests);
+  const ratePerMs = requests / (windowSeconds * 1000);
+  const windowMs = windowSeconds * 1000;
+  const buckets = new Map<string, Bucket>();
+  let lastSweep = now();
 
-  const rate = cfg.requests / cfg.windowSeconds;
-  const staleWindow = cfg.windowSeconds * STALE_ENTRY_TTL_FACTOR * 1000;
-
-  function getClientIP(c: { req: { header: (name: string) => string | undefined } }): string {
-    try {
-      const info = getConnInfo(c as Parameters<typeof getConnInfo>[0]);
-      return info.remote.address ?? "unknown";
-    } catch {
-      const forwarded = c.req.header("x-forwarded-for");
-      if (forwarded) {
-        return forwarded.split(",")[0]!.trim();
-      }
-      return "unknown";
+  function sweep(at: number): void {
+    // A bucket that has had a full window to refill is indistinguishable from a
+    // fresh one, so it can go. Sweeping once per window keeps this O(1) per request.
+    if (at - lastSweep < windowMs) return;
+    lastSweep = at;
+    for (const [k, bucket] of buckets) {
+      if (at - bucket.lastRefill >= windowMs) buckets.delete(k);
     }
   }
 
   return async (c, next) => {
-    const ip = getClientIP(c);
-    const key = `${c.req.routePath}:${ip}`;
-    const now = Date.now();
+    const at = now();
+    sweep(at);
 
-    let entry = limiters.get(key);
+    const id = key(c);
+    const bucket = buckets.get(id) ?? { tokens: burst, lastRefill: at };
+    bucket.tokens = Math.min(burst, bucket.tokens + (at - bucket.lastRefill) * ratePerMs);
+    bucket.lastRefill = at;
+    buckets.set(id, bucket);
 
-    // Clean stale entries
-    for (const [k, v] of limiters) {
-      if (now - v.lastSeen > staleWindow) {
-        limiters.delete(k);
-      }
-    }
-
-    if (!entry) {
-      entry = {
-        tokens: cfg.burst,
-        lastSeen: now,
-        lastRefill: now,
-      };
-      limiters.set(key, entry);
-    }
-
-    entry.lastSeen = now;
-
-    // Refill tokens
-    const elapsed = (now - entry.lastRefill) / 1000;
-    entry.tokens = Math.min(cfg.burst, entry.tokens + elapsed * rate);
-    entry.lastRefill = now;
-
-    if (entry.tokens < 1) {
-      const waitTime = Math.ceil((1 - entry.tokens) / rate);
-      const retryAfter = Math.max(1, waitTime);
+    if (bucket.tokens < 1) {
+      const retryAfter = Math.max(1, Math.ceil((1 - bucket.tokens) / ratePerMs / 1000));
       c.header("Retry-After", String(retryAfter));
-      c.header(
-        "X-RateLimit-Limit",
-        `${cfg.requests} requests per ${cfg.windowSeconds}s (burst ${cfg.burst})`
-      );
-      logger.warn(
-        { name, path: c.req.routePath, client_ip: ip, retry_after: retryAfter },
-        `${name} rate limit exceeded`
-      );
-      return c.json({ error: { code: "RATE_LIMITED", message } }, 429);
+      logger.warn({ limiter: name, key: id, retry_after: retryAfter }, "rate limit exceeded");
+      return respondError(c, 429, RATE_LIMITED, message);
     }
 
-    entry.tokens -= 1;
-    c.header(
-      "X-RateLimit-Limit",
-      `${cfg.requests} requests per ${cfg.windowSeconds}s (burst ${cfg.burst})`
-    );
+    bucket.tokens -= 1;
     return next();
   };
 }

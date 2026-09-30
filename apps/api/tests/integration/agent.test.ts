@@ -1,17 +1,17 @@
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
+import { readUIMessageStream, type UIMessage, type UIMessageChunk } from "ai";
 import type { ProfileOutput } from "@nexia/shared";
 import { profileEmbeddings, profiles } from "../../src/db/schema";
 import { createHarness, type Harness } from "../helpers/harness";
 import { bearerAuth, call, errorCode, profileInput, seedUser } from "../helpers/factories";
 import { mockChatModel, type MockStep } from "../helpers/model";
-import { waitFor } from "../helpers/wait";
 
 /** Shared harness for the cases that never reach the model. */
 let plain: Harness;
 
 beforeAll(() => {
-  plain = createHarness({ withQueue: true });
+  plain = createHarness();
 });
 afterAll(async () => {
   await plain.close();
@@ -21,19 +21,59 @@ function userMessage(text: string) {
   return { id: "m1", role: "user", parts: [{ type: "text", text }] };
 }
 
-async function chat(h: Harness, headers: Record<string, string>, text: string) {
+async function send(h: Harness, headers: Record<string, string>, messages: unknown[]) {
   const res = await h.app.request("/api/v1/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...headers },
-    body: JSON.stringify({ messages: [userMessage(text)] }),
+    body: JSON.stringify({ messages }),
   });
   return { status: res.status, body: await res.text() };
+}
+
+const chat = (h: Harness, headers: Record<string, string>, text: string) =>
+  send(h, headers, [userMessage(text)]);
+
+/** Rebuilds the assistant message the client would hold from a streamed reply. */
+async function assistantMessage(body: string): Promise<UIMessage> {
+  const chunks = body
+    .split("\n")
+    .filter((line) => line.startsWith("data: ") && !line.includes("[DONE]"))
+    .map((line) => JSON.parse(line.slice(6)) as UIMessageChunk);
+  const stream = new ReadableStream<UIMessageChunk>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(chunk);
+      controller.close();
+    },
+  });
+  let last: UIMessage | undefined;
+  for await (const message of readUIMessageStream({ stream })) last = message;
+  if (!last) throw new Error("no assistant message in the stream");
+  return last;
+}
+
+/** What the chat UI sends back after the person presses Save or Cancel. */
+function respondToApproval(message: UIMessage, approved: boolean, tamper = false): UIMessage {
+  return {
+    ...message,
+    parts: message.parts.map((part) => {
+      if (!("state" in part) || part.state !== "approval-requested") return part;
+      return {
+        ...part,
+        state: "approval-responded",
+        approval: {
+          ...part.approval,
+          approved,
+          signature: tamper ? "forged" : part.approval.signature,
+        },
+      } as unknown as typeof part;
+    }),
+  };
 }
 
 /** A harness whose model is scripted with the given turns. */
 function scripted(steps: MockStep[]) {
   const model = mockChatModel(steps);
-  const h = createHarness({ chatModel: model.model, withQueue: true });
+  const h = createHarness({ chatModel: model.model });
   return { h, model };
 }
 
@@ -72,6 +112,18 @@ describe("POST /chat guards", () => {
       body: "{oops",
     });
     expect(res.status).toBe(400);
+  });
+
+  test("rejects messages that are not chat messages", async () => {
+    const { h } = scripted([{ text: "unused" }]);
+    try {
+      const user = await seedUser(h);
+      const res = await send(h, await bearerAuth(h, user.id), [{ nonsense: true }]);
+      expect(res.status).toBe(400);
+      expect(res.body).toContain("VALIDATION_ERROR");
+    } finally {
+      await h.close();
+    }
   });
 
   test("reports 503 when no chat model is configured", async () => {
@@ -214,7 +266,7 @@ describe("agent tools", () => {
     }
   });
 
-  test("createProfile writes a real row scoped to the caller", async () => {
+  test("createProfile waits for approval, then writes a row scoped to the caller", async () => {
     const { h } = scripted([
       {
         toolCalls: [
@@ -228,30 +280,74 @@ describe("agent tools", () => {
           },
         ],
       },
-      { text: "Created." },
+      { text: "Saved them." },
     ]);
     try {
       const user = await seedUser(h);
-      const res = await chat(h, await bearerAuth(h, user.id), "add a colleague");
-      expect(res.status).toBe(200);
+      const headers = await bearerAuth(h, user.id);
+      const question = userMessage("add a colleague");
+
+      const proposal = await send(h, headers, [question]);
+      expect(proposal.status).toBe(200);
+      expect(proposal.body).toContain("tool-approval-request");
+      // Nothing is written until the person says yes.
+      expect(await h.db.select().from(profiles)).toHaveLength(0);
+
+      const assistant = await assistantMessage(proposal.body);
+      const approved = await send(h, headers, [question, respondToApproval(assistant, true)]);
+      expect(approved.status).toBe(200);
+      expect(approved.body).toContain("Saved them.");
 
       const [row] = await h.db.select().from(profiles).where(eq(profiles.userId, user.id));
-      expect(row).toBeDefined();
       expect(row!.fullName).toBe("Agent Created");
-      // The zodiac is derived by the service, on this path as on every other.
-      expect(row!.zodiacSign).toBe("Aries");
+
+      const got = await call<ProfileOutput>(h.app, "GET", `/api/v1/profiles/${row!.id}`, {
+        headers,
+      });
+      expect(got.body.zodiac_sign).toBe("Aries");
+
+      // The new profile is stale until embedded, like one made through the form.
+      await h.embedPending();
+      expect(await h.db.select().from(profileEmbeddings)).toHaveLength(1);
     } finally {
       await h.close();
     }
   });
 
-  test("createProfile through the agent also queues an embedding", async () => {
+  test("a declined write is never executed", async () => {
     const { h } = scripted([
       {
         toolCalls: [
           {
             toolName: "createProfile",
-            input: { full_name: "Queued By Agent", relationship_type: "Friend" },
+            input: { full_name: "Declined", relationship_type: "Friend" },
+          },
+        ],
+      },
+      { text: "Okay, I won't." },
+    ]);
+    try {
+      const user = await seedUser(h);
+      const headers = await bearerAuth(h, user.id);
+      const question = userMessage("add someone");
+
+      const assistant = await assistantMessage((await send(h, headers, [question])).body);
+      const declined = await send(h, headers, [question, respondToApproval(assistant, false)]);
+
+      expect(declined.status).toBe(200);
+      expect(await h.db.select().from(profiles)).toHaveLength(0);
+    } finally {
+      await h.close();
+    }
+  });
+
+  test("an approval the server did not sign is refused", async () => {
+    const { h } = scripted([
+      {
+        toolCalls: [
+          {
+            toolName: "createProfile",
+            input: { full_name: "Forged", relationship_type: "Friend" },
           },
         ],
       },
@@ -259,15 +355,13 @@ describe("agent tools", () => {
     ]);
     try {
       const user = await seedUser(h);
-      await chat(h, await bearerAuth(h, user.id), "add a friend");
+      const headers = await bearerAuth(h, user.id);
+      const question = userMessage("add someone");
 
-      await waitFor(
-        async () => {
-          const [row] = await h.db.select().from(profileEmbeddings);
-          return row ?? null;
-        },
-        { what: "the agent-created profile's embedding" }
-      );
+      const assistant = await assistantMessage((await send(h, headers, [question])).body);
+      await send(h, headers, [question, respondToApproval(assistant, true, true)]);
+
+      expect(await h.db.select().from(profiles)).toHaveLength(0);
     } finally {
       await h.close();
     }
@@ -281,7 +375,7 @@ describe("agent tools", () => {
       body: profileInput({
         full_name: "Original Name",
         bio: "a bio worth keeping",
-        tags: [{ tag: "keep-me" }],
+        tags: ["keep-me"],
       }),
     });
 
@@ -297,7 +391,9 @@ describe("agent tools", () => {
       { text: "Renamed." },
     ]);
     try {
-      await chat(h, headers, "rename them");
+      const question = userMessage("rename them");
+      const assistant = await assistantMessage((await send(h, headers, [question])).body);
+      await send(h, headers, [question, respondToApproval(assistant, true)]);
 
       const got = await call<ProfileOutput>(h.app, "GET", `/api/v1/profiles/${created.body.id}`, {
         headers,
@@ -305,7 +401,7 @@ describe("agent tools", () => {
       expect(got.body.full_name).toBe("Renamed By Agent");
       // The agent sends partial updates; untouched fields must survive.
       expect(got.body.bio).toBe("a bio worth keeping");
-      expect(got.body.tags.map((t) => t.tag)).toEqual(["keep-me"]);
+      expect(got.body.tags).toEqual(["keep-me"]);
     } finally {
       await h.close();
     }
@@ -329,18 +425,13 @@ describe("agent tools", () => {
         body: profileInput({ full_name: "Baker Friend", bio: "loves sourdough" }),
       });
 
-      await waitFor(
-        async () => {
-          const rows = await h.db.select().from(profileEmbeddings);
-          return rows.length === 2 ? rows : null;
-        },
-        { what: "both embeddings" }
-      );
+      await h.embedPending();
 
       const res = await chat(h, headers, "who likes climbing?");
       expect(res.body).toContain("Climber Friend");
-      // The id must be a number in the tool payload, not a bigint string.
-      expect(res.body).toContain(`"profile_id":${climber.body.id}`);
+      // Numbers, not bigint strings, and the live profile rather than a copy.
+      expect(res.body).toContain(`"id":${climber.body.id}`);
+      expect(res.body).toContain('"score":');
     } finally {
       await h.close();
     }
