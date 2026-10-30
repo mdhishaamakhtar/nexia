@@ -1,15 +1,9 @@
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createGoogle } from "@ai-sdk/google";
 import type { LanguageModel } from "ai";
 import type { Config } from "../config/config";
 
 export function createChatModel(cfg: Config): LanguageModel | null {
-  if (!cfg.ai.opencode_api_key) return null;
+  if (!cfg.ai.gemini_api_key) return null;
 
-  const provider = createOpenAICompatible({
-    name: "opencode",
-    baseURL: cfg.ai.opencode_base_url,
-    apiKey: cfg.ai.opencode_api_key,
-  });
-
-  return provider.chatModel(cfg.ai.chat_model);
+  return createGoogle({ apiKey: cfg.ai.gemini_api_key }).chat(cfg.ai.chat_model);
 }

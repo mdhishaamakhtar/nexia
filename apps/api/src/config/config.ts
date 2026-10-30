@@ -59,9 +59,7 @@ export const dbConfigSchema = z.object({
 
 export const aiConfigSchema = z.object({
   gemini_api_key: z.string().default(""),
-  opencode_api_key: z.string().default(""),
-  opencode_base_url: z.string().default("https://opencode.ai/zen/v1"),
-  chat_model: z.string().default("space-bunny-free"),
+  chat_model: z.string().default("gemini-3.5-flash-lite"),
   /** How often the embedding worker looks for profiles to (re-)embed. */
   embedding_interval_seconds: count.default(30),
 });

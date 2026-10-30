@@ -134,13 +134,10 @@ export async function createApp(configDir = "config"): Promise<Bootstrap> {
     ? createEmbeddingGenerator(config.ai.gemini_api_key)
     : null;
   if (!embeddingGenerator) {
-    logger.warn("Gemini API key not set: embeddings and semantic search are disabled");
+    logger.warn("Gemini API key not set: chat, embeddings and semantic search are disabled");
   }
 
   const chatModel = createChatModel(config);
-  if (!chatModel) {
-    logger.warn("OpenCode API key not set: chat is disabled");
-  }
 
   const runtime = wireApp({
     config,

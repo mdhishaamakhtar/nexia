@@ -15,14 +15,13 @@ describe("createChatModel", () => {
   test("returns null when no API key is configured", () => {
     // The whole AI surface is optional; without a key the agent must degrade
     // rather than construct a provider that can only fail at request time.
-    expect(createChatModel(cfg({ opencode_api_key: "" }))).toBeNull();
+    expect(createChatModel(cfg({ gemini_api_key: "" }))).toBeNull();
   });
 
   test("builds a model for the configured chat model id", () => {
     const model = createChatModel(
       cfg({
-        opencode_api_key: "sk-test",
-        opencode_base_url: "https://example.invalid/v1",
+        gemini_api_key: "test-key",
         chat_model: "some-model-id",
       })
     );

@@ -37,7 +37,6 @@ Think: "Who hates mushrooms?" or "What song reminds me of Sam?" and get answers 
 
 ```bash
 export GEMINI_API_KEY=your_key_here
-export OPENCODE_API_KEY=your_key_here
 # optional: export NEXIA_EMAIL_RESEND_API_KEY=your_key_here
 docker compose up --build
 ```
@@ -46,7 +45,7 @@ Then open [http://localhost:3000](http://localhost:3000).
 
 Use `./nexia.sh ra` to rebuild/restart all services, `./nexia.sh start` to start without rebuilding, `./nexia.sh wipe` to reset the database volume.
 
-Without `GEMINI_API_KEY` and `OPENCODE_API_KEY` everything but the chat works. Without a Resend key, emails are not sent and the verification and reset links are written to the API log instead.
+Without `GEMINI_API_KEY` everything but the chat and semantic search works. Without a Resend key, emails are not sent and the verification and reset links are written to the API log instead.
 
 ## Manual Dev Setup
 
