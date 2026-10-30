@@ -80,8 +80,7 @@ describe("loadConfig", () => {
     expect(cfg.db.max_open_conns).toBe(80);
     expect(cfg.db.run_migrations).toBe(false);
     expect(cfg.db.idle_timeout_seconds).toBe(300);
-    expect(cfg.ai.opencode_base_url).toBe("https://opencode.ai/zen/v1");
-    expect(cfg.ai.chat_model).toBe("space-bunny-free");
+    expect(cfg.ai.chat_model).toBe("gemini-3.5-flash-lite");
   });
 
   test("a release config boots once the environment supplies the secrets", async () => {

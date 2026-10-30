@@ -28,9 +28,7 @@ db:
 
 ai:
   gemini_api_key: ""
-  opencode_api_key: ""
-  opencode_base_url: "https://opencode.ai/zen/v1"
-  chat_model: "space-bunny-free"
+  chat_model: "gemini-3.5-flash-lite"
   embedding_interval_seconds: 30
 
 email:

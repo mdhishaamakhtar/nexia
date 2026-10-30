@@ -91,7 +91,7 @@ describe("createApp", () => {
     // call to Gemini (which MSW would refuse).
     const { app } = await boot({
       dbName: "bootstrap_with_worker",
-      ai: { gemini_api_key: "test-key", opencode_api_key: "test-key" },
+      ai: { gemini_api_key: "test-key" },
     });
     expect((await app.request("/api/v1/healthz")).status).toBe(200);
   });

@@ -62,8 +62,6 @@ export function testConfig(overrides: ConfigOverrides = {}): Config {
     },
     ai: {
       gemini_api_key: "test-gemini-key",
-      opencode_api_key: "test-opencode-key",
-      opencode_base_url: "https://example.invalid/v1",
       chat_model: "mock-model",
       embedding_interval_seconds: 30,
       ...overrides.ai,

@@ -21,7 +21,7 @@ once the user approves each change.
 | Frontend | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, TanStack Query v5, React Hook Form + Zod, Framer Motion |
 | Backend | Node 24, Hono, Drizzle ORM (postgres.js) |
 | Database | PostgreSQL 17 + pgvector extension |
-| AI / Embeddings | Vercel AI SDK v7, Google Gemini (`gemini-embedding-001` for 3072-dim embeddings), OpenCode Zen (chat model, `space-bunny-free` by default) |
+| AI / Embeddings | Vercel AI SDK v7, Google Gemini (`gemini-embedding-001` for 3072-dim embeddings, `gemini-3.5-flash-lite` for chat) |
 | Email | Resend API |
 | Testing | Vitest (API, shared, web in jsdom with Testing Library), Testcontainers (Postgres), MSW, `ai/test` mock models, Playwright (browser journeys) |
 | Container | Docker + Docker Compose |
@@ -170,7 +170,7 @@ Key config sections:
 |---|---|
 | `server` | `port`, `mode`, `jwt_secret`, `jwt_expiry_minutes`, `cors_origins`, `cookie_domain`, `client_ip_header`, auth/chat rate limit fields |
 | `db` | `host`, `port`, `user`, `password`, `name`, `ssl_mode`, `run_migrations`, `max_open_conns`, `conn_max_lifetime_minutes`, `idle_timeout_seconds` |
-| `ai` | `gemini_api_key`, `opencode_api_key`, `opencode_base_url`, `chat_model`, `embedding_interval_seconds` |
+| `ai` | `gemini_api_key`, `chat_model`, `embedding_interval_seconds` |
 | `email` | `resend_api_key`, `from_address`, `app_base_url` |
 
 ### Rate Limiting
@@ -385,9 +385,8 @@ Because staleness is read from the database, nothing is lost on a restart or a
 deploy, and there is no back-fill script: a profile created while Gemini was
 not configured is embedded as soon as a key is present.
 
-If `ai.gemini_api_key` is absent the worker does not start; all CRUD still
-works, and semantic search is unavailable. If `ai.opencode_api_key` is absent,
-`/chat` returns 503 `AI_UNAVAILABLE`.
+If `ai.gemini_api_key` is absent the worker does not start and `/chat` returns
+503 `AI_UNAVAILABLE`; all CRUD still works.
 
 ### RAG Chat Flow
 
@@ -780,9 +779,7 @@ sign-up can be finished locally from the API log.
 | `NEXIA_DB_NAME` | `db.name` | `nexia_db` | Yes |
 | `NEXIA_DB_SSL_MODE` | `db.ssl_mode` | `disable` | No |
 | `NEXIA_AI_GEMINI_API_KEY` | `ai.gemini_api_key` | _(empty)_ | For AI/chat |
-| `NEXIA_AI_OPENCODE_API_KEY` | `ai.opencode_api_key` | _(empty)_ | For chat |
-| `NEXIA_AI_OPENCODE_BASE_URL` | `ai.opencode_base_url` | `https://opencode.ai/zen/v1` | No |
-| `NEXIA_AI_CHAT_MODEL` | `ai.chat_model` | `space-bunny-free` | No |
+| `NEXIA_AI_CHAT_MODEL` | `ai.chat_model` | `gemini-3.5-flash-lite` | No |
 | `NEXIA_AI_EMBEDDING_INTERVAL_SECONDS` | `ai.embedding_interval_seconds` | `30` | No |
 | `NEXIA_EMAIL_RESEND_API_KEY` | `email.resend_api_key` | _(empty)_ | For email |
 | `NEXIA_EMAIL_APP_BASE_URL` | `email.app_base_url` | `http://localhost:3000` | No |

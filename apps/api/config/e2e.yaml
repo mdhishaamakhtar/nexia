@@ -28,7 +28,6 @@ db:
 
 ai:
   gemini_api_key: ""
-  opencode_api_key: ""
 
 email:
   resend_api_key: ""
