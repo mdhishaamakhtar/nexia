@@ -4,6 +4,7 @@ import type { jsPDF } from "jspdf";
 import { markDataUrl } from "@/shared/brand/mark";
 import { ageOn, formatDate } from "@/shared/lib/dates";
 import { identityFor } from "./identity";
+import { PROFILE_SECTIONS, type ProfileSectionId } from "./sections";
 import { shapeSvg } from "./shapes";
 
 /**
@@ -613,7 +614,6 @@ export async function exportProfilePdf(profile: ProfileOutput) {
   const favorites: Array<[string, string]> = [];
   if (hasText(profile.favorite_movie)) favorites.push(["Favorite movie", profile.favorite_movie]);
   if (hasText(profile.favorite_book)) favorites.push(["Favorite book", profile.favorite_book]);
-  if (hasText(profile.music_preference)) favorites.push(["Listens to", profile.music_preference]);
   if (profile.movie_genres.length) favorites.push(["Movie genres", list(profile.movie_genres)]);
   if (profile.book_genres.length) favorites.push(["Book genres", list(profile.book_genres)]);
 
@@ -623,7 +623,7 @@ export async function exportProfilePdf(profile: ProfileOutput) {
     dayToDay.push(["Doesn't eat", list(profile.food_restrictions)]);
   if (profile.political_views.length) dayToDay.push(["Politics", list(profile.political_views)]);
 
-  // In the page's order, each only if it has something to show.
+  // A bio or tag list too long for the header spills into panels of its own.
   const panels: Panel[] = [];
   if (overflow.bio)
     panels.push({
@@ -641,19 +641,10 @@ export async function exportProfilePdf(profile: ProfileOutput) {
           draw: (x: number, y: number) => drawPillRows(ctx, [row], x, y),
         })),
     });
-  if (profile.quotes.length)
-    panels.push({
-      title: "In their words",
-      share: WIDE,
-      rows: (width) =>
-        profile.quotes.flatMap((quote, i) => [
-          ...(i > 0 ? [gap(7)] : []),
-          bubbleRow(ctx, quote, width),
-        ]),
-    });
-  if (song)
-    panels.push({
-      title: "Their song",
+  // What each section draws, or null when it has nothing to show. Titles and
+  // order come from `PROFILE_SECTIONS`, the same list the page and form follow.
+  const sections: Record<ProfileSectionId, Omit<Panel, "title"> | null> = {
+    song: song && {
       share: NARROW,
       solid: true,
       rows: (width) => [
@@ -675,43 +666,64 @@ export async function exportProfilePdf(profile: ProfileOutput) {
             ]
           : []),
       ],
-    });
-  if (profile.top_songs.length)
-    panels.push({
-      title: "On repeat",
-      share: NARROW,
-      rows: (width) =>
-        profile.top_songs.flatMap((item, i) => [
-          ...(i > 0 ? [rule(ctx)] : []),
-          songRow(ctx, item, i + 1, width),
-        ]),
-    });
-  if (favorites.length)
-    panels.push({ title: "Favorites", share: WIDE, rows: factsPanel(ctx, favorites) });
-  if (dayToDay.length)
-    panels.push({ title: "Day to day", share: HALF, rows: factsPanel(ctx, dayToDay) });
-  if (profile.favorite_memories.length)
-    panels.push({
-      title: "Memories together",
-      share: HALF,
-      rows: (width) =>
-        profile.favorite_memories.flatMap((memory, i) => [
-          ...(i > 0 ? [rule(ctx)] : []),
-          ...textRows(ctx, memory, width, body(10.5, 15.5)),
-        ]),
-    });
-  if (hasText(profile.long_term_goals))
-    panels.push({
-      title: "Dreams of",
-      share: WIDE,
-      rows: (width) => textRows(ctx, profile.long_term_goals, width, body(13, 18, "bold")),
-    });
-  if (hasText(profile.notes))
-    panels.push({
-      title: "Notes",
-      share: NARROW,
-      rows: (width) => textRows(ctx, profile.notes, width, body(10.5, 15.5)),
-    });
+    },
+    repeat:
+      profile.top_songs.length || hasText(profile.music_preference)
+        ? {
+            share: WIDE,
+            rows: (width) => [
+              ...profile.top_songs.flatMap((item, i) => [
+                ...(i > 0 ? [rule(ctx)] : []),
+                songRow(ctx, item, i + 1, width),
+              ]),
+              ...(hasText(profile.music_preference)
+                ? [
+                    ...(profile.top_songs.length ? [rule(ctx)] : []),
+                    ...factsPanel(ctx, [["Listens to", profile.music_preference]])(width),
+                  ]
+                : []),
+            ],
+          }
+        : null,
+    favorites: favorites.length ? { share: WIDE, rows: factsPanel(ctx, favorites) } : null,
+    day: dayToDay.length ? { share: NARROW, rows: factsPanel(ctx, dayToDay) } : null,
+    words: profile.quotes.length
+      ? {
+          share: HALF,
+          rows: (width) =>
+            profile.quotes.flatMap((quote, i) => [
+              ...(i > 0 ? [gap(7)] : []),
+              bubbleRow(ctx, quote, width),
+            ]),
+        }
+      : null,
+    memories: profile.favorite_memories.length
+      ? {
+          share: HALF,
+          rows: (width) =>
+            profile.favorite_memories.flatMap((memory, i) => [
+              ...(i > 0 ? [rule(ctx)] : []),
+              ...textRows(ctx, memory, width, body(10.5, 15.5)),
+            ]),
+        }
+      : null,
+    dreams: hasText(profile.long_term_goals)
+      ? {
+          share: WIDE,
+          rows: (width) => textRows(ctx, profile.long_term_goals, width, body(13, 18, "bold")),
+        }
+      : null,
+    notes: hasText(profile.notes)
+      ? {
+          share: NARROW,
+          rows: (width) => textRows(ctx, profile.notes, width, body(10.5, 15.5)),
+        }
+      : null,
+  };
+  for (const section of PROFILE_SECTIONS) {
+    const panel = sections[section.id];
+    if (panel) panels.push({ title: section.title, ...panel });
+  }
 
   if (panels.length === 0) {
     panels.push({

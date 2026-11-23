@@ -23,6 +23,7 @@ export default function ChipListField({
   label,
   placeholder,
   kind = "neutral",
+  hideLabel = false,
 }: {
   control: Control<ProfileFormValues>;
   name: ProfileListField;
@@ -31,6 +32,8 @@ export default function ChipListField({
   /** What the list holds, which decides its shape: short facts are pills, a
    *  quote is a speech bubble, a memory is a block of prose. */
   kind?: "neutral" | "quote" | "memory";
+  /** Keep the label for screen readers only: the section heading says it. */
+  hideLabel?: boolean;
 }) {
   const inputId = useId();
   const hintId = useId();
@@ -75,7 +78,7 @@ export default function ChipListField({
 
   return (
     <div>
-      <label htmlFor={inputId} className="t-label mb-2 block">
+      <label htmlFor={inputId} className={hideLabel ? "sr-only" : "t-label mb-2 block"}>
         {label}
       </label>
 

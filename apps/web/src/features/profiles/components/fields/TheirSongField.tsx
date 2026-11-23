@@ -11,13 +11,16 @@ import type { ProfileFormValues } from "../../form";
 export default function TheirSongField({
   register,
   errors,
+  hideLabel = false,
 }: {
   register: UseFormRegister<ProfileFormValues>;
   errors: FieldErrors<ProfileFormValues>;
+  /** Keep the legend for screen readers only: the section heading says it. */
+  hideLabel?: boolean;
 }) {
   return (
     <fieldset>
-      <legend className="t-label mb-2">Their song</legend>
+      <legend className={hideLabel ? "sr-only" : "t-label mb-2"}>Their song</legend>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Input
           placeholder="Song name"

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { makeFullProfile } from "@test/fixtures";
 import { toFormValues } from "../form";
+import { PROFILE_SECTIONS } from "../sections";
 import ProfileForm from "./ProfileForm";
 
 const push = vi.fn();
@@ -28,6 +29,27 @@ const save = () => screen.getByRole("button", { name: "Save profile" });
 beforeEach(() => push.mockReset());
 
 describe("ProfileForm", () => {
+  test("is laid out the way the profile page is read", () => {
+    renderForm();
+
+    // What the page shows in its header is edited in the first panel.
+    const who = screen.getByRole("region", { name: "Who they are" });
+    for (const name of [/Full name/, /Relationship/, "Pronouns", "Profession", "Bio", "Tags"]) {
+      expect(within(who).getByLabelText(name)).toBeInTheDocument();
+    }
+    expect(within(who).getByRole("button", { name: /^Birthday/ })).toBeInTheDocument();
+
+    // Then the page's sections, under the same titles and in the same order.
+    expect(
+      screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)
+    ).toEqual(PROFILE_SECTIONS.map((section) => section.title));
+
+    // A field with a section to itself keeps its name without repeating the heading.
+    const notes = screen.getByRole("region", { name: "Notes" });
+    expect(within(notes).getByRole("textbox", { name: "Additional notes" })).toBeInTheDocument();
+    expect(within(notes).getByText("Additional notes")).toHaveClass("sr-only");
+  });
+
   test("offers nothing to save until something changes", async () => {
     const { user } = renderForm();
     expect(save()).toBeDisabled();

@@ -354,11 +354,22 @@ tags as chips.
 
 **Profile page** (`features/profiles/components/ProfileSheet`). A block of the
 person's `-soft` colour holds the controls, avatar, name, who they are, bio and
-tags. Below it, one `.panel-person` per kind of thing, each with a small bold
-heading. Quotes are speech bubbles. Their song is the one solid block.
+tags. Below it, one `.panel-person` per section, each with a small bold
+heading. Quotes are speech bubbles. Their song is the one solid block. Quotes
+and memories show three and fold the rest behind "Show all", so one long list
+never pushes everything else off the page.
 
-**Profile form** (`ProfileForm`, `SheetSection`). The same sections as panels,
-tinted with the person's colour when editing, with white fields inside. The
+**One order everywhere.** `features/profiles/sections.ts` lists a profile's
+sections once: Their song, On repeat, Favorites, Day to day, In their words,
+Memories together, Dreams of, Notes. Quick facts come first and the long reads
+last. The page, the form and the PDF all read that list, so they cannot
+disagree; change the order there and nowhere else.
+
+**Profile form** (`ProfileForm`, `SheetSection`). The page, made editable: a
+first panel with what the page's header shows (name, relationship, pronouns,
+profession, birthday, bio, tags), then the same sections under the same titles,
+tinted with the person's colour when editing, with white fields inside. A field
+with a section to itself takes the section's heading as its label. The
 save bar is fixed to the bottom: white with a line above, the one place a line
 separates two surfaces.
 
