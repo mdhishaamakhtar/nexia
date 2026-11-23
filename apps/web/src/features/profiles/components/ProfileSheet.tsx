@@ -172,6 +172,28 @@ function Memory({ memory, onOpen }: { memory: string; onOpen: () => void }) {
 }
 
 /**
+ * Short facts on a line with a dot between neighbours. Every fact carries its
+ * dot in front, and the row is pulled left by the dot's width under a clipped
+ * edge, so whichever fact starts a line loses its dot. However the line wraps,
+ * it never opens or closes on a stray separator.
+ */
+function FactRow({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <p className={cn("overflow-hidden text-base font-medium sm:text-lg", className)}>
+      <span className="-ml-5 flex flex-wrap items-center">{children}</span>
+    </p>
+  );
+}
+
+function Fact({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex min-w-0 items-center before:w-5 before:shrink-0 before:text-center before:content-['·']">
+      <span className="min-w-0">{children}</span>
+    </span>
+  );
+}
+
+/**
  * A person's page. Their colour fills the top: shape, name, who they are to
  * you, the line that sums them up. Under it, what you know about them, one
  * rounded panel per kind of thing, in a tint of the same colour. A field
@@ -344,30 +366,25 @@ export default function ProfileSheet({
             <Avatar id={profile.id} name={profile.full_name} size="lg" />
             <div className="min-w-0">
               <h1 className="t-name [overflow-wrap:anywhere]">{profile.full_name}</h1>
-              <p className="mt-2.5 flex flex-wrap text-base font-medium sm:text-lg">
+              <FactRow className="mt-2.5">
                 {who.map((part, i) => (
                   // By position: pronouns and profession can be the same text.
-                  <span key={i} className="after:mx-2 after:content-['·'] last:after:hidden">
-                    {part}
-                  </span>
+                  <Fact key={i}>{part}</Fact>
                 ))}
-              </p>
+              </FactRow>
               {profile.birthday && (
-                // The dot before the sign stays with the age, so a wrapped line
-                // never opens with a stray separator.
-                <p className="flex flex-wrap items-center gap-x-2 text-base font-medium sm:text-lg">
-                  <span>
-                    Born {formatDate(profile.birthday, "long")}
-                    {age !== null && <span> · {age} years old</span>}
-                    {profile.zodiac_sign && <span aria-hidden="true"> ·</span>}
-                  </span>
+                <FactRow>
+                  <Fact>Born {formatDate(profile.birthday, "long")}</Fact>
+                  {age !== null && <Fact>{age} years old</Fact>}
                   {profile.zodiac_sign && (
-                    <span className="inline-flex items-center gap-1.5">
-                      <ZodiacIcon sign={profile.zodiac_sign} size={17} />
-                      <span>{profile.zodiac_sign}</span>
-                    </span>
+                    <Fact>
+                      <span className="inline-flex items-center gap-1.5">
+                        <ZodiacIcon sign={profile.zodiac_sign} size={17} />
+                        <span>{profile.zodiac_sign}</span>
+                      </span>
+                    </Fact>
                   )}
-                </p>
+                </FactRow>
               )}
             </div>
           </div>
