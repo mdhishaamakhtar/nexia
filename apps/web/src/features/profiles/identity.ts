@@ -1,25 +1,42 @@
-import type { TapeColor } from "@/components/atoms/Tape";
+import { PERSON_COLORS, type PersonColor } from "@nexia/shared/brand";
 
 /**
- * A person's scrapbook identity: the strip of tape their card is pinned with,
- * and the tilt of their avatar. Both are keyed off the profile id, never the
- * position in a list, so someone looks the same in the grid, on their sheet,
- * and in a chat result however the list is filtered or sorted.
+ * How a person looks: one of six colours and one of seven shapes behind their
+ * initial. Both are keyed off the profile id, never the position in a list,
+ * so someone is the same in the grid, on their own page and in a chat result
+ * however the list is filtered or sorted.
+ *
+ * Six and seven share no factor, so the pair only repeats every 42 people,
+ * and two people added one after the other never share a colour or a shape.
  */
-const TAPES: ReadonlyArray<{ color: TapeColor; angle: number; width: number }> = [
-  { color: "peach", angle: -2.5, width: 42 },
-  { color: "lavender", angle: 1.8, width: 38 },
-  { color: "blue", angle: -1.2, width: 46 },
-  { color: "lavender", angle: 3, width: 34 },
-  { color: "peach", angle: -3.4, width: 36 },
-];
+export const PERSON_SHAPES = [
+  "circle",
+  "squircle",
+  "clover",
+  "flower",
+  "arch",
+  "diamond",
+  "hexagon",
+] as const;
+export type PersonShape = (typeof PERSON_SHAPES)[number];
 
-const TILTS = [-3, 2, -2, 3, -1] as const;
-
-export function tapeFor(id: number) {
-  return TAPES[Math.abs(id) % TAPES.length]!;
+export interface PersonIdentity {
+  color: PersonColor;
+  shape: PersonShape;
+  /**
+   * Put this on an element to give everything inside it the person's colour:
+   * it sets `--p`, `--p-soft`, `--p-tint` and `--p-ink` (see globals.css).
+   */
+  className: `person-${PersonColor}`;
 }
 
-export function tiltFor(id: number): number {
-  return TILTS[Math.abs(id) % TILTS.length]!;
+export function identityFor(id: number): PersonIdentity {
+  // Anything that is not a real id gets the first of each, never nothing.
+  const n = Number.isFinite(id) ? Math.abs(Math.trunc(id)) : 0;
+  const color = PERSON_COLORS[n % PERSON_COLORS.length]!;
+  return {
+    color,
+    shape: PERSON_SHAPES[n % PERSON_SHAPES.length]!,
+    className: `person-${color}`,
+  };
 }

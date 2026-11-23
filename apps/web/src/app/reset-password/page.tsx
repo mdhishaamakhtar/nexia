@@ -35,8 +35,6 @@ function ResetForm() {
     return (
       <AuthCard
         title="That link is incomplete"
-        eyebrow="account recovery"
-        tape="peach"
         footer={<AuthLink href="/login">Back to sign in</AuthLink>}
       >
         <p className="t-body text-center text-text-2">
@@ -69,8 +67,6 @@ function ResetForm() {
   return (
     <AuthCard
       title="Choose a new password"
-      eyebrow="account recovery"
-      tape="peach"
       footer={
         reset.isSuccess ? undefined : (
           <p>
@@ -82,7 +78,7 @@ function ResetForm() {
       {reset.isSuccess ? (
         <AuthNotice tone="success">Password updated. Taking you to sign in…</AuthNotice>
       ) : (
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <form onSubmit={onSubmit} className="space-y-5" noValidate>
           <Input
             label="New password"
             type="password"
@@ -99,7 +95,7 @@ function ResetForm() {
             error={form.formState.errors.confirm?.message}
             {...form.register("confirm")}
           />
-          <p className="text-xs text-text-3">
+          <p className="text-sm text-text-3">
             Setting a new password signs you out on your other devices.
           </p>
           {error && <AuthNotice>{error}</AuthNotice>}

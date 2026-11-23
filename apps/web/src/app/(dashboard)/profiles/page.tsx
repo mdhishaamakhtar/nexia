@@ -7,11 +7,11 @@ import { motion } from "framer-motion";
 import { RELATIONSHIP_TYPES, type RelationshipType } from "@nexia/shared";
 import Button from "@/components/atoms/Button";
 import SearchField from "@/components/atoms/SearchField";
-import Select from "@/components/atoms/Select";
 import PageShell from "@/components/layout/PageShell";
 import CardProfilePreview from "@/components/molecules/CardProfilePreview";
 import StatusNote from "@/components/molecules/StatusNote";
 import { useProfileList } from "@/features/profiles/hooks";
+import { cn } from "@/lib/utils";
 import { enter } from "@/shared/ui/motion";
 
 const RELATIONSHIP_OPTIONS = [
@@ -19,12 +19,15 @@ const RELATIONSHIP_OPTIONS = [
   ...RELATIONSHIP_TYPES.map((type) => ({ value: type, label: type })),
 ];
 
+/** One column on a phone, where cards lie flat; up to four standing cards. */
+const GRID = "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 xl:grid-cols-4";
+
 function isRelationship(value: string | null): value is RelationshipType {
   return !!value && (RELATIONSHIP_TYPES as readonly string[]).includes(value);
 }
 
 /**
- * The slambook grid. Search and filter live in the URL, so opening someone and
+ * Everyone in the slambook. Search and filter live in the URL, so opening someone and
  * coming back finds the list as it was, and a filtered view can be bookmarked.
  */
 function Slambook() {
@@ -64,50 +67,73 @@ function Slambook() {
 
   return (
     <>
-      <motion.header {...enter(0, 12)} className="mb-10 text-center">
-        <h1 className="t-page-title text-text-1">Your Slambook</h1>
-        <p className="mt-2 text-sm text-text-3">
-          {list.isSuccess && !isFiltered && total > 0
-            ? `${total} ${total === 1 ? "person" : "people"} you carry in your heart`
-            : "The people you carry in your heart"}
-        </p>
+      <motion.header
+        {...enter(0, 12)}
+        className="mb-7 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 sm:mb-9"
+      >
+        <h1 className="t-page-title flex items-center gap-3 text-text-1">
+          Your people
+          {list.isSuccess && !isFiltered && total > 0 && (
+            <span className="inline-flex h-9 items-center rounded-full bg-butter-soft px-3.5 text-lg font-bold tracking-normal text-butter-ink">
+              <span className="sr-only">, </span>
+              {total}
+              <span className="sr-only"> in your slambook</span>
+            </span>
+          )}
+        </h1>
+        <Button href="/profiles/new">
+          <Plus className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.4} aria-hidden="true" />
+          Add someone
+        </Button>
       </motion.header>
 
       <motion.div
         {...enter(0.06)}
-        className="mx-auto mb-10 flex max-w-xl flex-col gap-2.5 sm:flex-row"
+        className="mb-7 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5"
       >
         <SearchField
           value={search}
           onChange={setSearch}
           label="Search profiles by name"
-          placeholder="Search by name…"
-          className="flex-1"
+          placeholder="Find someone"
+          className="lg:w-80 lg:shrink-0"
         />
-        <Select
-          className="shrink-0 sm:w-44"
+        {/* One tap per relationship. On a phone the row scrolls sideways
+            rather than wrapping into a wall of pills. */}
+        <div
+          role="group"
           aria-label="Show relationship"
-          value={relationship}
-          onChange={(type) => setParams({ type })}
-          options={RELATIONSHIP_OPTIONS}
-        />
+          className="-mx-(--gutter) flex gap-1.5 overflow-x-auto px-(--gutter) [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0"
+        >
+          {RELATIONSHIP_OPTIONS.map((option) => {
+            const on = option.value === relationship;
+            return (
+              <button
+                key={option.label}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setParams({ type: option.value })}
+                className={cn(
+                  "h-11 shrink-0 cursor-pointer rounded-full px-4 text-[0.9375rem] font-semibold transition-colors",
+                  on ? "bg-text-1 text-white" : "bg-surface-2 text-text-1 hover:bg-surface-3"
+                )}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
       </motion.div>
 
       {list.isPending ? (
-        <div
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          role="status"
-          aria-label="Loading your slambook"
-        >
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="shimmer h-[150px] rounded-2xl" />
+        <div className={GRID} role="status" aria-label="Loading your slambook">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="shimmer h-[5.5rem] rounded-[1.75rem] sm:h-[14.75rem]" />
           ))}
         </div>
       ) : list.isError ? (
         <StatusNote
-          eyebrow="Couldn't load"
           title="Your slambook didn't load"
-          tape="peach"
           actions={<Button onClick={() => void list.refetch()}>Try again</Button>}
         >
           Check your connection and try again. Nothing has been lost.
@@ -135,7 +161,7 @@ function Slambook() {
             title="Your slambook is empty"
             actions={
               <Button href="/profiles/new">
-                <Plus className="h-4 w-4" aria-hidden="true" />
+                <Plus className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.4} aria-hidden="true" />
                 Add your first person
               </Button>
             }
@@ -146,13 +172,11 @@ function Slambook() {
       ) : (
         <>
           {isFiltered && (
-            <p className="mb-4 text-sm font-semibold text-text-3" aria-live="polite">
+            <p className="mb-4 text-[0.9375rem] font-semibold text-text-3" aria-live="polite">
               {total} {total === 1 ? "match" : "matches"}
             </p>
           )}
-          <ul
-            className={`grid grid-cols-1 gap-4 transition-opacity sm:grid-cols-2 lg:grid-cols-3 ${list.isPlaceholderData ? "opacity-60" : ""}`}
-          >
+          <ul className={cn(GRID, "transition-opacity", list.isPlaceholderData && "opacity-60")}>
             {profiles.map((profile, index) => (
               <CardProfilePreview key={profile.id} profile={profile} index={index} />
             ))}
@@ -177,24 +201,11 @@ function Slambook() {
 export default function ProfilesPage() {
   return (
     <div className="page-body">
-      {/* Bottom padding keeps the last row of cards clear of the add button. */}
-      <PageShell width="wide" as="main" id="main" className="pb-28 pt-10 sm:pt-14">
+      <PageShell width="wide" as="main" id="main" className="pb-24 pt-8 sm:pt-12">
         <Suspense>
           <Slambook />
         </Suspense>
       </PageShell>
-
-      {/* Peach, not blue: white-on-blue measured 1.8:1 and this is the page's
-          primary action. Offset clears the iOS home indicator. */}
-      <Button
-        href="/profiles/new"
-        size="icon"
-        aria-label="Add a new person"
-        className="fixed right-5 z-40 h-14 w-14 rounded-full sm:right-8"
-        style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
-      >
-        <Plus className="h-6 w-6" aria-hidden="true" />
-      </Button>
     </div>
   );
 }

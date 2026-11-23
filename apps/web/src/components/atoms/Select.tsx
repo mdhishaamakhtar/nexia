@@ -29,7 +29,7 @@ interface SelectProps<V extends string> {
 }
 
 /**
- * A dropdown drawn in the app's own paper rather than the operating system's
+ * A dropdown drawn by the app rather than the operating system's
  * menu. It follows the WAI-ARIA listbox pattern: the trigger opens a list that
  * takes focus, arrow keys, Home/End and typing a letter move through it, Enter
  * or Space picks, Escape closes and returns focus to the trigger. Typing a
@@ -198,14 +198,14 @@ export default function Select<V extends string>({
           onClick={() => (open ? close(false) : openList())}
           onKeyDown={onTriggerKeyDown}
           className={cn(
-            "field flex w-full cursor-pointer items-center justify-between gap-3 py-3 pl-4 pr-3.5 text-left",
+            "field flex w-full cursor-pointer items-center justify-between gap-3 py-2.5 pl-4 pr-3.5 text-left",
             error && "field-error"
           )}
         >
           <span className="truncate">{selected?.label}</span>
           <ChevronDown
             className={cn(
-              "h-4 w-4 shrink-0 text-text-3 transition-transform duration-150",
+              "h-[1.125rem] w-[1.125rem] shrink-0 text-text-1 transition-transform duration-150",
               open && "rotate-180"
             )}
             aria-hidden="true"
@@ -228,7 +228,7 @@ export default function Select<V extends string>({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.14, ease: EASE_OUT }}
               className={cn(
-                "paper-float absolute left-0 right-0 z-40 max-h-[17rem] overflow-y-auto rounded-xl p-1.5 outline-none",
+                "float absolute left-0 right-0 z-40 max-h-[17rem] overflow-y-auto rounded-2xl p-1.5 outline-none",
                 placeAbove ? "bottom-full mb-1.5" : "top-full mt-1.5"
               )}
             >
@@ -244,14 +244,14 @@ export default function Select<V extends string>({
                     onPointerEnter={() => setActive(index)}
                     onClick={() => choose(index)}
                     className={cn(
-                      "flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg px-3 text-[15px] text-text-2",
+                      "flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl px-3 text-base font-medium text-text-2",
                       index === active && "bg-surface-2 text-text-1",
                       isSelected && "font-semibold text-text-1"
                     )}
                   >
                     <span className="truncate">{option.label}</span>
                     {isSelected && (
-                      <Check className="h-4 w-4 shrink-0 text-lavender-ink" aria-hidden="true" />
+                      <Check className="h-4 w-4 shrink-0 text-text-1" aria-hidden="true" />
                     )}
                   </li>
                 );

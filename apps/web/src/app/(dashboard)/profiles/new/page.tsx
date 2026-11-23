@@ -20,11 +20,11 @@ export default function NewProfilePage() {
 
   return (
     <div className="page-body">
-      <PageShell width="reading" as="main" id="main" className="py-8 sm:py-10">
-        <motion.header {...enter(0, -8)} className="mb-7">
-          <BackButton href="/profiles" label="Back" className="mb-4" />
+      <PageShell width="reading" as="main" id="main" className="pb-10 pt-6 sm:pt-8">
+        <motion.header {...enter(0, -8)} className="mb-8">
+          <BackButton href="/profiles" label="Your people" className="mb-6" />
           <h1 className="t-page-title text-text-1">New profile</h1>
-          <p className="mt-1.5 text-sm text-text-3">Add someone new to your slambook.</p>
+          <p className="t-body mt-2.5 text-text-2">Add someone new to your slambook.</p>
         </motion.header>
 
         <ProfileForm

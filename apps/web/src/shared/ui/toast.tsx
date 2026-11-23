@@ -10,10 +10,9 @@ import {
   useState,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, AlertCircle, X } from "lucide-react";
+import { AlertCircle, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EASE_OUT } from "@/shared/ui/motion";
-import Tape from "@/components/atoms/Tape";
 
 type ToastType = "success" | "error";
 
@@ -34,9 +33,9 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 const DURATION: Record<ToastType, number> = { success: 3500, error: 7000 };
 
 /**
- * Toasts are small pinned notes: the same sheet, float line and tape as the
- * dialogs, cut down to one line of news. Lavender tape for "done", peach for
- * "something went wrong" — the same colours the dialogs use for the same moods.
+ * Toasts are one line of news in a dark pill: the one dark surface in the
+ * app, so it reads over a white page and over anyone's colour alike. A mint
+ * tick for "done", a red mark for "something went wrong".
  *
  * They drop in at the top, just under the navbar. The bottom of the screen
  * belongs to the form's Save bar and the chat composer, and a toast there used
@@ -114,30 +113,23 @@ function Toast({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number)
       onPointerLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className="pointer-events-auto relative flex w-full max-w-md items-start gap-2.5 rounded-2xl border-[1.5px] border-line-float bg-surface py-2.5 pl-3.5 pr-1.5"
+      className="pointer-events-auto relative flex w-full max-w-md items-start gap-3 rounded-[1.5rem] bg-text-1 py-2.5 pl-3 pr-2 text-white"
     >
-      <Tape
-        color={isError ? "peach" : "lavender"}
-        width={36}
-        height={14}
-        tilt={-6}
-        style={{ left: 30, top: -6, opacity: 0.9 }}
-      />
       <span
         className={cn(
-          "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-          isError ? "bg-red-bg" : "bg-green-soft"
+          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+          isError ? "bg-red-bg" : "bg-mint"
         )}
         aria-hidden="true"
       >
         {isError ? (
-          <AlertCircle className="h-3.5 w-3.5 text-red-ink" />
+          <AlertCircle className="h-4 w-4 text-red-ink" strokeWidth={2.4} />
         ) : (
-          <CheckCircle2 className="h-3.5 w-3.5 text-green-ink" />
+          <Check className="h-4 w-4 text-mint-ink" strokeWidth={3} />
         )}
       </span>
 
-      <p className="min-w-0 flex-1 py-0.5 text-[13px] font-semibold leading-snug text-text-1">
+      <p className="min-w-0 flex-1 py-1 text-[0.9375rem] font-semibold leading-snug">
         {toast.message}
       </p>
 
@@ -145,9 +137,9 @@ function Toast({ toast, onDismiss }: { toast: ToastItem; onDismiss: (id: number)
         type="button"
         onClick={() => onDismiss(toast.id)}
         aria-label="Dismiss notification"
-        className="hit-44 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-text-3 transition-colors hover:bg-surface-2 hover:text-text-1"
+        className="hit-44 mt-0.5 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/15 hover:text-white"
       >
-        <X className="h-3.5 w-3.5" aria-hidden="true" />
+        <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </motion.div>
   );

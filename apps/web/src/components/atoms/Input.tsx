@@ -34,7 +34,11 @@ export default function Input({
         aria-invalid={invalid}
         aria-describedby={describedBy}
         aria-required={required || undefined}
-        className={cn("field w-full appearance-none px-4 py-3", error && "field-error", className)}
+        className={cn(
+          "field w-full appearance-none px-4 py-2.5",
+          error && "field-error",
+          className
+        )}
         {...props}
       />
     </Field>

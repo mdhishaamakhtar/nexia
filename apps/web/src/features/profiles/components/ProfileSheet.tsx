@@ -1,108 +1,133 @@
 "use client";
 
 import type { ProfileOutput } from "@nexia/shared";
-import { useRef, useState, type ElementType, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import {
-  Book,
-  Calendar,
-  Film,
-  Heart,
-  ListMusic,
-  MapPin,
-  Music,
-  Quote,
-  Utensils,
-  Vote,
-} from "lucide-react";
+import { Music } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Tape from "@/components/atoms/Tape";
 import QuoteModal from "@/components/molecules/QuoteModal";
 import { useIsClamped } from "@/shared/hooks/use-is-clamped";
 import { ageOn, formatDate } from "@/shared/lib/dates";
 import { enter } from "@/shared/ui/motion";
-import { FIELD_LABELS, PROFILE_SECTIONS, RANK_TINTS, type ProfileFieldKey } from "../sections";
-import { tapeFor } from "../identity";
+import { identityFor } from "../identity";
+import type { ProfileFieldKey } from "../sections";
 import Avatar from "./Avatar";
-import SheetSection from "./SheetSection";
 import ZodiacIcon from "./ZodiacIcon";
 
 function hasText(value?: string | null): value is string {
   return Boolean(value?.trim());
 }
 
-function Label({ icon: Icon, children }: { icon?: ElementType; children: ReactNode }) {
-  return (
-    <p className="t-label mb-2.5 flex items-center gap-1.5">
-      {Icon ? <Icon className="h-3 w-3" aria-hidden="true" /> : null}
-      {children}
-    </p>
-  );
-}
+/**
+ * Where each profile field is shown: in the coloured header, or in the panel
+ * with this title. It is typed against every field key, so a field added to
+ * `sections.ts` and the form is a compile error here until the page shows it.
+ */
+const SHOWN_IN = {
+  profession: "header",
+  birthday: "header",
+  tags: "header",
+  quotes: "In their words",
+  associated_song: "Their song",
+  top_songs: "On repeat",
+  favorite_movie: "Favorites",
+  favorite_book: "Favorites",
+  music_preference: "Favorites",
+  movie_genres: "Favorites",
+  book_genres: "Favorites",
+  hangout_places: "Day to day",
+  food_restrictions: "Day to day",
+  political_views: "Day to day",
+  favorite_memories: "Memories together",
+  long_term_goals: "Dreams of",
+  notes: "Notes",
+} as const satisfies Record<ProfileFieldKey, string>;
 
-function Fact({
-  label,
+/**
+ * How wide a panel wants to be from `md` up. Panels sit in a wrapping row and
+ * grow to fill it, so a wide and a narrow one pair up, two halves pair up, and
+ * a panel left alone on its row takes all of it: the page never has a hole
+ * where a field someone didn't fill in would have been.
+ */
+const WIDTHS = {
+  wide: "md:basis-[calc(56%-0.5rem)]",
+  narrow: "md:basis-[calc(40%-0.5rem)]",
+  half: "md:basis-[calc(48%-0.5rem)]",
+} as const;
+
+function Panel({
+  title,
   icon,
+  width,
+  solid = false,
+  index,
   children,
 }: {
-  label: string;
-  icon?: ElementType;
+  title: string;
+  icon?: ReactNode;
+  width: keyof typeof WIDTHS;
+  /** Filled with the person's colour itself rather than its tint. */
+  solid?: boolean;
+  index: number;
   children: ReactNode;
 }) {
+  const headingId = useId();
   return (
-    <div className="min-w-0">
-      <Label icon={icon}>{label}</Label>
-      <p className="break-words text-sm font-semibold text-text-1">{children}</p>
+    <motion.section
+      aria-labelledby={headingId}
+      {...enter(0.05 + index * 0.04)}
+      className={cn(
+        "min-w-0 grow basis-full rounded-[1.75rem] p-6 sm:p-7",
+        WIDTHS[width],
+        solid ? "bg-p text-p-ink" : "panel-person"
+      )}
+    >
+      <h2
+        id={headingId}
+        className="mb-4 flex items-center gap-2 text-[0.9375rem] font-bold text-p-ink"
+      >
+        {icon}
+        {title}
+      </h2>
+      {children}
+    </motion.section>
+  );
+}
+
+/** Label on the left, what you know on the right; a line between rows. */
+function Rows({ children }: { children: ReactNode }) {
+  return <dl className="divide-y-[1.5px] divide-p-soft">{children}</dl>;
+}
+
+function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-x-4 gap-y-0.5 py-3 first:pt-0 last:pb-0 sm:grid-cols-[minmax(0,9.5rem)_minmax(0,1fr)]">
+      <dt className="text-[0.9375rem] text-text-2">{label}</dt>
+      <dd className="break-words text-[1.0625rem] font-semibold leading-snug text-text-1">
+        {children}
+      </dd>
     </div>
   );
 }
 
-/** Neutral paper chips: the rest bar between the coloured things on the sheet. */
-function Chips({
-  label,
-  icon,
-  items,
-  tag = false,
-}: {
-  label: string;
-  icon?: ElementType;
-  items: string[];
-  tag?: boolean;
-}) {
+/** A list read as a line of text, not a row of pills. */
+function Items({ items }: { items: string[] }) {
   return (
-    <div>
-      <Label icon={icon}>{label}</Label>
-      <ul className="flex flex-wrap gap-1.5">
-        {items.map((item) => (
-          <li
-            key={item}
-            className={cn(
-              "max-w-full break-words px-3 py-1 text-xs font-semibold",
-              tag ? "sticker-tag" : "sticker-chip"
-            )}
-          >
-            {tag ? `#${item}` : item}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function Prose({ label, text }: { label: string; text: string }) {
-  return (
-    <div>
-      <Label>{label}</Label>
-      <p className="t-body whitespace-pre-line text-text-2">{text}</p>
-    </div>
+    <ul className="flex flex-wrap gap-x-1.5">
+      {items.map((item) => (
+        <li key={item} className="break-words after:content-[','] last:after:hidden">
+          {item}
+        </li>
+      ))}
+    </ul>
   );
 }
 
 /**
- * Something the person said — the one device on the sheet that means "their
- * words, not yours", which is why memories and notes don't get the mark.
+ * Something the person said, as a speech bubble in their colour: their words,
+ * not yours. Opens in full when pressed.
  */
-function QuoteBubble({ quote, onOpen }: { quote: string; onOpen: () => void }) {
+function Quote({ quote, onOpen }: { quote: string; onOpen: () => void }) {
   const textRef = useRef<HTMLSpanElement>(null);
   const clamped = useIsClamped(textRef, quote);
   return (
@@ -110,19 +135,13 @@ function QuoteBubble({ quote, onOpen }: { quote: string; onOpen: () => void }) {
       type="button"
       onClick={onOpen}
       aria-label={clamped ? `Read the whole quote: ${quote.slice(0, 60)}` : undefined}
-      className="relative flex h-full flex-col rounded-2xl border border-lavender-line bg-lavender-soft py-4 pl-12 pr-4 text-left text-sm leading-relaxed text-text-2 transition-colors hover:border-lavender"
+      className="group max-w-full cursor-pointer rounded-[1.375rem] rounded-bl-md bg-p-soft px-5 py-3.5 text-left text-lg font-semibold leading-[1.3] tracking-[-0.01em] text-p-ink transition-transform duration-150 ease-out active:scale-[0.985] sm:text-[1.3125rem]"
     >
-      <span
-        aria-hidden="true"
-        className="t-page-title pointer-events-none absolute left-3.5 top-2 select-none leading-none text-lavender-ink/40"
-      >
-        &ldquo;
-      </span>
-      <span ref={textRef} className="line-clamp-3 break-words">
+      <span ref={textRef} className="line-clamp-4 break-words">
         {quote}
       </span>
       {clamped && (
-        <span className="mt-1.5 text-xs font-semibold text-lavender-ink underline underline-offset-2">
+        <span className="mt-1.5 inline-block text-[0.9375rem] font-semibold underline underline-offset-2">
           Read all
         </span>
       )}
@@ -130,21 +149,21 @@ function QuoteBubble({ quote, onOpen }: { quote: string; onOpen: () => void }) {
   );
 }
 
-/** A memory is yours, not theirs — a quiet paper well, no speech mark. */
-function MemoryCard({ memory, onOpen }: { memory: string; onOpen: () => void }) {
+/** A memory is yours, not theirs: plain prose. Opens in full when pressed. */
+function Memory({ memory, onOpen }: { memory: string; onOpen: () => void }) {
   const textRef = useRef<HTMLSpanElement>(null);
   const clamped = useIsClamped(textRef, memory);
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="paper-sunk flex h-full flex-col rounded-2xl p-4 text-left text-sm leading-relaxed text-text-2 transition-colors hover:bg-surface-3"
+      className="group block w-full cursor-pointer py-3 text-left text-[1.0625rem] leading-relaxed text-text-1 first:pt-0 last:pb-0"
     >
       <span ref={textRef} className="line-clamp-3 break-words">
         {memory}
       </span>
       {clamped && (
-        <span className="mt-1.5 text-xs font-semibold text-text-3 underline underline-offset-2">
+        <span className="mt-1 inline-block text-[0.9375rem] font-semibold text-text-2 underline underline-offset-2 group-hover:text-text-1">
           Read all
         </span>
       )}
@@ -152,267 +171,252 @@ function MemoryCard({ memory, onOpen }: { memory: string; onOpen: () => void }) 
   );
 }
 
-interface RenderContext {
-  profile: ProfileOutput;
-  openQuote: (text: string) => void;
-  openMemory: (text: string) => void;
-}
-
 /**
- * How each field reads on the sheet, and whether it has anything to show.
- * Empty fields are left out rather than shown as placeholders.
+ * A person's page. Their colour fills the top: shape, name, who they are to
+ * you, the line that sums them up. Under it, what you know about them, one
+ * rounded panel per kind of thing, in a tint of the same colour. A field
+ * nobody filled in leaves no gap and no placeholder.
+ *
+ * `toolbar` is the row of controls the page puts at the top of the coloured
+ * block (back, export, delete, edit).
  */
-const RENDERERS: Record<
-  ProfileFieldKey,
-  { has: (p: ProfileOutput) => boolean; render: (c: RenderContext) => ReactNode; wide?: boolean }
-> = {
-  profession: {
-    has: (p) => hasText(p.profession),
-    render: ({ profile }) => <Fact label="Profession">{profile.profession}</Fact>,
-  },
-  birthday: {
-    has: (p) => !!p.birthday,
-    render: ({ profile }) => {
-      const age = ageOn(profile.birthday);
-      return (
-        <Fact label="Birthday" icon={Calendar}>
-          {formatDate(profile.birthday, "long")}
-          {age !== null && <span className="font-medium text-text-3"> · {age} years old</span>}
-        </Fact>
-      );
-    },
-  },
-  tags: {
-    has: (p) => p.tags.length > 0,
-    wide: true,
-    render: ({ profile }) => <Chips label="Tags" items={profile.tags} tag />,
-  },
-  favorite_movie: {
-    has: (p) => hasText(p.favorite_movie),
-    render: ({ profile }) => (
-      <Fact label="Favorite movie" icon={Film}>
-        {profile.favorite_movie}
-      </Fact>
-    ),
-  },
-  favorite_book: {
-    has: (p) => hasText(p.favorite_book),
-    render: ({ profile }) => (
-      <Fact label="Favorite book" icon={Book}>
-        {profile.favorite_book}
-      </Fact>
-    ),
-  },
-  music_preference: {
-    has: (p) => hasText(p.music_preference),
-    render: ({ profile }) => (
-      <Fact label="Music preference" icon={Music}>
-        {profile.music_preference}
-      </Fact>
-    ),
-  },
-  // The one tinted well on the sheet: the song someone is bound to.
-  associated_song: {
-    has: (p) => !!p.associated_song?.name,
-    wide: true,
-    render: ({ profile }) => (
-      <div className="flex items-center gap-4 rounded-2xl border border-peach-line bg-peach-soft px-4 py-4">
-        <Music className="h-5 w-5 shrink-0 text-peach-ink" aria-hidden="true" />
-        <div className="min-w-0">
-          <p className="t-label mb-0.5 text-peach-ink">Their song</p>
-          <p className="break-words text-sm font-semibold text-text-1">
-            {profile.associated_song!.name}
-          </p>
-          {profile.associated_song!.artist && (
-            <p className="break-words text-xs text-text-2">{profile.associated_song!.artist}</p>
-          )}
+export default function ProfileSheet({
+  profile,
+  toolbar,
+}: {
+  profile: ProfileOutput;
+  toolbar?: ReactNode;
+}) {
+  const [quote, setQuote] = useState<string | null>(null);
+  const [memory, setMemory] = useState<string | null>(null);
+  const identity = identityFor(profile.id);
+  const age = ageOn(profile.birthday);
+  const who = [profile.relationship_type, profile.pronouns, profile.profession].filter(hasText);
+  const song = profile.associated_song?.name ? profile.associated_song : null;
+
+  const favourites: Array<[string, ReactNode]> = [];
+  if (hasText(profile.favorite_movie)) favourites.push(["Favorite movie", profile.favorite_movie]);
+  if (hasText(profile.favorite_book)) favourites.push(["Favorite book", profile.favorite_book]);
+  if (hasText(profile.music_preference)) favourites.push(["Listens to", profile.music_preference]);
+  if (profile.movie_genres.length > 0)
+    favourites.push(["Movie genres", <Items key="m" items={profile.movie_genres} />]);
+  if (profile.book_genres.length > 0)
+    favourites.push(["Book genres", <Items key="b" items={profile.book_genres} />]);
+
+  const dayToDay: Array<[string, ReactNode]> = [];
+  if (profile.hangout_places.length > 0)
+    dayToDay.push(["Find them at", <Items key="h" items={profile.hangout_places} />]);
+  if (profile.food_restrictions.length > 0)
+    dayToDay.push(["Doesn't eat", <Items key="f" items={profile.food_restrictions} />]);
+  if (profile.political_views.length > 0)
+    dayToDay.push(["Politics", <Items key="p" items={profile.political_views} />]);
+
+  // In reading order. Each entry is a panel only if it has something to show.
+  const panels: Array<Omit<Parameters<typeof Panel>[0], "index">> = [];
+  if (profile.quotes.length > 0)
+    panels.push({
+      title: SHOWN_IN.quotes,
+      width: "wide",
+      children: (
+        <div className="flex flex-col items-start gap-2.5">
+          {profile.quotes.map((q) => (
+            <Quote key={q} quote={q} onOpen={() => setQuote(q)} />
+          ))}
         </div>
-      </div>
-    ),
-  },
-  top_songs: {
-    has: (p) => p.top_songs.length > 0,
-    wide: true,
-    render: ({ profile }) => (
-      <div>
-        <Label icon={ListMusic}>Top songs</Label>
-        <ol className="space-y-3">
-          {profile.top_songs.map((song, i) => (
-            <li key={`${song.name}-${i}`} className="flex items-center gap-3.5">
+      ),
+    });
+  if (song)
+    panels.push({
+      title: SHOWN_IN.associated_song,
+      icon: <Music className="h-[1.0625rem] w-[1.0625rem]" strokeWidth={2.4} aria-hidden="true" />,
+      width: "narrow",
+      solid: true,
+      children: (
+        <div className="pt-6 sm:pt-10">
+          <p className="break-words text-[2rem] font-bold leading-none tracking-[-0.03em] sm:text-[2.625rem]">
+            {song.name}
+          </p>
+          {song.artist && <p className="mt-2 break-words text-lg font-medium">{song.artist}</p>}
+        </div>
+      ),
+    });
+  if (profile.top_songs.length > 0)
+    panels.push({
+      title: SHOWN_IN.top_songs,
+      width: "narrow",
+      children: (
+        <ol className="divide-y-[1.5px] divide-p-soft">
+          {profile.top_songs.map((s, i) => (
+            <li
+              key={`${s.name}-${i}`}
+              className="flex items-center gap-3.5 py-2.5 first:pt-0 last:pb-0"
+            >
               <span
-                className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border text-sm font-extrabold",
-                  RANK_TINTS[i % RANK_TINTS.length]
-                )}
+                className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-p text-sm font-bold text-p-ink"
                 aria-label={`Number ${i + 1}`}
               >
                 {i + 1}
               </span>
               <div className="min-w-0">
-                <p className="break-words text-sm font-semibold text-text-1">{song.name}</p>
-                {song.artist && <p className="break-words text-xs text-text-2">{song.artist}</p>}
+                <p className="break-words text-[1.0625rem] font-semibold leading-snug text-text-1">
+                  {s.name}
+                </p>
+                {s.artist && <p className="break-words text-[0.9375rem] text-text-2">{s.artist}</p>}
               </div>
             </li>
           ))}
         </ol>
-      </div>
-    ),
-  },
-  movie_genres: {
-    has: (p) => p.movie_genres.length > 0,
-    render: ({ profile }) => (
-      <Chips label="Movie genres" icon={Film} items={profile.movie_genres} />
-    ),
-  },
-  book_genres: {
-    has: (p) => p.book_genres.length > 0,
-    render: ({ profile }) => <Chips label="Book genres" icon={Book} items={profile.book_genres} />,
-  },
-  hangout_places: {
-    has: (p) => p.hangout_places.length > 0,
-    render: ({ profile }) => (
-      <Chips label="Hangout places" icon={MapPin} items={profile.hangout_places} />
-    ),
-  },
-  food_restrictions: {
-    has: (p) => p.food_restrictions.length > 0,
-    render: ({ profile }) => (
-      <Chips label="Food restrictions" icon={Utensils} items={profile.food_restrictions} />
-    ),
-  },
-  political_views: {
-    has: (p) => p.political_views.length > 0,
-    render: ({ profile }) => (
-      <Chips label="Political views" icon={Vote} items={profile.political_views} />
-    ),
-  },
-  long_term_goals: {
-    has: (p) => hasText(p.long_term_goals),
-    wide: true,
-    render: ({ profile }) => <Prose label="Long-term goals" text={profile.long_term_goals} />,
-  },
-  favorite_memories: {
-    has: (p) => p.favorite_memories.length > 0,
-    wide: true,
-    render: ({ profile, openMemory }) => (
-      <div>
-        <Label icon={Heart}>Favorite memories</Label>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {profile.favorite_memories.map((memory) => (
-            <MemoryCard key={memory} memory={memory} onOpen={() => openMemory(memory)} />
+      ),
+    });
+  if (favourites.length > 0)
+    panels.push({
+      title: SHOWN_IN.favorite_movie,
+      width: "wide",
+      children: (
+        <Rows>
+          {favourites.map(([label, value]) => (
+            <Row key={label} label={label}>
+              {value}
+            </Row>
+          ))}
+        </Rows>
+      ),
+    });
+  if (dayToDay.length > 0)
+    panels.push({
+      title: SHOWN_IN.hangout_places,
+      width: "half",
+      children: (
+        <Rows>
+          {dayToDay.map(([label, value]) => (
+            <Row key={label} label={label}>
+              {value}
+            </Row>
+          ))}
+        </Rows>
+      ),
+    });
+  if (profile.favorite_memories.length > 0)
+    panels.push({
+      title: SHOWN_IN.favorite_memories,
+      width: "half",
+      children: (
+        <div className="divide-y-[1.5px] divide-p-soft">
+          {profile.favorite_memories.map((m) => (
+            <Memory key={m} memory={m} onOpen={() => setMemory(m)} />
           ))}
         </div>
-      </div>
-    ),
-  },
-  notes: {
-    has: (p) => hasText(p.notes),
-    wide: true,
-    render: ({ profile }) => <Prose label="Additional notes" text={profile.notes} />,
-  },
-  quotes: {
-    has: (p) => p.quotes.length > 0,
-    wide: true,
-    render: ({ profile, openQuote }) => (
-      <div>
-        <Label icon={Quote}>{FIELD_LABELS.quotes}</Label>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          {profile.quotes.map((quote) => (
-            <QuoteBubble key={quote} quote={quote} onOpen={() => openQuote(quote)} />
-          ))}
-        </div>
-      </div>
-    ),
-  },
-};
-
-/**
- * A profile as one sheet of paper, top to bottom — the same page the PDF
- * prints and the form edits. Tape and rules divide it, not separate cards.
- */
-export default function ProfileSheet({ profile }: { profile: ProfileOutput }) {
-  const [quote, setQuote] = useState<string | null>(null);
-  const [memory, setMemory] = useState<string | null>(null);
-  const tape = tapeFor(profile.id);
-  const context: RenderContext = { profile, openQuote: setQuote, openMemory: setMemory };
-
-  const sections = PROFILE_SECTIONS.map((section) => ({
-    section,
-    fields: section.fields.filter((key) => RENDERERS[key].has(profile)),
-  })).filter(({ fields }) => fields.length > 0);
+      ),
+    });
+  if (hasText(profile.long_term_goals))
+    panels.push({
+      title: SHOWN_IN.long_term_goals,
+      width: "wide",
+      children: (
+        <p className="whitespace-pre-line break-words text-xl font-semibold leading-[1.3] tracking-[-0.015em] text-text-1 sm:text-2xl">
+          {profile.long_term_goals}
+        </p>
+      ),
+    });
+  if (hasText(profile.notes))
+    panels.push({
+      title: SHOWN_IN.notes,
+      width: "narrow",
+      children: (
+        <p className="whitespace-pre-line break-words text-[1.0625rem] leading-relaxed text-text-1">
+          {profile.notes}
+        </p>
+      ),
+    });
 
   return (
     <>
-      <motion.article
-        {...enter(0, 12)}
-        className="paper relative rounded-[28px] px-5 py-7 sm:px-9 sm:py-9"
-      >
-        {/* The one pinned strip on the page: the same tape as this person's
-            card in the grid, so the card you tapped is the sheet you land on. */}
-        <Tape color={tape.color} width={tape.width + 20} tilt={tape.angle} />
+      <article className={identity.className}>
+        <motion.header
+          {...enter(0, 12)}
+          className="card-person rounded-[2rem] p-5 sm:rounded-[2.5rem] sm:p-10 lg:px-13 lg:pb-13"
+        >
+          {toolbar}
 
-        <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-6">
-          <Avatar id={profile.id} name={profile.full_name} size="lg" />
-          <div className="w-full min-w-0 flex-1">
-            <h1 className="t-page-title mb-1 text-text-1 [overflow-wrap:anywhere]">
-              {profile.full_name}
-            </h1>
-            {profile.pronouns && (
-              <p className="mb-2.5 text-sm font-semibold lowercase text-text-3">
-                {profile.pronouns}
+          <div
+            className={cn("flex flex-wrap items-center gap-5 sm:gap-8", toolbar && "mt-8 sm:mt-12")}
+          >
+            <Avatar id={profile.id} name={profile.full_name} size="lg" />
+            <div className="min-w-0">
+              <h1 className="t-name [overflow-wrap:anywhere]">{profile.full_name}</h1>
+              <p className="mt-2.5 flex flex-wrap text-base font-medium sm:text-lg">
+                {who.map((part, i) => (
+                  // By position: pronouns and profession can be the same text.
+                  <span key={i} className="after:mx-2 after:content-['·'] last:after:hidden">
+                    {part}
+                  </span>
+                ))}
               </p>
-            )}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-semibold text-text-3">
-              <span className="sticker-chip inline-flex items-center gap-1.5 px-2.5 py-1 text-text-2">
-                <Heart className="h-3 w-3" aria-hidden="true" />
-                {profile.relationship_type}
-              </span>
               {profile.birthday && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Calendar className="h-3 w-3" aria-hidden="true" />
-                  {formatDate(profile.birthday, "birthday")}
-                </span>
-              )}
-              {profile.zodiac_sign && (
-                <span className="inline-flex items-center gap-1.5">
-                  <ZodiacIcon sign={profile.zodiac_sign} size={12} className="text-blue-ink" />
-                  {profile.zodiac_sign}
-                </span>
+                // The dot before the sign stays with the age, so a wrapped line
+                // never opens with a stray separator.
+                <p className="flex flex-wrap items-center gap-x-2 text-base font-medium sm:text-lg">
+                  <span>
+                    Born {formatDate(profile.birthday, "long")}
+                    {age !== null && <span> · {age} years old</span>}
+                    {profile.zodiac_sign && <span aria-hidden="true"> ·</span>}
+                  </span>
+                  {profile.zodiac_sign && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <ZodiacIcon sign={profile.zodiac_sign} size={17} />
+                      <span>{profile.zodiac_sign}</span>
+                    </span>
+                  )}
+                </p>
               )}
             </div>
           </div>
-        </header>
 
-        {/* Your own words about them, set as lead prose. */}
-        {profile.bio && (
-          <p className="t-body mt-6 whitespace-pre-line text-text-2">{profile.bio}</p>
-        )}
+          {profile.bio && (
+            <p className="mt-7 max-w-[41rem] whitespace-pre-line text-pretty text-lg font-medium leading-[1.45] sm:mt-9 sm:text-[1.375rem]">
+              {profile.bio}
+            </p>
+          )}
 
-        <hr className="mt-6 border-0 border-t border-line" />
+          {profile.tags.length > 0 && (
+            <ul aria-label="Tags" className="mt-6 flex flex-wrap gap-2">
+              {profile.tags.map((tag) => (
+                // A tag can be a whole sentence; on someone's own page it
+                // wraps rather than being cut short.
+                <li
+                  key={tag}
+                  className="chip chip-on-color min-h-9 max-w-full whitespace-normal rounded-[1.125rem] px-4 py-1.5 text-[0.9375rem] leading-snug"
+                >
+                  <span className="break-words">{tag}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </motion.header>
 
-        {sections.length === 0 ? (
-          <p className="pt-8 text-sm text-text-3">
+        {panels.length === 0 ? (
+          <p className="panel-person mt-4 rounded-[1.75rem] px-7 py-8 text-[1.0625rem] text-text-1">
             Nothing else written down yet. Edit the profile to add what you know about them.
           </p>
         ) : (
-          sections.map(({ section, fields }, index) => (
-            <SheetSection key={section.id} section={section} index={index}>
-              <div className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2">
-                {fields.map((key) => (
-                  <div key={key} className={cn(RENDERERS[key].wide && "sm:col-span-2")}>
-                    {RENDERERS[key].render(context)}
-                  </div>
-                ))}
-              </div>
-            </SheetSection>
-          ))
+          <div className="mt-4 flex flex-wrap gap-4">
+            {panels.map((panel, index) => (
+              <Panel key={panel.title} index={index} {...panel} />
+            ))}
+          </div>
         )}
-      </motion.article>
+      </article>
 
-      <QuoteModal text={quote} person={profile.full_name} onClose={() => setQuote(null)} />
+      <QuoteModal
+        text={quote}
+        person={profile.full_name}
+        personClassName={identity.className}
+        onClose={() => setQuote(null)}
+      />
       <QuoteModal
         text={memory}
         person={profile.full_name}
+        personClassName={identity.className}
         variant="memory"
         onClose={() => setMemory(null)}
       />

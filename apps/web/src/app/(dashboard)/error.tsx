@@ -21,9 +21,7 @@ export default function DashboardError({
     <div className="page-body">
       <PageShell width="reading" as="main" id="main" className="py-16">
         <StatusNote
-          eyebrow="Something broke"
           title="This page hit a problem"
-          tape="peach"
           headingLevel="h1"
           actions={<Button onClick={reset}>Try again</Button>}
         >

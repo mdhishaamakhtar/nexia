@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div
           role="status"
           aria-label="Loading"
-          className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-blue-ink"
+          className="h-7 w-7 animate-spin rounded-full border-[3px] border-surface-3 border-t-text-1"
         />
       </div>
     );
@@ -41,9 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <main className="flex min-h-dvh items-center justify-center px-5">
         <StatusNote
-          eyebrow="Can't reach Nexia"
           title="Your slambook is out of reach for a moment"
-          tape="peach"
           headingLevel="h1"
           actions={<Button onClick={retry}>Try again</Button>}
         >
@@ -57,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <ChatProvider>
       <a
         href="#main"
-        className="sr-only z-[70] rounded-xl bg-surface px-4 py-2 text-sm font-semibold text-text-1 focus:not-sr-only focus:fixed focus:left-4 focus:top-3"
+        className="sr-only z-[70] rounded-full bg-text-1 px-5 py-2.5 text-[0.9375rem] font-semibold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-3"
       >
         Skip to content
       </a>

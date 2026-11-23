@@ -26,7 +26,7 @@ export default function SearchField({
   return (
     <div className={cn("relative min-w-0", className)}>
       <Search
-        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-3"
+        className="pointer-events-none absolute left-4 top-1/2 h-[1.125rem] w-[1.125rem] -translate-y-1/2 text-text-1"
         aria-hidden="true"
       />
       <input
@@ -43,7 +43,7 @@ export default function SearchField({
         placeholder={placeholder}
         aria-label={label}
         autoComplete="off"
-        className="field w-full py-3 pl-10 pr-12"
+        className="field w-full py-2.5 pl-11 pr-12"
       />
       {value && (
         <button

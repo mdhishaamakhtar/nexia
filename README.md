@@ -109,7 +109,7 @@ This is an **npm workspaces monorepo**:
 ## Documentation
 
 - [CLAUDE.md](./CLAUDE.md): architecture, conventions and development workflows
-- [DESIGN.md](./DESIGN.md): the design system (flat paper, pinned notes, type and colour)
+- [DESIGN.md](./DESIGN.md): the design system (person colours and shapes, flat surfaces, type)
 - [PRODUCT.md](./PRODUCT.md): who it is for and how it should feel
 - [docs/brand](./docs/brand): the mark, the wordmark and the social preview
 

@@ -14,12 +14,11 @@ export default function NotFound() {
       <Link
         href="/"
         aria-label="Nexia home"
-        className="group/logo mb-7 flex h-14 w-14 items-center justify-center rounded-2xl"
+        className="group/logo mb-6 flex h-16 w-16 items-center justify-center rounded-full"
       >
-        <LogoMark size={44} />
+        <LogoMark size={56} />
       </Link>
       <StatusNote
-        eyebrow="Not found"
         title="There's no page here"
         headingLevel="h1"
         actions={<Button href="/profiles">Open your slambook</Button>}

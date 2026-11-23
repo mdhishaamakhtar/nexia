@@ -18,25 +18,19 @@ export default function GlobalError({
     <html lang="en">
       <body>
         <main className="flex min-h-dvh items-center justify-center px-5">
-          <div className="paper relative w-full max-w-md rounded-3xl px-7 pb-7 pt-9 text-center">
-            <span
-              className="washi-tape"
-              style={{ width: 92, height: 22, background: "var(--peach)" }}
-              aria-hidden="true"
-            />
-            <p className="t-label mb-2">Something broke</p>
+          <div className="panel w-full max-w-lg rounded-[2rem] px-7 py-10 text-center sm:px-10 sm:py-12">
             <h1 className="t-section-title text-text-1">Nexia couldn&apos;t load</h1>
-            <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-text-2">
+            <p className="t-body mx-auto mt-2.5 max-w-sm text-text-2">
               Nothing you saved has been lost. Try again in a moment.
             </p>
             <button
               type="button"
               onClick={reset}
-              className="mt-6 inline-flex min-h-11 items-center rounded-xl border border-peach-line bg-peach px-5 text-sm font-semibold text-peach-ink"
+              className="mt-7 inline-flex min-h-12 cursor-pointer items-center rounded-full bg-action px-6 text-base font-bold text-action-ink"
             >
               Try again
             </button>
-            {error.digest && <p className="mt-4 text-xs text-text-3">Reference: {error.digest}</p>}
+            {error.digest && <p className="mt-5 text-sm text-text-3">Reference: {error.digest}</p>}
           </div>
         </main>
       </body>

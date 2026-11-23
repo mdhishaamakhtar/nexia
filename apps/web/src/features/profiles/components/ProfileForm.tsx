@@ -74,7 +74,7 @@ const EDITORS: Record<ProfileFieldKey, (p: EditorProps) => ReactNode> = {
     />
   ),
   tags: ({ control }) => (
-    <ChipListField control={control} name="tags" label="Tags" placeholder="Add a tag" kind="tag" />
+    <ChipListField control={control} name="tags" label="Tags" placeholder="Add a tag" />
   ),
   favorite_movie: ({ register, errors }) => (
     <Input
@@ -177,9 +177,9 @@ const EDITORS: Record<ProfileFieldKey, (p: EditorProps) => ReactNode> = {
 };
 
 /**
- * Editing a profile is the same sheet of paper as reading one: the same hero
- * at the top, the same sections in the same order with the same tape, the
- * same fields in each. Only the state differs.
+ * Editing a profile mirrors reading one: who they are at the top, then the
+ * same fields grouped the same way, each group a panel in the person's colour.
+ * Only the state differs.
  */
 export default function ProfileForm({
   initialValues,
@@ -213,8 +213,11 @@ export default function ProfileForm({
 
   return (
     // Bottom padding clears the fixed action bar so the last field is reachable.
-    <form onSubmit={submit} noValidate className="pb-28">
-      <div className="paper rounded-[28px] px-5 py-7 sm:px-9 sm:py-9">
+    <form onSubmit={submit} noValidate className="flex flex-col gap-4 pb-32">
+      <section
+        aria-label="Who they are"
+        className="panel-person rounded-[1.75rem] px-5 py-6 sm:p-8"
+      >
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <Input
             label="Full name"
@@ -251,21 +254,19 @@ export default function ProfileForm({
             />
           </div>
         </div>
+      </section>
 
-        <hr className="mt-8 border-0 border-t border-line" />
-
-        {PROFILE_SECTIONS.map((section, index) => (
-          <SheetSection key={section.id} section={section} index={index}>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              {section.fields.map((key) => (
-                <div key={key} className={cn(WIDE.has(key) && "md:col-span-2")}>
-                  {EDITORS[key](editorProps)}
-                </div>
-              ))}
-            </div>
-          </SheetSection>
-        ))}
-      </div>
+      {PROFILE_SECTIONS.map((section, index) => (
+        <SheetSection key={section.id} section={section} index={index}>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {section.fields.map((key) => (
+              <div key={key} className={cn(WIDE.has(key) && "md:col-span-2")}>
+                {EDITORS[key](editorProps)}
+              </div>
+            ))}
+          </div>
+        </SheetSection>
+      ))}
 
       <FormActionBar
         isDirty={isDirty}
@@ -276,7 +277,6 @@ export default function ProfileForm({
 
       <ConfirmDialog
         isOpen={guard.pendingHref !== null}
-        eyebrow="Unsaved changes"
         title="Leave without saving?"
         description="What you've changed on this profile will be lost."
         confirmLabel="Leave"

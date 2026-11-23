@@ -31,7 +31,7 @@ function compare(a: CalendarDate, b: CalendarDate): number {
 }
 
 /**
- * A calendar drawn on the app's paper instead of the browser's date input,
+ * A calendar drawn by the app instead of the browser's date input,
  * which renders differently on every platform and can't be styled to match.
  *
  * Birthdays are usually decades back, so the month/year heading opens a year
@@ -200,12 +200,15 @@ export default function DatePicker({
           aria-describedby={describedBy}
           onClick={() => (open ? close(false) : openPicker())}
           className={cn(
-            "field flex w-full cursor-pointer items-center gap-3 py-3 pl-4 pr-12 text-left",
+            "field flex w-full cursor-pointer items-center gap-3 py-2.5 pl-4 pr-12 text-left",
             error && "field-error"
           )}
         >
-          <CalendarDays className="h-4 w-4 shrink-0 text-text-3" aria-hidden="true" />
-          <span className={cn("truncate", !selected && "text-text-3")}>
+          <CalendarDays
+            className="h-[1.125rem] w-[1.125rem] shrink-0 text-text-1"
+            aria-hidden="true"
+          />
+          <span className={cn("truncate", !selected && "font-normal text-text-3")}>
             {formatDate(value, "long") ?? placeholder}
           </span>
         </button>
@@ -239,7 +242,7 @@ export default function DatePicker({
               className={cn(
                 // On a phone the field is narrower than the calendar, so the
                 // panel reaches out to the card's edges instead of the screen's.
-                "paper-float absolute -inset-x-5 z-40 rounded-2xl p-3 sm:inset-x-auto sm:left-0 sm:w-[20.75rem]",
+                "float absolute -inset-x-5 z-40 rounded-3xl p-3 sm:inset-x-auto sm:left-0 sm:w-[20.75rem]",
                 placeAbove ? "bottom-full mb-1.5" : "top-full mt-1.5"
               )}
             >
@@ -249,7 +252,7 @@ export default function DatePicker({
                   onClick={() => setFocused(addMonths(focused, view === "days" ? -1 : -12))}
                   aria-label={view === "days" ? "Previous month" : "Previous year"}
                   className={cn(
-                    "flex h-11 w-11 items-center justify-center rounded-xl text-text-2 transition-colors hover:bg-surface-2",
+                    "flex h-11 w-11 items-center justify-center rounded-full text-text-1 transition-colors hover:bg-surface-2",
                     view === "years" && "invisible"
                   )}
                 >
@@ -259,7 +262,7 @@ export default function DatePicker({
                   type="button"
                   onClick={() => showView(view === "days" ? "years" : "days")}
                   aria-live="polite"
-                  className="flex min-h-11 items-center rounded-xl px-3 text-[15px] font-bold text-text-1 transition-colors hover:bg-surface-2"
+                  className="flex min-h-11 items-center rounded-full px-4 text-base font-bold text-text-1 transition-colors hover:bg-surface-2"
                 >
                   {view === "years"
                     ? "Pick a year"
@@ -272,7 +275,7 @@ export default function DatePicker({
                   onClick={() => setFocused(addMonths(focused, view === "days" ? 1 : 12))}
                   aria-label={view === "days" ? "Next month" : "Next year"}
                   className={cn(
-                    "flex h-11 w-11 items-center justify-center rounded-xl text-text-2 transition-colors hover:bg-surface-2",
+                    "flex h-11 w-11 items-center justify-center rounded-full text-text-1 transition-colors hover:bg-surface-2",
                     view === "years" && "invisible"
                   )}
                 >
@@ -318,11 +321,9 @@ export default function DatePicker({
                             aria-label={formatDate(toISODate(date), "long") ?? undefined}
                             aria-current={isToday ? "date" : undefined}
                             className={cn(
-                              "flex h-11 w-11 items-center justify-center rounded-xl text-sm font-semibold text-text-2 transition-colors hover:bg-surface-2 disabled:opacity-30",
-                              isToday &&
-                                !isSelected &&
-                                "border border-lavender-line text-lavender-ink",
-                              isSelected && "bg-peach text-peach-ink hover:bg-peach"
+                              "flex h-11 w-11 items-center justify-center rounded-full text-[0.9375rem] font-semibold text-text-1 transition-colors hover:bg-surface-2 disabled:opacity-30",
+                              isToday && !isSelected && "bg-surface-2",
+                              isSelected && "bg-action text-action-ink hover:bg-action"
                             )}
                           >
                             {date.day}
@@ -369,8 +370,8 @@ export default function DatePicker({
                           }
                         }}
                         className={cn(
-                          "min-h-11 rounded-xl text-sm font-semibold text-text-2 transition-colors hover:bg-surface-2",
-                          selected?.year === year && "bg-peach text-peach-ink hover:bg-peach"
+                          "min-h-11 rounded-full text-[0.9375rem] font-semibold text-text-1 transition-colors hover:bg-surface-2",
+                          selected?.year === year && "bg-action text-action-ink hover:bg-action"
                         )}
                       >
                         {year}
@@ -419,7 +420,7 @@ export default function DatePicker({
                             });
                           }
                         }}
-                        className="min-h-11 rounded-xl text-sm font-semibold text-text-2 transition-colors hover:bg-surface-2 disabled:opacity-30"
+                        className="min-h-11 rounded-full text-[0.9375rem] font-semibold text-text-1 transition-colors hover:bg-surface-2 disabled:opacity-30"
                       >
                         {monthName(month, undefined, "short")}
                       </button>

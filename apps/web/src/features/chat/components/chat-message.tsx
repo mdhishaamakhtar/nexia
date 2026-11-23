@@ -6,7 +6,7 @@ import { Check, Copy } from "lucide-react";
 import { MessageResponse } from "@/components/ai-elements/message";
 import { isToolPart } from "@/features/chat/lib/tool-meta";
 import { chatMarkdownComponents } from "@/features/chat/lib/markdown";
-import { NexiaAvatar } from "@/shared/ui/AIIcons";
+import { LogoMark } from "@/components/atoms/Logo";
 import { ToolActivity } from "./tool-activity";
 
 export function ChatMessage({
@@ -35,13 +35,13 @@ function AssistantMessage({
 
   return (
     <div className="group/msg w-full">
-      <div className="flex min-w-0 flex-col gap-2.5">
+      <div className="flex min-w-0 flex-col gap-3">
         {message.parts.map((part, i) => {
           if (part.type === "text" && part.text) {
             return (
               <div
                 key={`${message.id}-text-${i}`}
-                className="chat-markdown text-[15px] leading-[1.7] text-text-1"
+                className="chat-markdown text-[1.0625rem] leading-[1.6] text-text-1"
               >
                 <MessageResponse components={chatMarkdownComponents}>{part.text}</MessageResponse>
               </div>
@@ -75,17 +75,17 @@ function MessageSignature({ text }: { text: string }) {
   };
 
   return (
-    <div className="mt-2 flex items-center gap-2">
-      <NexiaAvatar size={18} />
-      <span className="text-[11px] font-bold tracking-tight text-text-3">Nexia</span>
+    <div className="mt-2.5 flex items-center gap-2">
+      <LogoMark size={18} />
+      <span className="text-[0.8125rem] font-bold text-text-3">Nexia</span>
       <button
         type="button"
         onClick={copy}
         aria-label={copied ? "Copied" : "Copy reply"}
-        className="hit-44 flex h-7 w-7 items-center justify-center rounded-lg text-text-3 opacity-70 transition-[opacity,background-color] hover:bg-surface-2 hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/msg:opacity-100"
+        className="hit-44 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-text-3 opacity-70 transition-[opacity,background-color] hover:bg-surface-2 hover:opacity-100 focus-visible:opacity-100 sm:opacity-0 sm:group-hover/msg:opacity-100"
       >
         {copied ? (
-          <Check className="h-3.5 w-3.5 text-green-ink" aria-hidden="true" />
+          <Check className="h-3.5 w-3.5 text-mint-ink" strokeWidth={2.6} aria-hidden="true" />
         ) : (
           <Copy className="h-3.5 w-3.5" aria-hidden="true" />
         )}
@@ -106,7 +106,7 @@ function UserMessage({ message }: { message: UIMessage }) {
 
   return (
     <div className="flex w-full justify-end pl-10">
-      <p className="max-w-[78%] whitespace-pre-wrap break-words rounded-[20px] rounded-br-md bg-peach px-4 py-2.5 text-[15px] leading-[1.6] text-peach-ink">
+      <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-[1.375rem] rounded-br-md bg-surface-2 px-5 py-3 text-[1.0625rem] font-medium leading-[1.45] text-text-1">
         {text}
       </p>
     </div>

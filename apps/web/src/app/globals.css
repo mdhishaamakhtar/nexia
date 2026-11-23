@@ -1,105 +1,114 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════════
-   NEXIA DESIGN TOKENS — "The Tidy Memory Scrapbook"
+   NEXIA DESIGN TOKENS — "Soft"
 
-   The material is PAPER, not glass, and the paper is FLAT.
+   A white page, flat pastel surfaces, and one colour per person.
 
-   Separation comes from three things only: white paper on the warm cream
-   page, a warm hairline, and spacing. There is no backdrop-filter and no
-   box-shadow anywhere in this product — not on cards, buttons, modals,
-   bars, or the FAB. Do not reintroduce either. If a surface doesn't read
-   clearly, fix the contrast or the spacing.
+   Separation comes from colour and spacing: a pastel card on the white
+   page, a neutral panel, a field's edge. There is no box-shadow and no
+   backdrop-filter anywhere in this product. Do not introduce either. If a
+   surface doesn't read clearly, fix the colour or the spacing.
 
-   Every colour used as a FOREGROUND has an `-ink` variant that clears
-   WCAG AA against paper. The soft accents (--peach, --lavender, --blue)
-   are surface tints only; never put text or an icon in them.
+   Every accent comes in four steps: the colour itself (shapes, solid
+   blocks), a `-soft` card fill, a `-tint` panel fill, and an `-ink` that is
+   the only step ever used for text. Ink on any of the other three clears
+   WCAG AA. See DESIGN.md.
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
   color-scheme: light;
 
   /* ── Surfaces ──
-     page → surface → surface-2 (sunk: wells, nested rows) → surface-3 (hover) */
-  --page: #fff7ed;
+     page → surface-2 (neutral panels, chips, wells) → surface-3 (hover) */
+  --page: #ffffff;
   --surface: #ffffff;
-  --surface-2: #fbf7f1;
-  --surface-3: #f4ede3;
+  --surface-2: #f5f4f8;
+  --surface-3: #ebe9f2;
 
-  /* ── Ink ── a warm neutral ramp. Contrast on --page: 14.3:1 / 7.2:1 / 5.3:1 */
-  --text-1: #292524;
-  --text-2: #57534e;
-  --text-3: #6f6660;
+  /* ── Ink ── a cool near-black ramp. On white: 16.6:1 / 8.9:1 / 6.4:1 */
+  --text-1: #1c1a24;
+  --text-2: #4a4757;
+  --text-3: #5f5c6d;
 
   /* ── Lines ──
-     Warm hairlines, not slate. With shadows removed these carry ALL of the
-     app's separation. `--field-line` is the one exception to "hairline": a
-     white field on white paper is identified by its edge alone, so that edge
-     has to clear the 3:1 non-text contrast floor (3.4:1 on white, 3.0:1 on the peach well). */
-  --border: rgba(120, 98, 74, 0.24);
-  --border-mid: rgba(120, 98, 74, 0.38);
-  --field-line: #968879;
+     Used sparingly: rows inside a panel, and the edge of things that float.
+     `--field-line` is the one that has to work alone: a white field on a
+     white page is identified by its edge, so it clears 3:1 (3.6:1). */
+  --border: #e6e4ee;
+  --border-mid: #cfccdb;
+  --field-line: #8a8698;
+  --line-float: #a5a1b8;
 
-  /* ── Accent surfaces ── tints only, never a foreground */
-  --peach: #fdba74;
-  --lavender: #c4b5fd;
-  --blue: #93c5fd;
+  /* ── The six person colours ── */
+  --peach: #ff8f57;
+  --peach-soft: #ffd2b8;
+  --peach-tint: #fff0e6;
+  --peach-ink: #4f1d05;
 
-  /* ── Accent washes ── opaque, so a wash reads the same on any surface */
-  --peach-soft: #ffedd5;
-  --lavender-soft: #ede9fe;
-  --blue-soft: #dbeafe;
-  --green-soft: #edf7f0;
+  --butter: #ffc21a;
+  --butter-soft: #ffe894;
+  --butter-tint: #fff7d6;
+  --butter-ink: #453000;
 
-  /* Hairlines for the washes above — the accent's own ink at low alpha. */
-  --peach-line: rgba(124, 45, 18, 0.24);
-  --lavender-line: rgba(91, 33, 182, 0.24);
-  --blue-line: rgba(30, 64, 175, 0.24);
-  --green-line: rgba(21, 128, 61, 0.26);
+  --mint: #4fcb8a;
+  --mint-soft: #bdebd0;
+  --mint-tint: #e6f7ed;
+  --mint-ink: #0b3d26;
 
-  /* ── Accent inks ── foreground-safe against paper (all ≥4.5:1) */
-  --peach-ink: #7c2d12;
-  --lavender-ink: #5b21b6;
-  --blue-ink: #3b6fd4;
-  --green-ink: #15803d;
-  --red-ink: #c81e1e;
+  --sky: #5fa8ff;
+  --sky-soft: #c4deff;
+  --sky-tint: #e8f2ff;
+  --sky-ink: #082f57;
 
-  /* --blue-ink is tuned for white paper (4.8:1). On --blue-soft, --surface-3
-     or --blue it falls below 4.5:1, so text there uses this (7.0:1+). */
-  --blue-ink-deep: #1e40af;
+  --lilac: #a58cf5;
+  --lilac-soft: #dacfff;
+  --lilac-tint: #f1ecff;
+  --lilac-ink: #22104f;
 
-  /* ── State tints ── */
-  --red-bg: rgba(200, 30, 30, 0.07);
-  --red-bg-hover: rgba(200, 30, 30, 0.13);
-  --red-border: rgba(200, 30, 30, 0.22);
-  --lavender-bg: rgba(196, 181, 253, 0.22);
-  --lavender-border: rgba(91, 33, 182, 0.22);
+  --pink: #ff7fae;
+  --pink-soft: #ffcbdf;
+  --pink-tint: #ffe9f1;
+  --pink-ink: #5c0e31;
 
-  /* ── Focus ── one visible ring, everywhere */
-  --focus: #3b6fd4;
+  /* ── Action ── tangerine: the one colour that means "do this". It is the
+     peach step, kept under its own name so a button never depends on which
+     person happens to be peach. Ink on it: 7.5:1. */
+  --action: #ff8f57;
+  --action-hover: #ff7d3d;
+  --action-soft: #ffe3d2;
+  --action-ink: #3a1503;
 
-  /* ── Overlay ── a plain warm scrim; modals do not blur the page. */
-  --overlay: rgba(41, 37, 36, 0.55);
+  /* ── Problems ── */
+  --red-ink: #b3201a;
+  --red-bg: #fde8e6;
+  --red-bg-hover: #fbd5d1;
 
-  /* ── Lines on the scrim ──
-     A hairline is only visible when it is darker than BOTH surfaces it
-     divides. On the scrim a normal card line ends up lighter than the scrim
-     and dissolves, so dialogs and popovers carry this heavier line. */
-  --line-float: rgba(120, 98, 74, 0.55);
-  --lavender-line-float: rgba(91, 33, 182, 0.55);
+  /* ── Focus ── one visible ring, everywhere. 7.4:1 on white, and it holds
+     on every pastel. */
+  --focus: #4a2fd6;
 
-  /* Assistant mark — deeper blue so the white glyph clears 3:1 */
-  --nexia-mark: #5b8def;
+  /* ── Overlay ── a plain scrim; modals do not blur the page. */
+  --overlay: rgba(28, 26, 36, 0.5);
+
+  /* ── The current person ──
+     A `.person-*` class (see identity.ts) fills these in, so a card, a
+     profile page or a chat result takes one person's colour without each
+     piece knowing which it is. Outside one they fall back to neutral. */
+  --p: var(--border-mid);
+  --p-soft: var(--surface-2);
+  --p-tint: var(--surface-2);
+  --p-ink: var(--text-1);
 
   /* ── Layout ── two column widths and ONE gutter scale. See `.shell`. */
-  --shell-wide: 72rem; /* 1152px — browse grids, landing, navbar */
-  --shell-reading: 48rem; /* 768px — detail, forms, chat */
+  --shell-wide: 76rem; /* 1216px — browse grids, profiles, landing, navbar */
+  --shell-reading: 46rem; /* 736px — forms and chat */
   --gutter: 1.25rem; /* 20px */
-  --navbar-h: 3.5rem; /* 56px — fits 44px touch targets */
+  --navbar-h: 4.5rem; /* 72px */
 
   /* ── Motion ── ease-out only; nothing overshoots */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur: 220ms;
+  --dur: 200ms;
 }
 
 @media (min-width: 640px) {
@@ -110,17 +119,55 @@
 
 @media (min-width: 1024px) {
   :root {
-    --gutter: 2rem; /* 32px */
+    --gutter: 2.5rem; /* 40px */
   }
 }
 
+.person-peach {
+  --p: var(--peach);
+  --p-soft: var(--peach-soft);
+  --p-tint: var(--peach-tint);
+  --p-ink: var(--peach-ink);
+}
+.person-butter {
+  --p: var(--butter);
+  --p-soft: var(--butter-soft);
+  --p-tint: var(--butter-tint);
+  --p-ink: var(--butter-ink);
+}
+.person-mint {
+  --p: var(--mint);
+  --p-soft: var(--mint-soft);
+  --p-tint: var(--mint-tint);
+  --p-ink: var(--mint-ink);
+}
+.person-sky {
+  --p: var(--sky);
+  --p-soft: var(--sky-soft);
+  --p-tint: var(--sky-tint);
+  --p-ink: var(--sky-ink);
+}
+.person-lilac {
+  --p: var(--lilac);
+  --p-soft: var(--lilac-soft);
+  --p-tint: var(--lilac-tint);
+  --p-ink: var(--lilac-ink);
+}
+.person-pink {
+  --p: var(--pink);
+  --p-soft: var(--pink-soft);
+  --p-tint: var(--pink-tint);
+  --p-ink: var(--pink-ink);
+}
+
 /* Every token as a Tailwind colour, so components write `text-text-2` or
-   `bg-peach-soft` instead of an inline style. `inline` keeps :root as the
-   single source of truth: the utilities reference the variables above. */
+   `bg-p-soft` instead of an inline style. `inline` keeps :root as the single
+   source of truth: the utilities reference the variables above. */
 @theme inline {
   --font-sans:
-    var(--font-nunito), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  /* The only non-Nunito face in the product, and only inside markdown code. */
+    var(--font-alan), "Avenir Next", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
+  /* Markdown code only. */
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
 
   --color-surface: var(--surface);
@@ -132,28 +179,45 @@
   --color-line: var(--border);
   --color-line-mid: var(--border-mid);
   --color-line-float: var(--line-float);
-  --color-field-line: var(--field-line);
+
   --color-peach: var(--peach);
-  --color-lavender: var(--lavender);
-  --color-blue: var(--blue);
   --color-peach-soft: var(--peach-soft);
-  --color-lavender-soft: var(--lavender-soft);
-  --color-blue-soft: var(--blue-soft);
-  --color-green-soft: var(--green-soft);
-  --color-peach-line: var(--peach-line);
-  --color-lavender-line: var(--lavender-line);
-  --color-lavender-line-float: var(--lavender-line-float);
-  --color-blue-line: var(--blue-line);
-  --color-green-line: var(--green-line);
+  --color-peach-tint: var(--peach-tint);
   --color-peach-ink: var(--peach-ink);
-  --color-lavender-ink: var(--lavender-ink);
-  --color-blue-ink: var(--blue-ink);
-  --color-blue-ink-deep: var(--blue-ink-deep);
-  --color-green-ink: var(--green-ink);
+  --color-butter: var(--butter);
+  --color-butter-soft: var(--butter-soft);
+  --color-butter-tint: var(--butter-tint);
+  --color-butter-ink: var(--butter-ink);
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-mint-tint: var(--mint-tint);
+  --color-mint-ink: var(--mint-ink);
+  --color-sky: var(--sky);
+  --color-sky-soft: var(--sky-soft);
+  --color-sky-tint: var(--sky-tint);
+  --color-sky-ink: var(--sky-ink);
+  --color-lilac: var(--lilac);
+  --color-lilac-soft: var(--lilac-soft);
+  --color-lilac-tint: var(--lilac-tint);
+  --color-lilac-ink: var(--lilac-ink);
+  --color-pink: var(--pink);
+  --color-pink-soft: var(--pink-soft);
+  --color-pink-tint: var(--pink-tint);
+  --color-pink-ink: var(--pink-ink);
+
+  --color-p: var(--p);
+  --color-p-soft: var(--p-soft);
+  --color-p-tint: var(--p-tint);
+  --color-p-ink: var(--p-ink);
+
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-action-soft: var(--action-soft);
+  --color-action-ink: var(--action-ink);
+
   --color-red-ink: var(--red-ink);
   --color-red-bg: var(--red-bg);
   --color-red-bg-hover: var(--red-bg-hover);
-  --color-red-border: var(--red-border);
   --color-overlay: var(--overlay);
 
   /* Tailwind's own `ease-out` becomes ours, so `ease-out` means one curve. */
@@ -175,9 +239,14 @@
 
   /* One focus treatment for the whole app. Components must not remove it. */
   :focus-visible {
-    outline: 2px solid var(--focus);
+    outline: 2.5px solid var(--focus);
     outline-offset: 2px;
-    border-radius: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--butter-soft);
+    color: var(--text-1);
   }
 
   input,
@@ -194,8 +263,8 @@
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-thumb {
     background: var(--border-mid);
@@ -207,9 +276,7 @@
    COMPONENTS
 
    Everything here sits in the components layer, BELOW utilities. That is
-   the point: `className="washi-tape opacity-0"` must mean opacity 0. These
-   classes used to be unlayered, which let them silently beat every utility
-   written next to them.
+   the point: `className="chip opacity-0"` must mean opacity 0.
    ═══════════════════════════════════════════════════════════════════ */
 
 @layer components {
@@ -236,53 +303,53 @@
     min-height: calc(100dvh - var(--navbar-h));
   }
 
-  /* ── Materials ── flat: a white sheet and a warm hairline, nothing else. */
-  .paper {
-    background: var(--surface);
-    border: 1px solid var(--border);
-  }
-  /* A quieter inset surface. Nested `.paper` inside `.paper` is never right. */
-  .paper-sunk {
+  /* ── Materials ── flat fills, no edges, no shadows.
+     `.panel` is the neutral block. `.panel-person` and `.card-person` take
+     the colour of whoever the nearest `.person-*` ancestor is. */
+  .panel {
     background: var(--surface-2);
-    border: 1px solid var(--border);
   }
-  /* Popovers (menus, the calendar) float over content and over the scrim,
-     so they carry the heavier float line. */
-  .paper-float {
+  .panel-person {
+    background: var(--p-tint);
+  }
+  .card-person {
+    background: var(--p-soft);
+    color: var(--p-ink);
+  }
+  /* Things that float over content (menus, the calendar, dialogs) are white
+     on white or white on the scrim, so they carry a line of their own. */
+  .float {
     background: var(--surface);
     border: 1.5px solid var(--line-float);
   }
 
   /* ── Fields ──
-     WHITE, not tinted: a field is a hole punched in the paper, defined by its
-     edge. 16px on phones is not a style choice — iOS Safari zooms the page on
-     focus for anything smaller. Width is always the caller's. */
+     WHITE, not tinted: a field is defined by its edge. 16px is not a style
+     choice — iOS Safari zooms the page on focus for anything smaller. Width
+     is always the caller's. */
   .field {
-    min-height: 2.75rem; /* 44px touch target */
+    min-height: 3rem; /* 48px */
     font-size: 1rem;
+    font-weight: 500;
     background: var(--surface);
-    border: 1px solid var(--field-line);
-    border-radius: 0.75rem;
+    border: 1.5px solid var(--field-line);
+    border-radius: 1rem;
     color: var(--text-1);
     transition: border-color var(--dur) var(--ease-out-soft);
   }
-  @media (min-width: 640px) {
-    .field {
-      font-size: 0.9375rem;
-    }
-  }
   .field::placeholder {
     color: var(--text-3);
+    font-weight: 400;
   }
   .field:hover:not(:disabled):not(:focus) {
-    border-color: var(--text-3);
+    border-color: var(--text-1);
   }
   .field:focus,
   .field:focus-visible,
   .field[aria-expanded="true"] {
     border-color: var(--focus);
-    outline: 2px solid var(--focus);
-    outline-offset: -1px;
+    outline: 2.5px solid var(--focus);
+    outline-offset: -1.5px;
   }
   .field:disabled {
     opacity: 0.5;
@@ -294,78 +361,58 @@
     outline-color: var(--red-ink);
   }
 
-  /* ── Sticker chips ── */
-  .sticker-chip {
+  /* ── Chips ── a pill of text. Neutral on the page; on a person's colour
+     it turns to frosted white and keeps their ink. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
     background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    color: var(--text-2);
+    color: var(--text-1);
+    font-weight: 600;
+    white-space: nowrap;
   }
-  .sticker-tag {
-    background: var(--lavender-bg);
-    border: 1px solid var(--lavender-border);
-    color: var(--lavender-ink);
-    border-radius: 999px;
+  .chip-on-color {
+    background: rgb(255 255 255 / 0.72);
+    color: inherit;
   }
 
-  /* ── Washi tape ── one material, two jobs.
-     `.washi-tape` PINS: rotated, pasted across the top edge of a surface.
-     `.tape-mark` MARKS: the same strip laid flat in a heading row.
-     Both are decoration; both are aria-hidden at every call site. */
-  .washi-tape,
-  .tape-mark {
-    background: var(--lavender);
-    clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%);
-    pointer-events: none;
-  }
-  .washi-tape {
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    width: 60px;
-    height: 20px;
-    transform: translateX(-50%) rotate(-2deg);
-    opacity: 0.7;
-    z-index: 20;
-  }
-  .tape-mark {
-    display: block;
-    flex-shrink: 0;
-    width: 26px;
-    height: 10px;
-  }
-
-  /* ── Type scale ── five roles, and nothing outside them. */
+  /* ── Type scale ── one family, Alan Sans; hierarchy is size and weight. */
   .t-display {
-    font-size: clamp(2.5rem, 1.6rem + 4vw, 4.25rem);
-    font-weight: 800;
-    line-height: 1.05;
+    font-size: clamp(2.75rem, 1.5rem + 5.4vw, 5.25rem);
+    font-weight: 700;
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+  }
+  /* A person's name at the top of their page: the largest thing in the app. */
+  .t-name {
+    font-size: clamp(2.5rem, 1.6rem + 4vw, 4.75rem);
+    font-weight: 700;
+    line-height: 1;
     letter-spacing: -0.03em;
   }
   .t-page-title {
-    font-size: clamp(1.75rem, 1.3rem + 1.8vw, 2.5rem);
-    font-weight: 800;
-    line-height: 1.12;
-    letter-spacing: -0.02em;
+    font-size: clamp(2.125rem, 1.5rem + 2.6vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
   }
   .t-section-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    line-height: 1.25;
-    letter-spacing: -0.01em;
-  }
-  /* Small all-caps label for every section header and field label. */
-  .t-label {
-    font-size: 0.6875rem; /* 11px */
+    font-size: 1.375rem;
     font-weight: 700;
     line-height: 1.2;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--text-3);
+    letter-spacing: -0.02em;
+  }
+  /* A quiet label in sentence case: it names a thing, it doesn't shout. */
+  .t-label {
+    font-size: 0.9375rem; /* 15px */
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-2);
   }
   .t-body {
-    font-size: 0.9375rem;
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.55;
   }
 
   /* ── Touch targets ──
@@ -387,28 +434,31 @@
   /* ── Loading and ambient motion ── */
   .shimmer {
     background: var(--surface-2);
-    border: 1px solid var(--border);
     animation: shimmer 1s var(--ease-out-soft) infinite alternate;
   }
   .streaming-dot {
     display: inline-block;
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
-    background: var(--blue-ink);
+    background: var(--action);
     animation: streaming-dot 1.2s var(--ease-out-soft) infinite;
   }
 
   /* ── Chat composer ──
-     The whole card — textarea plus the send row — is one field, so the focus
-     ring lives on the card, flush with its edge, not on the textarea. */
+     The whole pill — textarea plus the send button — is one field, so the
+     focus ring lives on the pill, flush with its edge, not on the textarea. */
   .composer {
-    border-color: var(--field-line);
+    border: 1.5px solid var(--field-line);
+    transition: border-color var(--dur) var(--ease-out-soft);
+  }
+  .composer:hover:not(:has(#chat-input:focus)) {
+    border-color: var(--text-1);
   }
   .composer:has(#chat-input:focus) {
     border-color: var(--focus);
-    outline: 2px solid var(--focus);
-    outline-offset: -1px;
+    outline: 2.5px solid var(--focus);
+    outline-offset: -1.5px;
   }
   #chat-input:focus-visible {
     outline: none;
@@ -423,11 +473,11 @@
     margin: 0;
   }
   .chat-markdown p + p {
-    margin-top: 0.5rem;
+    margin-top: 0.6rem;
   }
   .chat-markdown ul,
   .chat-markdown ol {
-    margin: 0.5rem 0;
+    margin: 0.6rem 0;
     padding-left: 1.25rem;
   }
   .chat-markdown ul {
@@ -437,7 +487,7 @@
     list-style: decimal;
   }
   .chat-markdown li + li {
-    margin-top: 0.2rem;
+    margin-top: 0.25rem;
   }
   .chat-markdown li::marker {
     color: var(--text-3);
@@ -452,7 +502,7 @@
   .chat-markdown h2,
   .chat-markdown h3 {
     font-weight: 700;
-    margin: 0.6rem 0 0.25rem;
+    margin: 0.7rem 0 0.3rem;
     line-height: 1.3;
   }
   .chat-markdown h1:first-child,
@@ -471,43 +521,42 @@
   }
   .chat-markdown code {
     background: var(--surface-2);
-    border: 1px solid var(--border);
-    padding: 0.1em 0.3em;
-    border-radius: 0.25rem;
+    padding: 0.1em 0.35em;
+    border-radius: 0.375rem;
     font-size: 0.85em;
     font-family: var(--font-mono);
   }
   .chat-markdown pre {
-    margin: 0.55rem 0;
-    border-radius: 0.75rem;
-    border: 1px solid var(--border);
+    margin: 0.6rem 0;
+    border-radius: 1rem;
     background: var(--surface-2);
-    padding: 0.8rem 0.95rem;
+    padding: 0.85rem 1rem;
     overflow-x: auto;
     font-size: 0.8125rem;
     line-height: 1.55;
   }
   .chat-markdown pre code {
     background: transparent;
-    border: 0;
     padding: 0;
     font-size: inherit;
   }
   .chat-markdown blockquote {
-    border-left: 2px solid var(--border-mid);
-    padding-left: 0.75rem;
-    margin: 0.4rem 0;
-    color: var(--text-3);
+    background: var(--surface-2);
+    border-radius: 1rem;
+    padding: 0.6rem 1rem;
+    margin: 0.5rem 0;
+    color: var(--text-2);
   }
   .chat-markdown a {
-    color: var(--blue-ink);
+    color: var(--text-1);
+    font-weight: 600;
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-underline-offset: 3px;
   }
   .chat-markdown hr {
     border: 0;
-    border-top: 1px solid var(--border);
-    margin: 0.9rem 0;
+    border-top: 1.5px solid var(--border);
+    margin: 1rem 0;
   }
 }
 

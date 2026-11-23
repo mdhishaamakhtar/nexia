@@ -8,7 +8,7 @@ development workflows, and key decisions to follow when making changes.
 
 ## Project Overview
 
-**Nexia** is a digital slambook / friend-profile scrapbook application. Users
+**Nexia** is a digital slambook: a friend-profile application. Users
 create rich profiles for their contacts (friends, family, colleagues, etc.) and
 query them via an AI chat assistant ("Ask Nexia") that uses RAG (Retrieval-
 Augmented Generation) over the stored profiles, and can add or update profiles
@@ -75,7 +75,7 @@ nexia/
 │           ├── features/         # Feature-sliced modules (auth, chat, profiles)
 │           └── shared/           # Shared API client, types, providers, UI
 ├── packages/
-│   └── shared/                   # @nexia/shared — Zod schemas, types, enums
+│   └── shared/                   # @nexia/shared — Zod schemas, types, enums, brand palette
 │       └── src/
 ├── docs/
 │   └── brand/                    # Logo mark, wordmark, social preview (rendered)
@@ -404,7 +404,7 @@ If `ai.gemini_api_key` is absent the worker does not start and `/chat` returns
    snapshot.
 4. **Writes need the user's approval.** `createProfile` and `updateProfile` are
    `needsApproval: true`: the stream stops with an approval request, the chat UI
-   shows the proposed change as a pinned note (Save / Not now), and the tool
+   shows the proposed change as a card (Save / Not now), and the tool
    runs only when the approval comes back. Approvals are signed with an HMAC
    derived from the JWT secret, so a client cannot forge one.
 5. The system prompt tells the agent to prefer RAG for fuzzy questions, to call
@@ -455,7 +455,7 @@ redundant auth checks, no Navbar flicker.
 | `/verify-email/confirm` | `app/verify-email/confirm/page.tsx` | No | Token verification result |
 | `/forgot-password` | `app/forgot-password/page.tsx` | No | Forgot password form |
 | `/reset-password` | `app/reset-password/page.tsx` | No | Reset password form |
-| `/profiles` | `app/(dashboard)/profiles/page.tsx` | No | Profile list (scrapbook view) |
+| `/profiles` | `app/(dashboard)/profiles/page.tsx` | No | Profile list (grid of person cards) |
 | `/profiles/new` | `app/(dashboard)/profiles/new/page.tsx` | No | Create profile form |
 | `/profiles/[id]` | `app/(dashboard)/profiles/[id]/page.tsx` | No | Profile detail view |
 | `/profiles/[id]/edit` | `app/(dashboard)/profiles/[id]/edit/page.tsx` | No | Edit profile form |
@@ -466,24 +466,32 @@ redundant auth checks, no Navbar flicker.
 Read **`DESIGN.md`** at the repo root before changing any UI. The short version:
 
 - **`PageShell`** (`components/layout/PageShell.tsx`) is the only container.
-  Two widths — `wide` (72rem) for browse grids, the landing page, and the navbar;
-  `reading` (48rem) for detail, forms, and chat. Never set `max-width` or
-  horizontal padding on a page directly.
-- **Material is flat opaque paper.** `.paper` / `.paper-sunk` plus a warm
-  hairline. There is **no `backdrop-filter` and no `box-shadow` anywhere** —
-  neither should be added. Form fields are white, not tinted.
+  Two widths — `wide` (76rem) for the people grid, a profile, the landing page
+  and the navbar; `reading` (46rem) for the profile form and chat. Never set
+  `max-width` or horizontal padding on a page directly.
+- **A white page and flat pastel surfaces.** `.panel` (neutral), `.card-person`
+  and `.panel-person` (the current person's colour). There is **no
+  `backdrop-filter` and no `box-shadow` anywhere** — neither should be added.
+  Form fields are white, not tinted.
+- **Every person has a colour and a shape**, derived from their profile id by
+  `identityFor` (`features/profiles/identity.ts`): six colours, seven shapes.
+  Put its `person-*` class on whatever is about that person and use the `p`
+  utilities inside (`bg-p-soft`, `text-p-ink`); `Avatar` draws the shape.
+- **Tangerine (`action`) is the one "do this" colour**: one primary button per
+  view.
 - **No native browser UI.** No `<select>`, date input, `alert()`, `confirm()` or
   `title` tooltip: use `Select`, `DatePicker`, `ConfirmDialog`, `toast`, and
-  `Tooltip`. Every overlay is a "pinned note" built on `overlays/Dialog`.
+  `Tooltip`. Every overlay is built on `overlays/Dialog`.
 - **The logo** is `atoms/Logo` (`<Logo>` / `<LogoMark>`), drawn from
   `shared/brand/mark.ts`. The favicon, app icons, manifest icons and
   `docs/brand` are renders of that module: change it, then run
   `npm run brand -w web` (pass `http://localhost:3000` to refresh the README's
   social preview too). The Open Graph image is `shared/lib/social-image.tsx`.
-- **Type comes from five classes** in `globals.css`: `.t-display`,
-  `.t-page-title`, `.t-section-title`, `.t-body`, `.t-label`.
-- **Soft accents are surface tints, never foregrounds.** Text and icons use the
-  `-ink` variants (`peach-ink`, `blue-ink`, `red-ink`, …), which clear WCAG AA.
+- **One typeface, Alan Sans**, and six type classes in `globals.css`:
+  `.t-display`, `.t-name`, `.t-page-title`, `.t-section-title`, `.t-body`,
+  `.t-label`.
+- **Colours are surfaces, never foregrounds.** Text and icons on a colour use
+  its `-ink` step (`lilac-ink`, `p-ink`, `action-ink`, …), which clears WCAG AA.
 - Dashboard pages use `.page-body`, not `min-h-screen` (which overshoots by the
   navbar height and forces a scrollbar).
 
@@ -494,8 +502,8 @@ components/
   ai-elements/  — Vendored chat pieces, trimmed to what Nexia uses:
                   conversation.tsx, message.tsx (MessageResponse only)
   atoms/        — Button, Field, Input, Textarea, Select, DatePicker, SearchField,
-                  Tooltip, Tape, Logo, BackButton, SignedInRedirect
-  overlays/     — Dialog (the one modal: focus trap, scrim, pinned-note sheet)
+                  Tooltip, Logo, BackButton, SignedInRedirect
+  overlays/     — Dialog (the one modal: focus trap, scrim, rounded sheet)
   layout/       — PageShell (container), AuthCard (unauthenticated page shell)
   molecules/    — Navbar, CardProfilePreview, ConfirmDialog, QuoteModal, StatusNote
 
@@ -509,7 +517,9 @@ features/
   profiles/api.ts     — Profile CRUD calls
   profiles/hooks.ts   — Query keys and the list / detail / mutation hooks
   profiles/form.ts    — Form schema (built from the shared schema) and mapping
-  profiles/sections.ts— Which fields each sheet section holds, labels, colours
+  profiles/identity.ts— A person's colour and shape, from their id
+  profiles/shapes.ts  — The seven shapes as data, for the avatar and the PDF
+  profiles/sections.ts— Which fields each form section holds, and their labels
   profiles/components — ProfileForm, ProfileSheet, SheetSection, FormActionBar,
                         Avatar, ZodiacIcon, fields/ (ChipList, TopSongs, TheirSong)
 
@@ -519,7 +529,7 @@ shared/
   hooks/              — useFocusTrap, useDismiss, useIsClamped, useLeaveGuard
   lib/                — dates.ts (all date parsing/formatting), social-image.tsx
   providers/          — React Query + MotionConfig wrapper
-  ui/                 — toast, motion (EASE_OUT, SETTLE, enter), AIIcons
+  ui/                 — toast, motion (EASE_OUT, SETTLE, enter)
 ```
 
 There is no `components/ui/` directory. The shadcn primitives were removed along
@@ -677,6 +687,12 @@ npm run brand -w web                          # icons and docs/brand SVGs
 npm run brand -w web -- http://localhost:3000 # also the README social preview
 ```
 
+`apps/web/public/fonts` holds two static weights of Alan Sans (Regular 400 and
+Bold 700, Latin and Latin Extended; SIL Open Font License 1.1). The app itself
+loads Alan Sans through `next/font`; these files are for the places that
+cannot: the profile PDF, the social preview image, and the outlined wordmark
+in `scripts/brand-assets.ts`.
+
 ### Emails in development
 
 With no `email.resend_api_key`, nothing is sent: the API logs each
@@ -748,6 +764,14 @@ sign-up can be finished locally from the API log.
    live here. Both `apps/api` and `apps/web` consume the same types.
 2. **No runtime dependencies**: this package exports only types, schemas, and
    constants. No database, no HTTP, no framework code.
+3. **The brand palette lives here too**, behind its own entry point,
+   `@nexia/shared/brand` (`brand.ts`): the six person colours and the neutrals
+   as data, for everything that cannot read a CSS variable — the logo and
+   icons, the profile PDF, the social image, and the API's emails. `globals.css`
+   holds the same values for the browser, and
+   `apps/web/src/shared/brand/palette.test.ts` fails if the two differ. Change a
+   colour in both, then run `npm run brand -w web`. `brand.ts` imports nothing,
+   so the Node brand script can load it directly.
 
 ### Git
 

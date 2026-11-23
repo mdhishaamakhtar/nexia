@@ -5,7 +5,6 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { useController, useFieldArray, type Control } from "react-hook-form";
 import { MAX_TOP_SONGS } from "@nexia/shared";
 import { cn } from "@/lib/utils";
-import { RANK_TINTS } from "../../sections";
 import type { ProfileFormValues } from "../../form";
 
 /**
@@ -48,19 +47,19 @@ export default function TopSongsField({ control }: { control: Control<ProfileFor
       {fields.length > 0 && (
         <ol className="mb-3 space-y-2">
           {fields.map((field, index) => (
-            <li key={field.id} className="flex items-center gap-3">
+            <li
+              key={field.id}
+              className="flex items-center gap-3 rounded-[1.25rem] bg-surface py-1 pl-3.5 pr-1"
+            >
               <span
-                className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border text-sm font-extrabold",
-                  RANK_TINTS[index % RANK_TINTS.length]
-                )}
+                className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-p text-sm font-bold text-p-ink"
                 aria-label={`Number ${index + 1}`}
               >
                 {index + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-text-1">{field.name}</p>
-                {field.artist && <p className="truncate text-xs text-text-2">{field.artist}</p>}
+                <p className="truncate text-base font-semibold text-text-1">{field.name}</p>
+                {field.artist && <p className="truncate text-sm text-text-2">{field.artist}</p>}
               </div>
               <div className="flex shrink-0 items-center">
                 <button
@@ -68,7 +67,7 @@ export default function TopSongsField({ control }: { control: Control<ProfileFor
                   onClick={() => swap(index, index - 1)}
                   disabled={index === 0}
                   aria-label={`Move ${field.name} up`}
-                  className="flex h-11 w-9 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text-1 disabled:invisible"
+                  className="flex h-11 w-9 cursor-pointer items-center justify-center rounded-full text-text-2 transition-colors hover:bg-surface-2 hover:text-text-1 disabled:invisible"
                 >
                   <ArrowUp className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -77,7 +76,7 @@ export default function TopSongsField({ control }: { control: Control<ProfileFor
                   onClick={() => swap(index, index + 1)}
                   disabled={index === fields.length - 1}
                   aria-label={`Move ${field.name} down`}
-                  className="flex h-11 w-9 items-center justify-center rounded-lg text-text-3 transition-colors hover:bg-surface-2 hover:text-text-1 disabled:invisible"
+                  className="flex h-11 w-9 cursor-pointer items-center justify-center rounded-full text-text-2 transition-colors hover:bg-surface-2 hover:text-text-1 disabled:invisible"
                 >
                   <ArrowDown className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -85,7 +84,7 @@ export default function TopSongsField({ control }: { control: Control<ProfileFor
                   type="button"
                   onClick={() => remove(index)}
                   aria-label={`Remove ${field.name}`}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-red-ink transition-colors hover:bg-red-bg"
+                  className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-red-ink transition-colors hover:bg-red-bg"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -96,7 +95,7 @@ export default function TopSongsField({ control }: { control: Control<ProfileFor
       )}
 
       {full ? (
-        <p className="text-xs text-text-3">
+        <p className="text-sm text-text-2">
           That&apos;s all {MAX_TOP_SONGS}. Remove one to swap it out.
         </p>
       ) : (
@@ -111,7 +110,7 @@ export default function TopSongsField({ control }: { control: Control<ProfileFor
               placeholder="Song name"
               aria-label="Top song name"
               aria-invalid={nameState.error ? true : undefined}
-              className={cn("field min-w-0 flex-1 px-4 py-3", nameState.error && "field-error")}
+              className={cn("field min-w-0 flex-1 px-4 py-2.5", nameState.error && "field-error")}
             />
             <input
               value={draftArtist.value}
@@ -120,20 +119,20 @@ export default function TopSongsField({ control }: { control: Control<ProfileFor
               onKeyDown={onKeyDown}
               placeholder="Artist (optional)"
               aria-label="Top song artist"
-              className="field min-w-0 flex-1 px-4 py-3"
+              className="field min-w-0 flex-1 px-4 py-2.5"
             />
             <button
               type="button"
               onClick={add}
               disabled={!draftName.value.trim()}
-              className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-field-line bg-surface px-4 text-sm font-semibold text-text-2 transition-colors hover:bg-surface-2 disabled:border-line disabled:text-text-3 sm:w-11 sm:px-0"
+              className="flex min-h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-text-1 px-5 text-base font-semibold text-white transition-[background-color,transform] active:scale-95 disabled:cursor-default disabled:bg-surface-3 disabled:text-text-3 sm:w-12 sm:px-0"
             >
               <Plus className="h-5 w-5" aria-hidden="true" />
               <span className="sm:sr-only">Add song</span>
             </button>
           </div>
           {nameState.error && (
-            <p role="alert" className="mt-1.5 text-xs font-semibold text-red-ink">
+            <p role="alert" className="mt-2 text-sm font-semibold text-red-ink">
               {nameState.error.message}
             </p>
           )}

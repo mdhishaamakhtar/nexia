@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "secondary" | "destructive" | "ghost";
+type Variant = "primary" | "secondary" | "destructive" | "ghost" | "frost";
 type Size = "sm" | "md" | "lg" | "icon";
 
 /**
@@ -11,30 +11,32 @@ type Size = "sm" | "md" | "lg" | "icon";
  * pages used to hand-roll their own, which is how a white-on-light-blue CTA at
  * 1.8:1 once became the primary action on the profiles page.
  *
- * Primary is peach with peach ink (5.6:1) and a peach hairline. The soft accent
- * tints are never a text or icon colour anywhere; see globals.css.
+ * Primary is tangerine with its own dark ink (7.5:1): the one colour in the app
+ * that means "do this". Secondary is the neutral panel fill. `frost` is for a
+ * control that sits on someone's colour: translucent white, in their ink.
  *
  * Press feedback is a CSS scale on the one ease-out curve. No spring: DESIGN.md
  * rules out overshoot, and a CSS transition costs nothing per button.
  */
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-peach text-peach-ink border-peach-line hover:brightness-[0.97]",
-  secondary: "bg-surface text-text-2 border-line-mid hover:bg-surface-2 hover:text-text-1",
-  destructive: "bg-red-bg text-red-ink border-red-border hover:bg-red-bg-hover",
-  ghost: "bg-transparent text-text-2 border-transparent hover:bg-surface-2 hover:text-text-1",
+  primary: "bg-action text-action-ink font-bold hover:bg-action-hover",
+  secondary: "bg-surface-2 text-text-1 hover:bg-surface-3",
+  destructive: "bg-red-bg text-red-ink hover:bg-red-bg-hover",
+  ghost: "bg-transparent text-text-2 hover:bg-surface-2 hover:text-text-1",
+  frost: "bg-white/70 text-current hover:bg-white",
 };
 
 // Every size clears the 44px touch-target floor.
 const SIZES: Record<Size, string> = {
-  sm: "min-h-11 gap-1.5 px-3.5 text-[13px]",
-  md: "min-h-11 gap-2 px-5 text-sm",
-  lg: "min-h-12 gap-2 px-8 text-sm font-bold",
+  sm: "min-h-11 gap-1.5 px-4 text-[0.9375rem]",
+  md: "min-h-12 gap-2 px-5.5 text-base",
+  lg: "min-h-14 gap-2.5 px-7 text-lg",
   icon: "h-11 w-11 shrink-0",
 };
 
 const BASE =
-  "relative inline-flex cursor-pointer select-none items-center justify-center rounded-xl border font-semibold " +
-  "transition-[transform,background-color,color,filter] duration-150 ease-out active:scale-[0.98] " +
+  "relative inline-flex cursor-pointer select-none items-center justify-center rounded-full font-semibold " +
+  "transition-[transform,background-color,color] duration-150 ease-out active:scale-[0.97] " +
   "disabled:pointer-events-none disabled:opacity-45 aria-disabled:pointer-events-none aria-disabled:opacity-45";
 
 interface CommonProps {

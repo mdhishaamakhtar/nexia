@@ -6,15 +6,13 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFocusTrap } from "@/shared/hooks/use-focus-trap";
 import { EASE_OUT } from "@/shared/ui/motion";
-import Tape, { type TapeColor } from "@/components/atoms/Tape";
 
 /**
- * The one modal: a note pinned over the page.
+ * The one modal: a white sheet over a dimmed page.
  *
- * Every overlay in the app is built from the same four things — a flat sheet
- * on the heavier float line, one strip of tape across its top edge, an eyebrow
- * label over a title, and its actions on the bottom right — so a confirmation,
- * an expanded quote and a toast read as one family. (DESIGN.md, "Pinned notes".)
+ * Every overlay in the app is built from the same things — a flat rounded
+ * sheet, a title, and its actions on the bottom right — so a confirmation and
+ * an expanded quote read as one family. (DESIGN.md, "Overlays".)
  *
  * The modal contract is here too: focus moves in and is trapped, Escape and a
  * click on the scrim close it unless `dismissible` is false (mid-delete, say),
@@ -24,12 +22,10 @@ export default function Dialog({
   open,
   onClose,
   role = "dialog",
-  eyebrow,
   title,
   titleId,
   describedBy,
-  tape = "lavender",
-  tone = "paper",
+  tone = "plain",
   dismissible = true,
   showClose = false,
   initialFocus,
@@ -40,13 +36,14 @@ export default function Dialog({
   open: boolean;
   onClose: () => void;
   role?: "dialog" | "alertdialog";
-  eyebrow?: string;
   title?: ReactNode;
   titleId?: string;
   describedBy?: string;
-  tape?: TapeColor;
-  /** The sheet's material: plain paper, the sunk well, or the lavender wash. */
-  tone?: "paper" | "sunk" | "lavender";
+  /**
+   * The sheet's fill: white, or the colour of whoever it is about. `person`
+   * needs a `person-*` class in `className` to know whose.
+   */
+  tone?: "plain" | "person";
   dismissible?: boolean;
   /** A close button in the corner, for dialogs with no Cancel of their own. */
   showClose?: boolean;
@@ -61,11 +58,9 @@ export default function Dialog({
         <Panel
           onClose={onClose}
           role={role}
-          eyebrow={eyebrow}
           title={title}
           titleId={titleId}
           describedBy={describedBy}
-          tape={tape}
           tone={tone}
           dismissible={dismissible}
           showClose={showClose}
@@ -81,19 +76,16 @@ export default function Dialog({
 }
 
 const TONES = {
-  paper: "bg-surface border-line-float",
-  sunk: "bg-surface-2 border-line-float",
-  lavender: "bg-lavender-soft border-lavender-line-float",
+  plain: "bg-surface text-text-1",
+  person: "card-person",
 } as const;
 
 function Panel({
   onClose,
   role,
-  eyebrow,
   title,
   titleId,
   describedBy,
-  tape,
   tone,
   dismissible,
   showClose,
@@ -104,11 +96,9 @@ function Panel({
 }: {
   onClose: () => void;
   role: "dialog" | "alertdialog";
-  eyebrow?: string;
   title?: ReactNode;
   titleId?: string;
   describedBy?: string;
-  tape: TapeColor;
   tone: keyof typeof TONES;
   dismissible: boolean;
   showClose: boolean;
@@ -119,7 +109,7 @@ function Panel({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   // False once closing starts. The trap lets go at once, so focus is back on
-  // the page while the note fades, and the fading scrim stops taking clicks.
+  // the page while the sheet fades, and the fading scrim stops taking clicks.
   const present = useIsPresent();
   useFocusTrap(panelRef, {
     active: present,
@@ -147,25 +137,22 @@ function Panel({
         tabIndex={-1}
         aria-labelledby={titleId}
         aria-describedby={describedBy}
-        initial={{ opacity: 0, y: 14, rotate: -0.6 }}
-        animate={{ opacity: 1, y: 0, rotate: 0 }}
+        initial={{ opacity: 0, y: 14, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 8 }}
-        transition={{ duration: 0.28, ease: EASE_OUT }}
+        transition={{ duration: 0.26, ease: EASE_OUT }}
         className={cn(
-          "relative flex max-h-[85dvh] w-full flex-col rounded-3xl border-2 outline-none",
+          "relative flex max-h-[85dvh] w-full flex-col rounded-[2rem] outline-none",
           TONES[tone],
           className
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <Tape color={tape} width={92} height={22} tilt={-2.5} />
-
-        {(eyebrow || title || showClose) && (
-          <header className="flex items-start gap-3 px-7 pb-1 pt-8">
+        {(title || showClose) && (
+          <header className="flex items-start gap-3 px-7 pb-1 pt-7 sm:px-8">
             <div className="min-w-0 flex-1">
-              {eyebrow && <p className="t-label mb-1.5">{eyebrow}</p>}
               {title && (
-                <h2 id={titleId} className="t-section-title text-balance break-words text-text-1">
+                <h2 id={titleId} className="t-section-title text-balance break-words">
                   {title}
                 </h2>
               )}
@@ -175,18 +162,23 @@ function Panel({
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="-mr-3 -mt-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-3 transition-colors hover:bg-surface-3 hover:text-text-1"
+                className={cn(
+                  "-mr-2.5 -mt-2.5 flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors",
+                  tone === "person" ? "hover:bg-white/60" : "text-text-2 hover:bg-surface-2"
+                )}
               >
-                <X className="h-4 w-4" aria-hidden="true" />
+                <X className="h-[1.125rem] w-[1.125rem]" aria-hidden="true" />
               </button>
             )}
           </header>
         )}
 
-        {children && <div className="min-h-0 overflow-y-auto px-7 pb-7 pt-2">{children}</div>}
+        {children && (
+          <div className="min-h-0 overflow-y-auto px-7 pb-7 pt-2 sm:px-8 sm:pb-8">{children}</div>
+        )}
 
         {footer && (
-          <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-4">
+          <footer className="flex flex-wrap items-center justify-end gap-2 px-5 pb-5 pt-1 sm:px-6 sm:pb-6">
             {footer}
           </footer>
         )}

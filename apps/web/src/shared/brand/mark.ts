@@ -1,7 +1,7 @@
 /**
- * The Nexia mark: a note pinned to the page. A white card with a strip of
- * peach washi tape across its top edge and an "N" on it, set down a little
- * crooked, like every card in the app (DESIGN.md, "Pinned notes").
+ * The Nexia mark: four people, one flower. Four round petals, each in one of
+ * the colours a person can be, overlapping in turn around a yellow centre
+ * where they meet (DESIGN.md, "The mark").
  *
  * This module is the one source of the mark's geometry. The React logo, the
  * social preview image and the static icons all draw from it, so the icons in
@@ -12,47 +12,49 @@
  * the Open Graph route and a Node script alike.
  */
 
+import { BRAND, PERSON_PALETTE } from "@nexia/shared/brand";
+
+/** The colours the mark and its lockups are drawn in. */
 export const BRAND_COLORS = {
-  page: "#fff7ed",
-  paper: "#ffffff",
-  ink: "#292524",
-  inkMuted: "#6f6660",
-  tape: "#fdba74",
+  page: BRAND.page,
+  ink: BRAND.ink,
+  inkMuted: BRAND.ink3,
+  peach: PERSON_PALETTE.peach.base,
+  pink: PERSON_PALETTE.pink.base,
+  lilac: PERSON_PALETTE.lilac.base,
+  sky: PERSON_PALETTE.sky.base,
+  butter: PERSON_PALETTE.butter.base,
 } as const;
 
 /**
- * Nunito ExtraBold "N", outlined at 100px with its baseline at y = 0, so the
- * mark never depends on a font being loaded (a favicon cannot load one).
- */
-const N_PATH =
-  "M14.3 0.9Q10.8 0.9 8.95 -1.05Q7.1 -3 7.1 -6.6V-63.6Q7.1 -67.4 8.95 -69.4Q10.8 -71.4 13.9 -71.4Q16.6 -71.4 18.05 -70.35Q19.5 -69.3 21.4 -66.9L56.5 -22.2H53.8V-64Q53.8 -67.5 55.65 -69.45Q57.5 -71.4 61 -71.4Q64.5 -71.4 66.35 -69.45Q68.2 -67.5 68.2 -64V-6.3Q68.2 -3 66.5 -1.05Q64.8 0.9 61.9 0.9Q59.1 0.9 57.45 -0.2Q55.8 -1.3 53.9 -3.7L18.9 -48.4H21.5V-6.6Q21.5 -3 19.7 -1.05Q17.9 0.9 14.3 0.9Z";
-
-/**
- * Drawn on a 64-unit grid. The viewBox is cropped to the ink, centred on the
- * tilted note and its tape, so the mark fills whatever box it is given.
+ * Drawn on a 100-unit grid and cropped to the petals, so the mark fills
+ * whatever box it is given.
+ *
+ * The petals are painted clockwise from the top left, each over the one
+ * before. That leaves the last (sky) on top of the first (peach), which would
+ * break the turn, so `tuck` repaints the sliver where those two overlap in
+ * peach: every petal then sits over one neighbour and under the other.
  */
 export const MARK = {
-  viewBox: "3.5 5 57 57",
-  /** The note is set down 5° anticlockwise; the tape crosses it the other way. */
-  tilt: "rotate(-5 32 35)",
-  note: { x: 9, y: 11, width: 46, height: 48, rx: 12, strokeWidth: 3.25 },
-  glyph: { d: N_PATH, transform: "translate(19.5 48.2) scale(0.332)" },
-  /** The app's washi strip, notched at both ends like `.washi-tape`. */
-  tape: {
-    points: "20.82,6.5 43.18,6.5 45,11.5 43.18,16.5 20.82,16.5 19,11.5",
-    transform: "rotate(4 32 11.5)",
-  },
+  viewBox: "4 4 92 92",
+  radius: 28,
+  petals: [
+    { cx: 33, cy: 33, fill: BRAND_COLORS.peach },
+    { cx: 67, cy: 33, fill: BRAND_COLORS.pink },
+    { cx: 67, cy: 67, fill: BRAND_COLORS.lilac },
+    { cx: 33, cy: 67, fill: BRAND_COLORS.sky },
+  ],
+  tuck: { d: "M10.751 50A28 28 0 0 1 55.249 50A28 28 0 0 1 10.751 50Z", fill: BRAND_COLORS.peach },
+  centre: { cx: 50, cy: 50, r: 15, fill: BRAND_COLORS.butter },
 } as const;
 
-/** The mark's shapes as SVG markup, in the 64-unit grid. */
+/** The mark's shapes as SVG markup, in the 100-unit grid. */
 export function markShapes(): string {
-  const { note, glyph, tape, tilt } = MARK;
+  const { petals, radius, tuck, centre } = MARK;
   return [
-    `<g transform="${tilt}">`,
-    `<rect x="${note.x}" y="${note.y}" width="${note.width}" height="${note.height}" rx="${note.rx}" fill="${BRAND_COLORS.paper}" stroke="${BRAND_COLORS.ink}" stroke-width="${note.strokeWidth}"/>`,
-    `<path transform="${glyph.transform}" d="${glyph.d}" fill="${BRAND_COLORS.ink}"/>`,
-    `</g>`,
-    `<polygon points="${tape.points}" transform="${tape.transform}" fill="${BRAND_COLORS.tape}"/>`,
+    ...petals.map((p) => `<circle cx="${p.cx}" cy="${p.cy}" r="${radius}" fill="${p.fill}"/>`),
+    `<path d="${tuck.d}" fill="${tuck.fill}"/>`,
+    `<circle cx="${centre.cx}" cy="${centre.cy}" r="${centre.r}" fill="${centre.fill}"/>`,
   ].join("");
 }
 
@@ -73,9 +75,9 @@ export function markSvg({
   if (!background) {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK.viewBox}"${dims}>${markShapes()}</svg>`;
   }
-  // Scale about the centre of the cropped viewBox (32, 33.5).
-  const inset = `translate(32 33.5) scale(${scale}) translate(-32 -33.5)`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK.viewBox}"${dims}><rect x="3.5" y="5" width="57" height="57" fill="${background}"/><g transform="${inset}">${markShapes()}</g></svg>`;
+  // Scale about the centre of the cropped viewBox (50, 50).
+  const inset = `translate(50 50) scale(${scale}) translate(-50 -50)`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK.viewBox}"${dims}><rect x="4" y="4" width="92" height="92" fill="${background}"/><g transform="${inset}">${markShapes()}</g></svg>`;
 }
 
 /** The mark as a `data:` URL, for places that take an image source. */

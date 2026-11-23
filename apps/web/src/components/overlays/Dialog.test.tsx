@@ -17,7 +17,6 @@ function DialogHarness(props: Partial<React.ComponentProps<typeof Dialog>>) {
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        eyebrow="A note"
         title="Pinned up"
         titleId="dialog-title"
         footer={<button type="button">Last</button>}
@@ -100,7 +99,6 @@ describe("ConfirmDialog", () => {
     render(
       <ConfirmDialog
         isOpen
-        eyebrow="Delete profile"
         title="Delete Priya?"
         description="This can't be undone."
         confirmLabel="Delete"
@@ -146,12 +144,31 @@ describe("QuoteModal", () => {
     expect(dialog.querySelector("figcaption")).toHaveTextContent("Zoë");
   });
 
+  test("a quote's sheet takes the colour of whoever said it", () => {
+    render(
+      <QuoteModal
+        text="Eat the cake."
+        person="Zoë"
+        personClassName="person-mint"
+        onClose={() => {}}
+      />
+    );
+    expect(screen.getByRole("dialog")).toHaveClass("person-mint", "card-person");
+  });
+
   test("a memory is yours, shared with them, and long text drops a size", () => {
     const long = "We walked for hours. ".repeat(20);
     render(<QuoteModal text={long} person="Zoë" variant="memory" onClose={() => {}} />);
     const dialog = screen.getByRole("dialog", { name: "A memory with Zoë" });
     expect(dialog.querySelector("figcaption")).toBeNull();
-    expect(dialog.querySelector("p.text-lg")).not.toBeNull();
+    expect(dialog).not.toHaveClass("card-person");
+    expect(dialog).toHaveTextContent("We walked for hours.");
+  });
+
+  test("a long quote drops a size so it still reads as prose", () => {
+    const long = "We walked for hours. ".repeat(20);
+    render(<QuoteModal text={long} person="Zoë" onClose={() => {}} />);
+    expect(screen.getByRole("dialog").querySelector("p.text-xl")).not.toBeNull();
   });
 
   test("stays closed without text", () => {
@@ -161,10 +178,9 @@ describe("QuoteModal", () => {
 });
 
 describe("StatusNote", () => {
-  test("pins an empty or error state to the page with its actions", () => {
+  test("shows an empty or error state on the page with its actions", () => {
     render(
       <StatusNote
-        eyebrow="Not found"
         title="Nobody here"
         headingLevel="h1"
         actions={<button type="button">Go back</button>}

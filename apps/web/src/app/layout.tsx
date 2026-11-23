@@ -1,14 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
+import { Alan_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AppQueryProvider } from "@/shared/providers/query-provider";
 import { ToastProvider } from "@/shared/ui/toast";
 
-const nunito = Nunito({
+// One family for everything: Alan Sans, friendly without being childish.
+// Hierarchy comes from size and weight, never a second face.
+const alan = Alan_Sans({
   subsets: ["latin"],
-  variable: "--font-nunito",
-  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-alan",
 });
 
 export const metadata: Metadata = {
@@ -57,7 +58,7 @@ export const metadata: Metadata = {
   },
 };
 
-// Tints the mobile browser's toolbar to match the white navbar under it.
+// Tints the mobile browser's toolbar to match the white page under it.
 export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
@@ -70,7 +71,7 @@ export default function RootLayout({
   return (
     // The font variable sits on <html> so `--font-sans`, which refers to it,
     // resolves on :root and not just inside <body>.
-    <html lang="en" className={nunito.variable}>
+    <html lang="en" className={alan.variable}>
       <body className="antialiased">
         <script
           type="application/ld+json"

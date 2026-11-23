@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { CircleAlert, CircleCheck, Loader2 } from "lucide-react";
+import { CircleAlert, Check, Loader2 } from "lucide-react";
 import Button from "@/components/atoms/Button";
 import AuthCard, { AuthLink } from "@/components/layout/AuthCard";
 import { verifyEmail } from "@/features/auth/api";
@@ -33,7 +33,7 @@ function Confirm() {
 
   if (status === "loading") {
     return (
-      <AuthCard title="Confirming…" eyebrow="nexia account" tape="blue">
+      <AuthCard title="Confirming…">
         <div className="flex justify-center" role="status" aria-label="Confirming your email">
           <Loader2 className="h-8 w-8 animate-spin text-text-3" aria-hidden="true" />
         </div>
@@ -43,9 +43,14 @@ function Confirm() {
 
   if (status === "success") {
     return (
-      <AuthCard title="Email confirmed" eyebrow="nexia account" tape="blue">
+      <AuthCard title="Email confirmed">
         <div className="flex flex-col items-center gap-4 text-center">
-          <CircleCheck className="h-8 w-8 text-green-ink" aria-hidden="true" />
+          <span
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-mint text-mint-ink"
+            aria-hidden="true"
+          >
+            <Check className="h-7 w-7" strokeWidth={2.6} />
+          </span>
           <p className="t-body text-text-2">Your address is confirmed. You can sign in now.</p>
           <Button href="/login" className="w-full">
             Sign in
@@ -58,8 +63,6 @@ function Confirm() {
   return (
     <AuthCard
       title="That link didn't work"
-      eyebrow="nexia account"
-      tape="peach"
       footer={<AuthLink href="/login">Back to sign in</AuthLink>}
     >
       <div className="flex flex-col items-center gap-4 text-center">
@@ -68,7 +71,7 @@ function Confirm() {
           It may have expired (links work for 24 hours) or been replaced by a newer one. Get a fresh
           link below.
         </p>
-        <div className="w-full border-t border-line pt-5">
+        <div className="w-full border-t-[1.5px] border-line-mid pt-5">
           <ResendVerification label="Send me a new link" />
         </div>
       </div>
