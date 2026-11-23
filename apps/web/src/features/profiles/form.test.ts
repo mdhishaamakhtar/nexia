@@ -4,7 +4,7 @@ import { profileFormSchema, toFormValues, toProfilePayload, withItem } from "./f
 import { PERSON_COLORS } from "@nexia/shared/brand";
 import { identityFor, PERSON_SHAPES } from "./identity";
 import { SHAPE_PARTS, shapeSvg } from "./shapes";
-import { FIELD_LABELS, PROFILE_SECTIONS } from "./sections";
+import { FIELD_LABELS, HEADER_FIELDS, PROFILE_SECTIONS } from "./sections";
 
 describe("list items", () => {
   test("are trimmed and never repeated, ignoring case", () => {
@@ -130,9 +130,23 @@ describe("shapes", () => {
 });
 
 describe("sections", () => {
-  test("every field lives in exactly one section and has a label", () => {
-    const fields = PROFILE_SECTIONS.flatMap((s) => s.fields);
+  test("every field has one home: the header or exactly one section", () => {
+    const fields: string[] = [...HEADER_FIELDS, ...PROFILE_SECTIONS.flatMap((s) => s.fields)];
     expect(new Set(fields).size).toBe(fields.length);
-    for (const field of fields) expect(FIELD_LABELS[field]).toBeTruthy();
+    // FIELD_LABELS is typed against every field key, so its keys are all of them.
+    expect([...fields].sort()).toEqual(Object.keys(FIELD_LABELS).sort());
+  });
+
+  test("the facts come first and the long reads last", () => {
+    expect(PROFILE_SECTIONS.map((s) => s.title)).toEqual([
+      "Their song",
+      "On repeat",
+      "Favorites",
+      "Day to day",
+      "In their words",
+      "Memories together",
+      "Dreams of",
+      "Notes",
+    ]);
   });
 });

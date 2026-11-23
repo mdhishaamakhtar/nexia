@@ -33,6 +33,7 @@ const WIDE: ReadonlySet<ProfileFieldKey> = new Set([
   "tags",
   "associated_song",
   "top_songs",
+  "music_preference",
   "long_term_goals",
   "favorite_memories",
   "notes",
@@ -43,11 +44,13 @@ interface EditorProps {
   control: Control<ProfileFormValues>;
   register: UseFormRegister<ProfileFormValues>;
   errors: FieldErrors<ProfileFormValues>;
+  /** The field has its section to itself, so the section's heading is its label. */
+  solo: boolean;
 }
 
 const today = toISODate(todayDate());
 
-/** One editor per field. The section a field appears in comes from sections.ts. */
+/** One editor per field. Which section a field sits in, and where, comes from sections.ts. */
 const EDITORS: Record<ProfileFieldKey, (p: EditorProps) => ReactNode> = {
   profession: ({ register, errors }) => (
     <Input
@@ -97,7 +100,9 @@ const EDITORS: Record<ProfileFieldKey, (p: EditorProps) => ReactNode> = {
       {...register("music_preference")}
     />
   ),
-  associated_song: ({ register, errors }) => <TheirSongField register={register} errors={errors} />,
+  associated_song: ({ register, errors, solo }) => (
+    <TheirSongField register={register} errors={errors} hideLabel={solo} />
+  ),
   top_songs: ({ control }) => <TopSongsField control={control} />,
   movie_genres: ({ control }) => (
     <ChipListField
@@ -139,37 +144,42 @@ const EDITORS: Record<ProfileFieldKey, (p: EditorProps) => ReactNode> = {
       placeholder="Add a view"
     />
   ),
-  long_term_goals: ({ register, errors }) => (
+  long_term_goals: ({ register, errors, solo }) => (
     <Textarea
       label={FIELD_LABELS.long_term_goals}
+      hideLabel={solo}
       rows={3}
+      placeholder="Where they want to be in a few years…"
       error={errors.long_term_goals?.message}
       {...register("long_term_goals")}
     />
   ),
-  favorite_memories: ({ control }) => (
+  favorite_memories: ({ control, solo }) => (
     <ChipListField
       control={control}
       name="favorite_memories"
       label={FIELD_LABELS.favorite_memories}
+      hideLabel={solo}
       placeholder="Add a memory"
       kind="memory"
     />
   ),
-  notes: ({ register, errors }) => (
+  notes: ({ register, errors, solo }) => (
     <Textarea
       label={FIELD_LABELS.notes}
+      hideLabel={solo}
       rows={4}
       placeholder="Anything else worth remembering…"
       error={errors.notes?.message}
       {...register("notes")}
     />
   ),
-  quotes: ({ control }) => (
+  quotes: ({ control, solo }) => (
     <ChipListField
       control={control}
       name="quotes"
       label={FIELD_LABELS.quotes}
+      hideLabel={solo}
       placeholder="Add something they said"
       kind="quote"
     />
@@ -177,9 +187,10 @@ const EDITORS: Record<ProfileFieldKey, (p: EditorProps) => ReactNode> = {
 };
 
 /**
- * Editing a profile mirrors reading one: who they are at the top, then the
- * same fields grouped the same way, each group a panel in the person's colour.
- * Only the state differs.
+ * Editing a profile mirrors reading one. The first panel holds what the
+ * profile page shows in its coloured header, in the same order: name, who they
+ * are to you, what they do, birthday, bio, tags. Then come the sections of
+ * `PROFILE_SECTIONS`, under the same titles and in the same order as the page.
  */
 export default function ProfileForm({
   initialValues,
@@ -209,7 +220,7 @@ export default function ProfileForm({
   // A successful save navigates with router.push, which the guard never sees.
   const submit = handleSubmit((values) => onSubmit(toProfilePayload(values)));
 
-  const editorProps = { control, register, errors };
+  const editorProps = { control, register, errors, solo: false };
 
   return (
     // Bottom padding clears the fixed action bar so the last field is reachable.
@@ -219,18 +230,14 @@ export default function ProfileForm({
         className="panel-person rounded-[1.75rem] px-5 py-6 sm:p-8"
       >
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <Input
-            label="Full name"
-            required
-            error={errors.full_name?.message}
-            {...register("full_name")}
-          />
-          <Input
-            label="Pronouns"
-            placeholder="e.g. she/her, they/them"
-            error={errors.pronouns?.message}
-            {...register("pronouns")}
-          />
+          <div className="md:col-span-2">
+            <Input
+              label="Full name"
+              required
+              error={errors.full_name?.message}
+              {...register("full_name")}
+            />
+          </div>
           <Controller
             control={control}
             name="relationship_type"
@@ -244,6 +251,14 @@ export default function ProfileForm({
               />
             )}
           />
+          <Input
+            label="Pronouns"
+            placeholder="e.g. she/her, they/them"
+            error={errors.pronouns?.message}
+            {...register("pronouns")}
+          />
+          {EDITORS.profession(editorProps)}
+          {EDITORS.birthday(editorProps)}
           <div className="md:col-span-2">
             <Textarea
               label="Bio"
@@ -253,6 +268,7 @@ export default function ProfileForm({
               {...register("bio")}
             />
           </div>
+          <div className="md:col-span-2">{EDITORS.tags(editorProps)}</div>
         </div>
       </section>
 
@@ -261,7 +277,7 @@ export default function ProfileForm({
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {section.fields.map((key) => (
               <div key={key} className={cn(WIDE.has(key) && "md:col-span-2")}>
-                {EDITORS[key](editorProps)}
+                {EDITORS[key]({ ...editorProps, solo: section.fields.length === 1 })}
               </div>
             ))}
           </div>

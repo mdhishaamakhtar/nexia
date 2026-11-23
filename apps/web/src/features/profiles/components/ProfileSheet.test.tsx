@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { makeFullProfile, makeProfile } from "@test/fixtures";
+import { PROFILE_SECTIONS } from "../sections";
 import ProfileSheet from "./ProfileSheet";
 
 describe("ProfileSheet", () => {
@@ -18,18 +19,10 @@ describe("ProfileSheet", () => {
     expect(screen.getByText("she/her")).toBeInTheDocument();
     expect(screen.getAllByText("Pisces").length).toBeGreaterThan(0);
     expect(screen.getByText(/30 years old/)).toBeInTheDocument();
-    for (const title of [
-      "In their words",
-      "Their song",
-      "On repeat",
-      "Favorites",
-      "Day to day",
-      "Memories together",
-      "Dreams of",
-      "Notes",
-    ]) {
-      expect(screen.getByRole("region", { name: title })).toBeInTheDocument();
-    }
+    // One panel per section, in the order the form uses too.
+    expect(
+      screen.getAllByRole("region").map((panel) => within(panel).getByRole("heading").textContent)
+    ).toEqual(PROFILE_SECTIONS.map((section) => section.title));
     expect(
       within(screen.getByRole("list", { name: "Tags" })).getByText("night owl")
     ).toBeInTheDocument();
@@ -68,6 +61,42 @@ describe("ProfileSheet", () => {
     expect(screen.getByRole("dialog", { name: "A memory with Asha Kumar" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  test("folds a long list of quotes or memories until asked for all of it", async () => {
+    vi.useRealTimers();
+    const user = userEvent.setup();
+    const quotes = ["One", "Two", "Three", "Four", "Five"].map((n) => `Quote number ${n}`);
+    render(
+      <ProfileSheet
+        profile={makeFullProfile({ quotes, favorite_memories: ["Only this one memory"] })}
+      />
+    );
+    const words = screen.getByRole("region", { name: "In their words" });
+
+    expect(within(words).getByText("Quote number Three")).toBeInTheDocument();
+    expect(within(words).queryByText("Quote number Four")).not.toBeInTheDocument();
+    // A list that already fits has no button.
+    expect(
+      within(screen.getByRole("region", { name: "Memories together" })).queryByRole("button", {
+        name: /Show/,
+      })
+    ).not.toBeInTheDocument();
+
+    const showAll = within(words).getByRole("button", { name: "Show all 5 quotes" });
+    expect(showAll).toHaveAttribute("aria-expanded", "false");
+    await user.click(showAll);
+    expect(within(words).getByText("Quote number Five")).toBeInTheDocument();
+
+    await user.click(within(words).getByRole("button", { name: "Show fewer" }));
+    expect(within(words).queryByText("Quote number Four")).not.toBeInTheDocument();
+  });
+
+  test("keeps what they listen to with their songs, even with no songs listed", () => {
+    render(<ProfileSheet profile={makeFullProfile({ top_songs: [] })} />);
+    expect(
+      within(screen.getByRole("region", { name: "On repeat" })).getByText("Anything with strings")
+    ).toBeInTheDocument();
   });
 
   test("with only a name, says there's nothing else yet", () => {

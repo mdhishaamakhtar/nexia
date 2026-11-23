@@ -24,6 +24,7 @@ export default function Field({
   id,
   label,
   labelId,
+  hideLabel = false,
   error,
   errorId,
   hint,
@@ -36,6 +37,8 @@ export default function Field({
   label?: string;
   /** For controls that are not <input>s (custom pickers) and need aria-labelledby. */
   labelId?: string;
+  /** Keep the label for screen readers only: a heading right above already says it. */
+  hideLabel?: boolean;
   error?: string;
   errorId: string;
   hint?: string;
@@ -47,7 +50,7 @@ export default function Field({
   return (
     <div className={cn("w-full min-w-0", className)}>
       {label && (
-        <label id={labelId} htmlFor={id} className="t-label mb-2 block">
+        <label id={labelId} htmlFor={id} className={hideLabel ? "sr-only" : "t-label mb-2 block"}>
           {label}
           {required && (
             <span className="text-red-ink" aria-hidden="true">

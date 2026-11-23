@@ -6,12 +6,14 @@ interface TextareaProps extends React.ComponentProps<"textarea"> {
   label?: string;
   error?: string;
   hint?: string;
+  hideLabel?: boolean;
 }
 
 export default function Textarea({
   label,
   error,
   hint,
+  hideLabel,
   className,
   id: idProp,
   rows = 4,
@@ -20,7 +22,15 @@ export default function Textarea({
   const { id, errorId, hintId, describedBy, invalid } = useFieldIds(idProp, !!error, !!hint);
 
   return (
-    <Field id={id} label={label} error={error} errorId={errorId} hint={hint} hintId={hintId}>
+    <Field
+      id={id}
+      label={label}
+      hideLabel={hideLabel}
+      error={error}
+      errorId={errorId}
+      hint={hint}
+      hintId={hintId}
+    >
       <textarea
         id={id}
         rows={rows}

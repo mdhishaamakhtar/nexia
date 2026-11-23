@@ -10,38 +10,14 @@ import { useIsClamped } from "@/shared/hooks/use-is-clamped";
 import { ageOn, formatDate } from "@/shared/lib/dates";
 import { enter } from "@/shared/ui/motion";
 import { identityFor } from "../identity";
-import type { ProfileFieldKey } from "../sections";
+import Button from "@/components/atoms/Button";
+import { PROFILE_SECTIONS, type ProfileSectionId } from "../sections";
 import Avatar from "./Avatar";
 import ZodiacIcon from "./ZodiacIcon";
 
 function hasText(value?: string | null): value is string {
   return Boolean(value?.trim());
 }
-
-/**
- * Where each profile field is shown: in the coloured header, or in the panel
- * with this title. It is typed against every field key, so a field added to
- * `sections.ts` and the form is a compile error here until the page shows it.
- */
-const SHOWN_IN = {
-  profession: "header",
-  birthday: "header",
-  tags: "header",
-  quotes: "In their words",
-  associated_song: "Their song",
-  top_songs: "On repeat",
-  favorite_movie: "Favorites",
-  favorite_book: "Favorites",
-  music_preference: "Favorites",
-  movie_genres: "Favorites",
-  book_genres: "Favorites",
-  hangout_places: "Day to day",
-  food_restrictions: "Day to day",
-  political_views: "Day to day",
-  favorite_memories: "Memories together",
-  long_term_goals: "Dreams of",
-  notes: "Notes",
-} as const satisfies Record<ProfileFieldKey, string>;
 
 /**
  * How wide a panel wants to be from `md` up. Panels sit in a wrapping row and
@@ -54,6 +30,51 @@ const WIDTHS = {
   narrow: "md:basis-[calc(40%-0.5rem)]",
   half: "md:basis-[calc(48%-0.5rem)]",
 } as const;
+
+/** How wide each section's panel wants to be. Neighbours are chosen to pair up. */
+const SECTION_WIDTH: Record<ProfileSectionId, keyof typeof WIDTHS> = {
+  song: "narrow",
+  repeat: "wide",
+  favorites: "wide",
+  day: "narrow",
+  words: "half",
+  memories: "half",
+  dreams: "wide",
+  notes: "narrow",
+};
+
+/**
+ * How many quotes or memories show before the rest fold away. Someone with
+ * sixteen quotes would otherwise push everything else off the page.
+ */
+const PREVIEW_COUNT = 3;
+
+/** The button that unfolds a long list, and folds it again. */
+function ShowAll({
+  total,
+  noun,
+  open,
+  onToggle,
+}: {
+  total: number;
+  noun: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (total <= PREVIEW_COUNT) return null;
+  return (
+    <Button
+      type="button"
+      variant="frost"
+      size="sm"
+      aria-expanded={open}
+      onClick={onToggle}
+      className="mt-4"
+    >
+      {open ? "Show fewer" : `Show all ${total} ${noun}`}
+    </Button>
+  );
+}
 
 function Panel({
   title,
@@ -196,8 +217,9 @@ function Fact({ children }: { children: ReactNode }) {
 /**
  * A person's page. Their colour fills the top: shape, name, who they are to
  * you, the line that sums them up. Under it, what you know about them, one
- * rounded panel per kind of thing, in a tint of the same colour. A field
- * nobody filled in leaves no gap and no placeholder.
+ * rounded panel per section of `PROFILE_SECTIONS`, in that order and in a tint
+ * of the same colour. A section nobody filled in leaves no gap and no
+ * placeholder.
  *
  * `toolbar` is the row of controls the page puts at the top of the coloured
  * block (back, export, delete, edit).
@@ -216,10 +238,16 @@ export default function ProfileSheet({
   const who = [profile.relationship_type, profile.pronouns, profile.profession].filter(hasText);
   const song = profile.associated_song?.name ? profile.associated_song : null;
 
+  const [allQuotes, setAllQuotes] = useState(false);
+  const [allMemories, setAllMemories] = useState(false);
+  const quotes = allQuotes ? profile.quotes : profile.quotes.slice(0, PREVIEW_COUNT);
+  const memories = allMemories
+    ? profile.favorite_memories
+    : profile.favorite_memories.slice(0, PREVIEW_COUNT);
+
   const favourites: Array<[string, ReactNode]> = [];
   if (hasText(profile.favorite_movie)) favourites.push(["Favorite movie", profile.favorite_movie]);
   if (hasText(profile.favorite_book)) favourites.push(["Favorite book", profile.favorite_book]);
-  if (hasText(profile.music_preference)) favourites.push(["Listens to", profile.music_preference]);
   if (profile.movie_genres.length > 0)
     favourites.push(["Movie genres", <Items key="m" items={profile.movie_genres} />]);
   if (profile.book_genres.length > 0)
@@ -233,123 +261,103 @@ export default function ProfileSheet({
   if (profile.political_views.length > 0)
     dayToDay.push(["Politics", <Items key="p" items={profile.political_views} />]);
 
-  // In reading order. Each entry is a panel only if it has something to show.
-  const panels: Array<Omit<Parameters<typeof Panel>[0], "index">> = [];
-  if (profile.quotes.length > 0)
-    panels.push({
-      title: SHOWN_IN.quotes,
-      width: "wide",
-      children: (
+  const facts = (rows: Array<[string, ReactNode]>) => (
+    <Rows>
+      {rows.map(([label, value]) => (
+        <Row key={label} label={label}>
+          {value}
+        </Row>
+      ))}
+    </Rows>
+  );
+
+  // What each section shows, or null when there is nothing to show. The order
+  // they appear in is `PROFILE_SECTIONS`, the same one the form follows.
+  const content: Record<ProfileSectionId, ReactNode> = {
+    song: song && (
+      <div className="pt-6 sm:pt-10">
+        <p className="break-words text-[2rem] font-bold leading-none tracking-[-0.03em] sm:text-[2.625rem]">
+          {song.name}
+        </p>
+        {song.artist && <p className="mt-2 break-words text-lg font-medium">{song.artist}</p>}
+      </div>
+    ),
+    repeat: (profile.top_songs.length > 0 || hasText(profile.music_preference)) && (
+      <div className="divide-y-[1.5px] divide-p-soft">
+        {profile.top_songs.length > 0 && (
+          <ol className="divide-y-[1.5px] divide-p-soft pb-3 last:pb-0">
+            {profile.top_songs.map((s, i) => (
+              <li
+                key={`${s.name}-${i}`}
+                className="flex items-center gap-3.5 py-2.5 first:pt-0 last:pb-0"
+              >
+                <span
+                  className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-p text-sm font-bold text-p-ink"
+                  aria-label={`Number ${i + 1}`}
+                >
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="break-words text-[1.0625rem] font-semibold leading-snug text-text-1">
+                    {s.name}
+                  </p>
+                  {s.artist && (
+                    <p className="break-words text-[0.9375rem] text-text-2">{s.artist}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+        {hasText(profile.music_preference) && (
+          <div className="pt-3 first:pt-0">{facts([["Listens to", profile.music_preference]])}</div>
+        )}
+      </div>
+    ),
+    favorites: favourites.length > 0 && facts(favourites),
+    day: dayToDay.length > 0 && facts(dayToDay),
+    words: profile.quotes.length > 0 && (
+      <>
         <div className="flex flex-col items-start gap-2.5">
-          {profile.quotes.map((q) => (
+          {quotes.map((q) => (
             <Quote key={q} quote={q} onOpen={() => setQuote(q)} />
           ))}
         </div>
-      ),
-    });
-  if (song)
-    panels.push({
-      title: SHOWN_IN.associated_song,
-      icon: <Music className="h-[1.0625rem] w-[1.0625rem]" strokeWidth={2.4} aria-hidden="true" />,
-      width: "narrow",
-      solid: true,
-      children: (
-        <div className="pt-6 sm:pt-10">
-          <p className="break-words text-[2rem] font-bold leading-none tracking-[-0.03em] sm:text-[2.625rem]">
-            {song.name}
-          </p>
-          {song.artist && <p className="mt-2 break-words text-lg font-medium">{song.artist}</p>}
-        </div>
-      ),
-    });
-  if (profile.top_songs.length > 0)
-    panels.push({
-      title: SHOWN_IN.top_songs,
-      width: "narrow",
-      children: (
-        <ol className="divide-y-[1.5px] divide-p-soft">
-          {profile.top_songs.map((s, i) => (
-            <li
-              key={`${s.name}-${i}`}
-              className="flex items-center gap-3.5 py-2.5 first:pt-0 last:pb-0"
-            >
-              <span
-                className="flex h-[1.875rem] w-[1.875rem] shrink-0 items-center justify-center rounded-full bg-p text-sm font-bold text-p-ink"
-                aria-label={`Number ${i + 1}`}
-              >
-                {i + 1}
-              </span>
-              <div className="min-w-0">
-                <p className="break-words text-[1.0625rem] font-semibold leading-snug text-text-1">
-                  {s.name}
-                </p>
-                {s.artist && <p className="break-words text-[0.9375rem] text-text-2">{s.artist}</p>}
-              </div>
-            </li>
-          ))}
-        </ol>
-      ),
-    });
-  if (favourites.length > 0)
-    panels.push({
-      title: SHOWN_IN.favorite_movie,
-      width: "wide",
-      children: (
-        <Rows>
-          {favourites.map(([label, value]) => (
-            <Row key={label} label={label}>
-              {value}
-            </Row>
-          ))}
-        </Rows>
-      ),
-    });
-  if (dayToDay.length > 0)
-    panels.push({
-      title: SHOWN_IN.hangout_places,
-      width: "half",
-      children: (
-        <Rows>
-          {dayToDay.map(([label, value]) => (
-            <Row key={label} label={label}>
-              {value}
-            </Row>
-          ))}
-        </Rows>
-      ),
-    });
-  if (profile.favorite_memories.length > 0)
-    panels.push({
-      title: SHOWN_IN.favorite_memories,
-      width: "half",
-      children: (
+        <ShowAll
+          total={profile.quotes.length}
+          noun="quotes"
+          open={allQuotes}
+          onToggle={() => setAllQuotes((open) => !open)}
+        />
+      </>
+    ),
+    memories: profile.favorite_memories.length > 0 && (
+      <>
         <div className="divide-y-[1.5px] divide-p-soft">
-          {profile.favorite_memories.map((m) => (
+          {memories.map((m) => (
             <Memory key={m} memory={m} onOpen={() => setMemory(m)} />
           ))}
         </div>
-      ),
-    });
-  if (hasText(profile.long_term_goals))
-    panels.push({
-      title: SHOWN_IN.long_term_goals,
-      width: "wide",
-      children: (
-        <p className="whitespace-pre-line break-words text-xl font-semibold leading-[1.3] tracking-[-0.015em] text-text-1 sm:text-2xl">
-          {profile.long_term_goals}
-        </p>
-      ),
-    });
-  if (hasText(profile.notes))
-    panels.push({
-      title: SHOWN_IN.notes,
-      width: "narrow",
-      children: (
-        <p className="whitespace-pre-line break-words text-[1.0625rem] leading-relaxed text-text-1">
-          {profile.notes}
-        </p>
-      ),
-    });
+        <ShowAll
+          total={profile.favorite_memories.length}
+          noun="memories"
+          open={allMemories}
+          onToggle={() => setAllMemories((open) => !open)}
+        />
+      </>
+    ),
+    dreams: hasText(profile.long_term_goals) && (
+      <p className="whitespace-pre-line break-words text-xl font-semibold leading-[1.3] tracking-[-0.015em] text-text-1 sm:text-2xl">
+        {profile.long_term_goals}
+      </p>
+    ),
+    notes: hasText(profile.notes) && (
+      <p className="whitespace-pre-line break-words text-[1.0625rem] leading-relaxed text-text-1">
+        {profile.notes}
+      </p>
+    ),
+  };
+  const panels = PROFILE_SECTIONS.filter((section) => content[section.id]);
 
   return (
     <>
@@ -417,8 +425,25 @@ export default function ProfileSheet({
           </p>
         ) : (
           <div className="mt-4 flex flex-wrap gap-4">
-            {panels.map((panel, index) => (
-              <Panel key={panel.title} index={index} {...panel} />
+            {panels.map((section, index) => (
+              <Panel
+                key={section.id}
+                index={index}
+                title={section.title}
+                width={SECTION_WIDTH[section.id]}
+                solid={section.id === "song"}
+                icon={
+                  section.id === "song" && (
+                    <Music
+                      className="h-[1.0625rem] w-[1.0625rem]"
+                      strokeWidth={2.4}
+                      aria-hidden="true"
+                    />
+                  )
+                }
+              >
+                {content[section.id]}
+              </Panel>
             ))}
           </div>
         )}

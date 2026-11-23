@@ -519,7 +519,7 @@ features/
   profiles/form.ts    — Form schema (built from the shared schema) and mapping
   profiles/identity.ts— A person's colour and shape, from their id
   profiles/shapes.ts  — The seven shapes as data, for the avatar and the PDF
-  profiles/sections.ts— Which fields each form section holds, and their labels
+  profiles/sections.ts— A profile's sections, in order, for the page, form and PDF alike
   profiles/components — ProfileForm, ProfileSheet, SheetSection, FormActionBar,
                         Avatar, ZodiacIcon, fields/ (ChipList, TopSongs, TheirSong)
 
