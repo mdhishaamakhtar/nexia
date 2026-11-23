@@ -101,7 +101,7 @@ function LoginForm() {
   return (
     <AuthCard
       title="Nexia"
-      eyebrow="your digital slambook"
+      subtitle="Your digital slambook"
       footer={
         isLogin ? (
           <AuthLink href="/forgot-password">Forgot your password?</AuthLink>
@@ -113,7 +113,7 @@ function LoginForm() {
       <div
         role="tablist"
         aria-label="Sign in or create an account"
-        className="relative mb-7 flex rounded-xl border border-line bg-surface-2 p-1"
+        className="relative mb-7 flex rounded-full bg-surface p-1"
         onKeyDown={(e) => {
           if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
             e.preventDefault();
@@ -122,7 +122,7 @@ function LoginForm() {
         }}
       >
         <motion.div
-          className="absolute bottom-1 left-1 top-1 z-0 w-[calc(50%-4px)] rounded-lg bg-blue-ink-deep"
+          className="absolute bottom-1 left-1 top-1 z-0 w-[calc(50%-4px)] rounded-full bg-text-1"
           initial={false}
           animate={{ x: isLogin ? "0%" : "100%" }}
           transition={SETTLE}
@@ -141,7 +141,7 @@ function LoginForm() {
               aria-selected={active}
               tabIndex={active ? 0 : -1}
               onClick={() => switchTo(id)}
-              className={`relative z-10 min-h-11 flex-1 rounded-lg px-3 text-[13px] font-bold transition-colors duration-150 ${active ? "text-surface" : "text-text-3 hover:text-text-1"}`}
+              className={`relative z-10 min-h-11 flex-1 cursor-pointer rounded-full px-3 text-[0.9375rem] font-bold transition-colors duration-150 ${active ? "text-white" : "text-text-2 hover:text-text-1"}`}
             >
               {label}
             </button>
@@ -149,7 +149,7 @@ function LoginForm() {
         })}
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
         <Input
           label="Email"
           type="email"
@@ -177,7 +177,7 @@ function LoginForm() {
                 type="button"
                 onClick={() => resend.mutate()}
                 disabled={resend.isPending}
-                className="mt-1.5 font-bold underline underline-offset-2"
+                className="mt-1.5 cursor-pointer font-bold underline underline-offset-2"
               >
                 {resend.isPending ? "Sending…" : "Send me a new link"}
               </button>

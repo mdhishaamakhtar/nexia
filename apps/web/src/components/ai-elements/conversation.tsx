@@ -32,8 +32,11 @@ export const ConversationContent = ({
     // transcript from handing the rest of the gesture to whatever is behind it.
     // Paired with the document-scroll lock the chat page applies, a phone has
     // exactly one scrollable surface instead of two competing ones.
+    // The library reserves a scrollbar's width on both edges, which insets the
+    // transcript from the header above it and the composer below; the gutter
+    // is put back to `auto` so all three share one left edge.
     scrollClassName={cn(
-      "h-full w-full overflow-auto overscroll-contain scroll-smooth",
+      "h-full w-full overflow-auto overscroll-contain scroll-smooth [scrollbar-gutter:auto]!",
       scrollClassName
     )}
     {...props}
@@ -44,8 +47,8 @@ export type ConversationScrollButtonProps = ComponentProps<"button">;
 
 /**
  * Appears only when the transcript is scrolled away from the bottom.
- * Opaque paper, not the translucent blurred pill it used to be — it sits over
- * running text and needs to be readable rather than atmospheric.
+ * A solid dark circle, not a translucent blurred pill: it sits over running
+ * text and needs to be readable rather than atmospheric.
  */
 export const ConversationScrollButton = ({
   className,
@@ -62,7 +65,7 @@ export const ConversationScrollButton = ({
       aria-label="Scroll to latest message"
       className={cn(
         "absolute bottom-4 left-1/2 flex h-11 w-11 -translate-x-1/2 items-center justify-center",
-        "rounded-full border-[1.5px] border-line-float bg-surface text-text-2 transition-colors hover:bg-surface-2",
+        "cursor-pointer rounded-full bg-text-1 text-white transition-transform active:scale-95",
         className
       )}
       {...props}

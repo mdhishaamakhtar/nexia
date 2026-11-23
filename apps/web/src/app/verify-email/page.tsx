@@ -8,21 +8,16 @@ export const metadata: Metadata = {
 
 export default function VerifyEmailPage() {
   return (
-    <AuthCard
-      title="Check your email"
-      eyebrow="almost there"
-      tape="blue"
-      footer={<AuthLink href="/login">Back to sign in</AuthLink>}
-    >
+    <AuthCard title="Check your email" footer={<AuthLink href="/login">Back to sign in</AuthLink>}>
       <div className="space-y-5 text-center">
         <p className="t-body text-text-2">
           We&apos;ve sent a link to confirm your address. Open it, then sign in. It works for 24
           hours.
         </p>
-        <p className="text-xs leading-relaxed text-text-3">
+        <p className="text-sm leading-relaxed text-text-3">
           Already have an account with this address? Sign in, or reset your password instead.
         </p>
-        <div className="border-t border-line pt-5">
+        <div className="border-t-[1.5px] border-line-mid pt-5">
           <p className="t-label mb-3">Nothing arrived?</p>
           <ResendVerification />
         </div>

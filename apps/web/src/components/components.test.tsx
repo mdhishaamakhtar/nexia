@@ -8,19 +8,17 @@ import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Logo, { LogoMark } from "@/components/atoms/Logo";
 import SearchField from "@/components/atoms/SearchField";
-import Tape from "@/components/atoms/Tape";
 import Textarea from "@/components/atoms/Textarea";
 import Tooltip from "@/components/atoms/Tooltip";
 import AuthCard, { AuthLink, AuthNotice } from "@/components/layout/AuthCard";
 import PageShell from "@/components/layout/PageShell";
 import CardProfilePreview from "@/components/molecules/CardProfilePreview";
 import Navbar from "@/components/molecules/Navbar";
-import Avatar from "@/features/profiles/components/Avatar";
+import Avatar, { Shape } from "@/features/profiles/components/Avatar";
 import SheetSection from "@/features/profiles/components/SheetSection";
 import ZodiacIcon from "@/features/profiles/components/ZodiacIcon";
 import { PROFILE_SECTIONS } from "@/features/profiles/sections";
 import { AppQueryProvider } from "@/shared/providers/query-provider";
-import { NexiaAvatar } from "@/shared/ui/AIIcons";
 import { makeSummary } from "@test/fixtures";
 
 const signOut = vi.fn();
@@ -121,6 +119,13 @@ describe("small pieces", () => {
     expect(screen.getByRole("link", { name: "Back" })).toBeInTheDocument();
   });
 
+  test("a back button on someone's colour can drop to its arrow on a phone and keep its name", () => {
+    render(<BackButton href="/profiles" label="Your people" onColor collapse />);
+    const link = screen.getByRole("link", { name: "Your people" });
+    expect(link).toHaveClass("bg-white/70");
+    expect(screen.getByText("Your people")).toHaveClass("sr-only", "sm:not-sr-only");
+  });
+
   test("the logo says Nexia; its mark alone is decoration", () => {
     const { container } = render(
       <>
@@ -131,22 +136,43 @@ describe("small pieces", () => {
     expect(screen.getByText("Nexia")).toBeInTheDocument();
     const marks = container.querySelectorAll("svg");
     expect(marks).toHaveLength(2);
-    marks.forEach((svg) => expect(svg).toHaveAttribute("aria-hidden", "true"));
+    marks.forEach((svg) => {
+      expect(svg).toHaveAttribute("aria-hidden", "true");
+      // Four petals and the centre.
+      expect(svg.querySelectorAll("circle")).toHaveLength(5);
+    });
   });
 
-  test("tape, the page shell, an avatar and the assistant's sticker render as asked", () => {
+  test("the page shell and an avatar render as asked", () => {
     const { container } = render(
       <PageShell as="section" width="reading" id="shell">
-        <Tape color="blue" width={40} />
         <Avatar id={3} name="  zoë" size="lg" />
         <Avatar id={4} name="   " />
-        <NexiaAvatar size={24} tilt={-3} />
       </PageShell>
     );
     expect(container.querySelector("section#shell")).toHaveClass("shell", "shell-reading");
-    expect(container.querySelector(".washi-tape")).toHaveStyle({ width: "40px" });
     expect(screen.getByText("Z")).toBeInTheDocument();
     expect(screen.getByText("?")).toBeInTheDocument();
+  });
+
+  test("an avatar is the person's shape in the person's colour, and only decoration", () => {
+    const { container } = render(
+      <>
+        <Avatar id={3} name="Zoë" />
+        <Avatar id={10} name="Sana" />
+        <Shape id={10} className="h-4 w-4" />
+      </>
+    );
+    const [zoe, sana, bare] = container.querySelectorAll("svg");
+    // id 3 → the fourth colour and the fourth shape; id 10 → the fifth and the fourth.
+    expect(zoe).toHaveClass("person-sky");
+    expect(zoe).toHaveAttribute("data-shape", "flower");
+    expect(sana).toHaveClass("person-lilac");
+    expect(sana).toHaveAttribute("data-shape", "flower");
+    expect(zoe).toHaveAttribute("aria-hidden", "true");
+    // The bare shape is the same drawing with no initial in it.
+    expect(bare).toHaveClass("person-lilac", "h-4");
+    expect(bare!.querySelector("text")).toBeNull();
   });
 
   test.each([...ZODIAC_SIGNS, "Unknown"])("the %s icon draws", (sign) => {
@@ -156,11 +182,11 @@ describe("small pieces", () => {
 });
 
 describe("layout", () => {
-  test("every signed-out page is one pinned sheet under the mark", () => {
+  test("every signed-out page is one panel under the mark", () => {
     render(
       <AuthCard
         title="Check your email"
-        eyebrow="almost there"
+        subtitle="Almost there"
         footer={<AuthLink href="/login">Back</AuthLink>}
       >
         <AuthNotice>Something went wrong</AuthNotice>
@@ -169,6 +195,7 @@ describe("layout", () => {
     );
     expect(screen.getByRole("link", { name: "Nexia home" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("heading", { level: 1, name: "Check your email" })).toBeInTheDocument();
+    expect(screen.getByText("Almost there")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("Something went wrong");
     expect(screen.getByRole("status")).toHaveTextContent("Sent");
     expect(screen.getByRole("link", { name: "Back" })).toHaveAttribute("href", "/login");
@@ -203,6 +230,7 @@ describe("layout", () => {
     const card = screen.getByRole("link", { name: /Zoë Fernandes/ });
     expect(card).toHaveAttribute("href", "/profiles/5");
     expect(card).toHaveTextContent("Scorpio");
+    expect(card).toHaveClass("person-pink", "card-person");
     expect(card).toHaveTextContent("+1 more");
     expect(card).not.toHaveTextContent("chess");
   });

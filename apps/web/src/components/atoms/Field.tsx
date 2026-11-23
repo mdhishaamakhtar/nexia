@@ -59,12 +59,12 @@ export default function Field({
       )}
       {children}
       {hint && !error && (
-        <p id={hintId} className="mt-1.5 text-xs text-text-3">
+        <p id={hintId} className="mt-2 text-sm text-text-3">
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} role="alert" className="mt-1.5 text-xs font-semibold text-red-ink">
+        <p id={errorId} role="alert" className="mt-2 text-sm font-semibold text-red-ink">
           {error}
         </p>
       )}

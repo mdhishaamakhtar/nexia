@@ -1,98 +1,100 @@
 ---
 name: "Nexia"
-description: "A warm paper scrapbook system for personal profiles and memory lookup."
+description: "Soft: a white page, flat pastel surfaces, and one colour and shape per person."
 colors:
-  page: "#fff7ed"
+  page: "#ffffff"
   surface: "#ffffff"
-  surface-2: "#fbf7f1"
-  surface-3: "#f4ede3"
-  text-1: "#292524"
-  text-2: "#57534e"
-  text-3: "#6f6660"
-  border: "#78624a2e"
-  border-mid: "#78624a52"
-  field-line: "#968879"
-  peach: "#fdba74"
-  lavender: "#c4b5fd"
-  blue: "#93c5fd"
-  peach-soft: "#ffedd5"
-  lavender-soft: "#ede9fe"
-  blue-soft: "#dbeafe"
-  green-soft: "#edf7f0"
-  peach-line: "#7c2d123d"
-  lavender-line: "#5b21b63d"
-  blue-line: "#1e40af3d"
-  line-float: "#78624a8c"
-  lavender-line-float: "#5b21b68c"
-  peach-ink: "#7c2d12"
-  lavender-ink: "#5b21b6"
-  blue-ink: "#3b6fd4"
-  blue-ink-deep: "#1e40af"
-  green-ink: "#15803d"
-  red-ink: "#c81e1e"
-  red-bg: "#c81e1e12"
-  red-bg-hover: "#c81e1e21"
-  red-border: "#c81e1e38"
-  lavender-bg: "#c4b5fd38"
-  lavender-border: "#5b21b638"
-  focus: "#3b6fd4"
-  overlay: "#2925248c"
-  nexia-mark: "#5b8def"
+  surface-2: "#f5f4f8"
+  surface-3: "#ebe9f2"
+  text-1: "#1c1a24"
+  text-2: "#4a4757"
+  text-3: "#5f5c6d"
+  border: "#e6e4ee"
+  border-mid: "#cfccdb"
+  field-line: "#8a8698"
+  line-float: "#a5a1b8"
+  peach: "#ff8f57"
+  peach-soft: "#ffd2b8"
+  peach-tint: "#fff0e6"
+  peach-ink: "#4f1d05"
+  butter: "#ffc21a"
+  butter-soft: "#ffe894"
+  butter-tint: "#fff7d6"
+  butter-ink: "#453000"
+  mint: "#4fcb8a"
+  mint-soft: "#bdebd0"
+  mint-tint: "#e6f7ed"
+  mint-ink: "#0b3d26"
+  sky: "#5fa8ff"
+  sky-soft: "#c4deff"
+  sky-tint: "#e8f2ff"
+  sky-ink: "#082f57"
+  lilac: "#a58cf5"
+  lilac-soft: "#dacfff"
+  lilac-tint: "#f1ecff"
+  lilac-ink: "#22104f"
+  pink: "#ff7fae"
+  pink-soft: "#ffcbdf"
+  pink-tint: "#ffe9f1"
+  pink-ink: "#5c0e31"
+  action: "#ff8f57"
+  action-hover: "#ff7d3d"
+  action-soft: "#ffe3d2"
+  action-ink: "#3a1503"
+  red-ink: "#b3201a"
+  red-bg: "#fde8e6"
+  red-bg-hover: "#fbd5d1"
+  focus: "#4a2fd6"
+  overlay: "#1c1a2480"
 typography:
   display:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "4.25rem"
-    fontWeight: 800
-    lineHeight: 1.05
+    fontFamily: "Alan Sans, Avenir Next, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "5.25rem"
+    fontWeight: 700
+    lineHeight: 0.98
+    letterSpacing: "-0.035em"
+  name:
+    fontFamily: "Alan Sans, Avenir Next, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "4.75rem"
+    fontWeight: 700
+    lineHeight: 1
     letterSpacing: "-0.03em"
   pageTitle:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "2.5rem"
-    fontWeight: 800
-    lineHeight: 1.12
-    letterSpacing: "-0.02em"
-  sectionTitle:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "1.25rem"
+    fontFamily: "Alan Sans, Avenir Next, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "3.5rem"
     fontWeight: 700
-    lineHeight: 1.25
-    letterSpacing: "-0.01em"
+    lineHeight: 1.02
+    letterSpacing: "-0.03em"
+  sectionTitle:
+    fontFamily: "Alan Sans, Avenir Next, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "1.375rem"
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
   control:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontFamily: "Alan Sans, Avenir Next, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 500
     lineHeight: 1.5
     letterSpacing: "normal"
   body:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "0.9375rem"
-    fontWeight: 500
-    lineHeight: 1.6
-    letterSpacing: "normal"
-  bodySm:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 500
-    lineHeight: 1.5
-    letterSpacing: "normal"
-  meta:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "0.8125rem"
-    fontWeight: 600
-    lineHeight: 1.4
-    letterSpacing: "normal"
-  caption:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "0.75rem"
-    fontWeight: 500
-    lineHeight: 1.4
+    fontFamily: "Alan Sans, Avenir Next, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "1rem"
+    fontWeight: 400
+    lineHeight: 1.55
     letterSpacing: "normal"
   label:
-    fontFamily: "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
-    fontSize: "0.6875rem"
-    fontWeight: 700
+    fontFamily: "Alan Sans, Avenir Next, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "0.9375rem"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "normal"
+  chip:
+    fontFamily: "Alan Sans, Avenir Next, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif"
+    fontSize: "0.8125rem"
+    fontWeight: 600
     lineHeight: 1.2
-    letterSpacing: "0.12em"
+    letterSpacing: "normal"
   code:
     fontFamily: "ui-monospace, SF Mono, SFMono-Regular, Menlo, monospace"
     fontSize: "0.85em"
@@ -100,13 +102,11 @@ typography:
     lineHeight: 1.55
     letterSpacing: "normal"
 rounded:
-  focus: "2px"
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  lg: "16px"
-  xl: "24px"
-  2xl: "28px"
+  focus: "4px"
+  field: "16px"
+  bubble: "22px"
+  card: "28px"
+  hero: "40px"
   full: "999px"
 spacing:
   xs: "4px"
@@ -114,405 +114,292 @@ spacing:
   md: "12px"
   lg: "16px"
   xl: "20px"
-  2xl: "24px"
-  3xl: "28px"
+  2xl: "28px"
+  3xl: "40px"
   gutter-sm: "20px"
   gutter-md: "24px"
-  gutter-lg: "32px"
-  navbar: "56px"
+  gutter-lg: "40px"
+  navbar: "72px"
 components:
   button-primary:
-    backgroundColor: "{colors.peach}"
-    textColor: "{colors.peach-ink}"
-    typography: "{typography.bodySm}"
-    rounded: "{rounded.md}"
-    padding: "0 20px"
+    backgroundColor: "{colors.action}"
+    textColor: "{colors.action-ink}"
+    typography: "{typography.control}"
+    rounded: "{rounded.full}"
+    padding: "0 22px"
   button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text-2}"
-    typography: "{typography.bodySm}"
-    rounded: "{rounded.md}"
-    padding: "0 20px"
+    backgroundColor: "{colors.surface-2}"
+    textColor: "{colors.text-1}"
+    typography: "{typography.control}"
+    rounded: "{rounded.full}"
+    padding: "0 22px"
   button-destructive:
     backgroundColor: "{colors.red-bg}"
     textColor: "{colors.red-ink}"
-    typography: "{typography.bodySm}"
-    rounded: "{rounded.md}"
-    padding: "0 20px"
+    typography: "{typography.control}"
+    rounded: "{rounded.full}"
+    padding: "0 22px"
   field:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text-1}"
     typography: "{typography.control}"
-    rounded: "{rounded.md}"
-    padding: "12px 16px"
-  sticker-chip:
+    rounded: "{rounded.field}"
+    padding: "10px 16px"
+  chip:
     backgroundColor: "{colors.surface-2}"
-    textColor: "{colors.text-2}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "4px 12px"
-  sticker-tag:
-    backgroundColor: "{colors.lavender-bg}"
-    textColor: "{colors.lavender-ink}"
-    typography: "{typography.label}"
-    rounded: "{rounded.full}"
-    padding: "4px 12px"
-  paper:
-    backgroundColor: "{colors.surface}"
     textColor: "{colors.text-1}"
-    rounded: "{rounded.lg}"
-    padding: "20px"
+    typography: "{typography.chip}"
+    rounded: "{rounded.full}"
+    padding: "0 12px"
+  panel:
+    backgroundColor: "{colors.surface-2}"
+    textColor: "{colors.text-1}"
+    rounded: "{rounded.card}"
+    padding: "28px"
+  card-person:
+    backgroundColor: "{colors.lilac-soft}"
+    textColor: "{colors.lilac-ink}"
+    rounded: "{rounded.card}"
+    padding: "22px"
 ---
 
 # Design System: Nexia
 
 ## 1. Overview
 
-**Creative North Star: "The Tidy Memory Scrapbook"**
+**Creative North Star: "Soft"**
 
-Nexia is a personal memory book, not a productivity dashboard. Screens should
-feel like a carefully kept slambook: warm paper, sticker chips, gentle colour,
-and small washi-tape details that make profiles feel *kept* rather than stored.
+Nexia is a slambook: one person keeping track of the people they care about.
+There are no photos in it, so a person's identity on screen is a **colour and a
+shape**. Everything else stays out of the way: a white page, flat pastel
+surfaces with large corners, one friendly typeface, and one colour that means
+"do this".
 
-**The material is paper, and paper is opaque.** An earlier version of this system
-built every surface from translucent glass (`backdrop-filter: blur(20px)`). It
-was replaced wholesale: translucency muddied every card against the warm page,
-cost a compositing layer per element, and read as a tech product rather than a
-scrapbook. Depth now comes from opaque surfaces, warm hairlines, and spacing —
-and from nothing else. See §5: the product is flat and carries no shadows at all.
+The personality is cute and polished. Cute comes from the shapes, the pastels
+and the round corners. Polished comes from restraint: flat fills, a single type
+family, generous space, and no decoration that isn't carrying information.
 
-**There is no `backdrop-filter` anywhere in the app, and none should be added.**
+**Key characteristics**
 
-**Key characteristics:**
-
-- Warm cream page, opaque white paper, restrained peach / lavender / blue accents.
-- Rounded panels separated by fine warm borders, never by a shadow.
-- Small tape and sticker motifs used for hierarchy, never as wallpaper.
-- Nunito throughout, with compact all-caps labels and calm body text.
-- Ease-out motion that never overshoots.
-
-**The mark is a pinned note.** The logo is the same object as everything else in
-the app: a white card with one strip of peach washi tape across its top edge,
-an "N" in ink on it, set down a few degrees crooked. See "Logo" in §6.
+- A white page. Colour belongs to people, not to the chrome.
+- Each person has one of six colours and one of seven shapes, derived from
+  their profile id (`features/profiles/identity.ts`). A person looks the same
+  in the grid, on their page, in a dialog and in a chat result.
+- Flat. No `box-shadow`, no `backdrop-filter`, anywhere.
+- Light theme only.
+- One family, Alan Sans. Hierarchy is size and weight.
+- Fields are white, defined by their edge.
+- No native browser UI: no `<select>`, date input, `alert()`, `confirm()` or
+  `title` tooltip.
 
 ## 2. Layout
 
-Horizontal alignment is a system, not a per-page decision. Everything routes
-through `PageShell` (`src/components/layout/PageShell.tsx`), which emits the
-`.shell` class defined in `globals.css`.
+`PageShell` (`components/layout/PageShell.tsx`) is the only container, backed
+by `.shell` in `globals.css`.
 
-- **`wide`** — `72rem`. Browse grids, the landing page, and the navbar.
-- **`reading`** — `48rem`. Profile detail, forms, and chat.
+| Width     | Token             | Used for                                          |
+| --------- | ----------------- | ------------------------------------------------- |
+| `wide`    | `--shell-wide` 76rem    | People grid, profile page, landing, navbar  |
+| `reading` | `--shell-reading` 46rem | The profile form and chat                   |
 
-Both variants share one responsive gutter token (`--gutter`: 20 / 24 / 32px),
-and `.shell` folds the gutter into its `max-width`. That is what keeps the
-navbar's brand and sign-out glyphs landing on exactly the same pixel columns as
-the profile grid beneath them.
+One gutter token, `--gutter` (20 / 24 / 40px), is folded into `max-width`, so
+the two widths are concentric and the navbar lines up with wide content. No
+page sets its own `max-width` or horizontal padding.
 
-**Named rules:**
+Dashboard pages use `.page-body` (`100dvh` minus the navbar), never
+`min-h-screen`. The navbar is 72px (`--navbar-h`), white, sticky, with a
+hairline under it because content scrolls beneath.
 
-**The One Shell Rule.** No page sets its own `max-width` or horizontal padding.
-If a surface needs to span the viewport (the form action bar, the navbar), it
-goes full-bleed and puts a `PageShell` *inside* itself.
+**Spacing.** Tight inside a group, generous between groups. Cards in a grid sit
+16px apart (12px on a phone). Panels on a profile sit 16px apart. Sections of a
+page are separated by space, not rules.
 
-**The Navbar Offset Rule.** Dashboard pages use `.page-body`
-(`min-height: calc(100dvh - var(--navbar-h))`), never `min-h-screen`. The latter
-overshoots by exactly the navbar height and forces a scrollbar on every page.
-
-**The One Sheet Rule.** A profile is one sheet of paper — a single `.paper`
-article that runs from the hero to the last quote — on both the detail page and
-the edit form. It is not a stack of section cards. The earlier version gave
-every section its own white panel with a grey icon tile and an 11px caps label;
-four of those in a column is a settings screen wearing a scrapbook's colours,
-and it left section headings and field labels sharing one type size, so the
-page had no hierarchy to read. Sections are divided by a heading and a hairline,
-never by a new card. The same rule is why the form uses the same sheet: editing
-a profile and reading one are the same document in two states.
-
-**The App Screen Lock.** Chat is the only screen that owns the viewport, and it
-adds `.app-screen` to `<html>` while mounted, which removes the document
-scroller entirely. Sizing the column to `100dvh` is not sufficient on a phone:
-the document keeps a scroller of its own, so a flick past either end of the
-transcript chains into the page and drags the browser chrome — two scrollers
-competing for one gesture. The transcript additionally sets
-`overscroll-behavior: contain`. Any future full-height screen uses the same
-class; nothing else should.
+**Responsive.** A person's card stands (shape above name) from `sm` up and lies
+flat (shape beside name) on a phone, in one column. The grid is 2 / 3 / 4
+columns at `sm` / `md` / `xl`. Profile panels sit in a wrapping row and grow to
+fill it, so a missing field never leaves a hole; on a phone they stack.
 
 ## 3. Colours
 
-A warm scrapbook neutral system with three soft accent roles.
+All tokens live in `:root` in `apps/web/src/app/globals.css` and are exposed to
+Tailwind through `@theme inline` (`bg-surface-2`, `text-p-ink`, …).
+
+The same values exist as data in `@nexia/shared/brand`, for the logo, the
+profile PDF, the social image and the emails, none of which can read a
+stylesheet. `palette.test.ts` in the web app fails if the two differ.
 
 ### Surfaces
 
-- **Warm Page Cream** (`page`): the application background. Always light.
-- **Clean Paper** (`surface`): cards, panels, bars, the navbar.
-- **Sunk Paper** (`surface-2`): nested rows, wells, chip fills. Never a field.
-- **Pressed Paper** (`surface-3`): hover fills and active nav states.
+| Token         | Value     | Role                                   |
+| ------------- | --------- | -------------------------------------- |
+| `--page`      | `#ffffff` | The page                               |
+| `--surface`   | `#ffffff` | Fields, dialogs, menus                 |
+| `--surface-2` | `#f5f4f8` | Neutral panels, chips, secondary buttons |
+| `--surface-3` | `#ebe9f2` | Hover on the above                     |
 
 ### Ink
 
-`text-1` / `text-2` / `text-3` is a **warm** neutral ramp (14.3:1 / 7.2:1 /
-5.3:1 on the page). Cool slate greys were replaced because they read as a subtle
-mismatch against warm cream, and the old tertiary sat right on the 4.5:1 line.
+A cool near-black ramp: `--text-1` `#1c1a24` (16.6:1 on white), `--text-2`
+`#4a4757` (8.9:1), `--text-3` `#5f5c6d` (6.4:1).
 
-### Accents
+### The six person colours
 
-- **Pressed Peach** (`peach`): primary actions, tape, the FAB, chat send.
-- **Keepsake Lavender** (`lavender`): avatar tiles (every avatar, everywhere:
-  the grid, the sheet, chat cards, the PDF), tape, tag chips, quotes.
-- **Lookup Blue** (`blue`): AI touchpoints and small navigational emphasis.
+Each comes in four steps.
 
-Each accent also has a **wash** — `peach-soft`, `lavender-soft`, `blue-soft` —
-the pale opaque paper behind a tinted well, chip, or badge, plus a matching
-`-line` hairline. Washes are opaque rather than alpha so they read identically
-on `surface` and on `page`.
+| Step      | Example (lilac) | Used for                                        |
+| --------- | --------------- | ----------------------------------------------- |
+| base      | `#a58cf5`       | The shape behind an initial; solid blocks (their song, rank badges) |
+| `-soft`   | `#dacfff`       | A person's card and the top of their page; speech bubbles |
+| `-tint`   | `#f1ecff`       | Panels on their page and in their form          |
+| `-ink`    | `#22104f`       | The only step ever used for text or icons       |
+
+The six are peach, butter, mint, sky, lilac and pink.
+
+**The current person.** A `.person-<colour>` class sets `--p`, `--p-soft`,
+`--p-tint` and `--p-ink`. Components use `bg-p-soft`, `text-p-ink`,
+`.card-person` and `.panel-person` and never need to know which colour they
+are in. Outside any person the variables fall back to neutral, which is how the
+new-profile form is grey until the person exists.
+
+### Action
+
+Tangerine: `--action` `#ff8f57` with `--action-ink` `#3a1503` (7.5:1). It is the
+primary button, the send button, a selected date, and (as `--action-soft`) the
+current item in the navbar. It is the same value as peach, under its own name,
+so a button never depends on which person is peach.
+
+### Problems, focus, overlay
+
+Red is `--red-ink` on `--red-bg`. Success borrows mint. The focus ring is
+`--focus` `#4a2fd6`, 2.5px, everywhere. The scrim is `--overlay`, with no blur.
 
 ### Named rules
 
-**The Ink Rule (non-negotiable).** `peach`, `lavender`, and `blue` are *surface
-tints only*. They are never a text or icon colour — all three fail contrast as a
-foreground on paper (blue on white measures 1.8:1). Every accent has an `-ink`
-variant that clears WCAG AA: `peach-ink`, `lavender-ink`, `blue-ink`,
-`green-ink`, `red-ink`. Use those for anything a person has to read.
-
-**The Two Blues Rule.** `blue-ink` is tuned for white paper (4.8:1). On
-`blue-soft` it falls to 3.8:1 and fails, so text on the blue wash uses
-`blue-ink-deep` (7.0:1) instead. The two are not interchangeable; peach and
-lavender need no equivalent because their inks already clear AA on their own
-washes (8.0:1 and 7.5:1).
-
-**The Content Colour Rule.** Colour is assigned by *what a thing is*, never by
-where it lands in a loop. A tag is lavender on the profile grid, on the detail
-sheet, in the form, and in the PDF export. The song someone is bound to is the
-one peach well. Ranked songs cycle lavender / peach / blue because rank is the
-information — and they carry their number too, so colour is never the only
-code. Everything else — genres, places, food, politics — stays a neutral paper
-chip, which is what lets the coloured things mean something. An index-modulo
-accent applied to whatever happens to render next is the failure mode this rule
-exists to prevent.
-
-**The Accent Ration Rule.** If every card uses all three accents, the scrapbook
-stops feeling kept and starts feeling noisy.
-
-**The Warm Light Rule.** `page` is the baseline for every surface. Dark mode is
-forbidden — PRODUCT.md specifies light theme only.
-
-**The Focus Rule.** One focus treatment, set globally on `:focus-visible`: a 2px
-`focus` outline at 2px offset. Components must not remove it.
+- **The Ink Rule.** Text and icons on a colour use that colour's `-ink`. The
+  base, `-soft` and `-tint` steps are surfaces, never foregrounds.
+- **The Person Rule.** Colour on a signed-in screen means a person. Do not use
+  a person colour as decoration next to real people. The exceptions are fixed
+  and listed: the logo, the three shapes in an empty state, the count beside
+  "Your people", the four chat suggestions, and the landing page.
+- **The One Action Rule.** One tangerine button per view. Everything else is
+  neutral (`secondary`), quiet (`ghost`) or, on a person's colour, `frost`.
+  Chat is the one exception: its send button is always tangerine, and so is
+  Save on a change it is proposing.
+- **The White Field Rule.** Fields are white with a 1.5px `--field-line` edge.
+  Never tint a field.
 
 ## 4. Typography
 
-**Family:** Nunito, with `-apple-system`, `BlinkMacSystemFont`, `Segoe UI`,
-`system-ui`, `sans-serif` fallback.
-
-**The one exception** is `--font-mono` (`ui-monospace, "SF Mono",
-SFMono-Regular, Menlo, monospace`), used *only* for inline code and code fences
-inside chat markdown. It is the sole non-Nunito face in the product and must not
-spread to labels, data, or anything styled to look "technical".
+One family: **Alan Sans**, loaded with `next/font` as `--font-alan`. Weights in
+use: 400 body, 500 controls and meta, 600 labels and chips, 700 titles and
+primary buttons.
 
 ### The ramp
 
-Five named classes in `globals.css` carry the hierarchy. Nothing outside them.
-
-| Class | Size | Weight | Used for |
-|---|---|---|---|
-| `.t-display` | `clamp(2.5rem → 4.25rem)` | 800 | Landing hero only |
-| `.t-page-title` | `clamp(1.75rem → 2.5rem)` | 800 | Every authenticated page `h1` |
-| `.t-section-title` | `1.25rem` | 700 | Profile sheet sections, modal titles, empty-state headings |
-| `.t-body` | `0.9375rem` (15px) | 500 | Profile prose, chat text, card names |
-| `.t-label` | `0.6875rem` (11px) | 700 | Every section header and field label |
-
-The two display steps are fluid: `.t-display` is
-`clamp(2.5rem, 1.6rem + 4vw, 4.25rem)` and `.t-page-title` is
-`clamp(1.75rem, 1.3rem + 1.8vw, 2.5rem)`. The frontmatter above records each
-step's maximum; the clamp minimum is part of the same step, not a new one.
-
-Supporting steps for controls and metadata: **16px** (form fields and the chat
-composer — smaller values make iOS Safari zoom the viewport on focus), **14px**
-(buttons, body-small), **13px** (compact buttons, status text), **12px**
-(captions, chips).
+| Class              | Size                         | Use                                  |
+| ------------------ | ---------------------------- | ------------------------------------ |
+| `.t-display`       | clamp(2.75rem → 5.25rem), 700 | Landing headlines                   |
+| `.t-name`          | clamp(2.5rem → 4.75rem), 700  | A person's name on their page       |
+| `.t-page-title`    | clamp(2.125rem → 3.5rem), 700 | Page titles                         |
+| `.t-section-title` | 1.375rem, 700                | Panel and dialog titles              |
+| `.t-label`         | 0.9375rem, 600               | Field labels                         |
+| `.t-body`          | 1rem / 1.55                  | Running text                         |
 
 ### Named rules
 
-**The One Family Rule.** Nunito carries the product. No display face for app
-labels, buttons, forms, or profile content.
-
-**The One Label Rule.** `.t-label` is the *only* all-caps metadata style. A
-second, smaller 10px label size existed on the detail page and was removed —
-11px is the floor for tracked uppercase text.
-
-**The 16px Field Rule.** Form controls never go below 16px on mobile.
+- Sentence case everywhere. No tracked uppercase labels.
+- No small label sitting above a heading. A heading carries itself.
+- Body text is never below 15px; 16px in fields, so iOS does not zoom.
+- Display tracking stops at -0.035em.
 
 ## 5. Elevation
 
-**There is no elevation, because there are no shadows.** Not on cards, buttons,
-modals, bars, the FAB, the composer, or toasts. Nexia is a flat product.
+There is none. Nothing casts a shadow and nothing blurs what is behind it.
 
-Separation comes from exactly three things:
-
-1. White paper sitting on the warm cream page.
-2. A single warm hairline (`border` / `border-mid`).
-3. Spacing.
-
-Because borders carry all the separation, they are set slightly stronger than a
-decorative border would be. If a surface doesn't read clearly, fix its contrast
-or its spacing — do not reach for a shadow.
-
-**Named rules:**
-
-**The Flat Rule.** No `box-shadow` anywhere. Hover states that used to lift with
-a shadow (profile cards) now darken their border and rise a few pixels instead.
-
-**The No Nested Paper Rule.** `.paper` inside `.paper` is never correct. Nested
-groups use `.paper-sunk` (a bordered `surface-2` well).
-
-**The Float Line Rule.** A hairline is only visible when it is darker than
-**both** surfaces it divides. On the page that happens for free — a card's line
-is darker than its own fill and darker than the cream behind it. On the overlay
-it does not: the scrim composites to a mid tone, so a normal 1px card border
-ends up *lighter* than the scrim and dissolves into the card's silhouette. A
-dialog that simply reuses its card's border therefore looks like it has no
-border at all. Surfaces floating on the scrim use `line-float` /
-`lavender-line-float` at **2px** instead — the one place in the product where a
-border is not 1px, because it is the one place a border has to out-contrast a
-mid grey. `overlay` itself is `0.55`, not `0.42`; the lighter scrim sat too
-close to the paper it was meant to be pushing back.
+- On the page, separation is colour: a pastel card, a neutral panel, a white
+  field with an edge.
+- Things that float over content (`Select` menu, calendar) use `.float`: white
+  with a 1.5px `--line-float` edge.
+- Dialogs are a white (or person-coloured) sheet on the scrim.
+- Hover on a card is a 4px lift (`-translate-y-1`), with no shadow. Press is a
+  slight scale down.
 
 ## 6. Components
 
-- **Buttons** — one component, `atoms/Button.tsx`, four variants (`primary`,
-  `secondary`, `destructive`, `ghost`) and two sizes. Both sizes clear 44px.
-  Nothing hand-rolls a button.
-- **Logo** — `atoms/Logo.tsx`: `<Logo>` is the mark with "Nexia" beside it in
-  Nunito ExtraBold (navbar, landing nav and footer); `<LogoMark>` is the mark
-  alone (above the sign-in card, the not-found and error pages). The geometry
-  lives once, in `shared/brand/mark.ts`, and everything is drawn from it: the
-  React logo, the social preview (`shared/lib/social-image.tsx`), and the
-  static files — `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`,
-  `public/icons/*` (manifest icons, the email mark) and `docs/brand/*` — which
-  `npm run brand -w web` re-renders. The "N" and the wordmark are outlined
-  paths, so no icon depends on a font loading. The mark is never recoloured,
-  re-tilted or given a background of its own on the page; app icons put it on
-  a `page` square. The chat assistant keeps its own avatar (the blue spark
-  squircle): the mark is the product, the spark is the thing you talk to.
-- **Fields** — `atoms/Input`, `atoms/Textarea`, `atoms/Select`,
-  `atoms/DatePicker`, all built on `atoms/Field` for the shared label / hint /
-  error / `aria-describedby` wiring. Fields are **white**, not tinted: a
-  cream-tinted input on a white card reads as muddy, and a field should look
-  like a hole punched in the paper rather than a slightly different shade of
-  it. Their edge is `field-line` (`#968879`), not `border-mid`: a control's
-  boundary is non-text UI and needs 3:1 against the paper, which the
-  translucent hairlines do not reach. Component classes live in
-  `@layer components`, so a utility on the same element always wins; still,
-  size a field from its wrapper, not the control. A button sitting **beside** a field
-  takes its height from the row (`self-stretch` plus `min-h-11`), never a hard
-  `h-11`: `.field` is a 44px *minimum* plus its own padding and line box, so it
-  computes taller than 44px, and every fixed-height add button in the profile
-  form sat a pixel short of the input next to it.
-- **No native pickers or dialogs.** The browser's `<select>`, date input,
-  `alert()` / `confirm()`, and `title` tooltips all render in the operating
-  system's style, not the paper's. `atoms/Select` is a WAI-ARIA listbox (arrow
-  keys, Home / End, typeahead, flips above when there is no room below);
-  `atoms/DatePicker` is a calendar with day, month and year views, a keyboard
-  grid, and a year view first when empty, since a birthday is decades back;
-  `atoms/Tooltip` labels icon buttons on hover and keyboard focus. Their
-  popovers are `.paper-float` (the 1.5px float line). On a phone the calendar
-  reaches out to the card's edges, not the screen's.
-- **Back button** — `atoms/BackButton`. Its hover pill aligns to the content
-  column; it is never pulled left with a negative margin to align the arrow
-  glyph, because the fill then spills past the card edge on hover.
-- **Chips** — `.sticker-chip` for neutral metadata, `.sticker-tag` for
-  personality tags.
-- **Cards** — `.paper` with `16px`–`28px` radii. Profile cards lift on hover
-  (translate + a darkened border, never a shadow); they carry no CSS
-  `transition` on `transform`, because Framer Motion owns that property and the
-  two smear each other frame by frame.
-- **Washi tape** — one material, two placements, sharing a torn-end silhouette.
-  `.washi-tape` **pins**: rotated, pasted across the top edge of a surface, one
-  per surface. Colour, width, and angle vary per person, keyed off the **profile
-  id** rather than the grid index, so someone keeps the same tape however the
-  list is filtered. The profile sheet pins exactly one, at the top of the sheet.
-  `.tape-mark` **marks**: the same strip laid flat in a heading row to open a
-  section, in the text flow rather than over an edge, at full strength because
-  26px of 70%-opacity peach on cream is not a colour. Tape never decorates a
-  surface that is already tinted — a peach strip on a peach well reads as a
-  blob, and it costs the hero its claim to the only pinned tape on the page.
-- **Profile sheet section** — `features/profiles/components/SheetSection.tsx`,
-  shared by the detail page and the form. Tape mark, `.t-section-title`, then a
-  hairline running out to the sheet's edge; more air above the heading than
-  below it. Section titles, tape colours, and which fields each section holds
-  live in `features/profiles/sections.ts`, so read, edit, and export cannot
-  drift.
-- **Pinned notes** — every overlay and interruption is one family, built from
-  the same four parts: a flat sheet, one strip of tape across its top edge, an
-  eyebrow label over a title, and its actions bottom right.
-  `overlays/Dialog.tsx` is the one modal (focus moves in and is trapped, Escape
-  and the scrim close it unless `dismissible` is false, the page stops
-  scrolling, focus returns on close, and a closing scrim stops taking clicks the
-  moment it starts to fade). `ConfirmDialog` builds on it — peach tape when the
-  action destroys something, lavender otherwise, and focus lands on Cancel.
-  `QuoteModal` is a quote or memory pinned up on its own. `StatusNote` is the
-  in-page version for empty, not-found and error states. Toasts are small
-  slips pinned under the navbar: lavender tape for done, peach for a problem,
-  announced through separate polite and assertive live regions, paused while
-  hovered or focused, and never more than three at once.
-- **Quote bubble** — a `lavender-soft` card with the quotation mark hung in its
-  left gutter at `.t-page-title` scale. Reserved for things the person actually
-  **said**: it is the one device meaning "their words, not yours", which is why
-  memories, notes, and the bio are plain wells and prose instead. Opened, the
-  words are the point: they are set large (20–24px, semibold) and signed with
-  the person's name under a short rule, and everything else steps back to a
-  label. A memory opens on the plain well, unsigned, labelled with who it is
-  shared with.
-- **Form action bar** — `features/profiles/components/FormActionBar.tsx`. A
-  viewport-anchored bar, not a floating pill: it reports dirty state, disables
-  save until something actually changed, and guards against navigating away with
-  unsaved edits.
+**Logo** (`atoms/Logo`, geometry in `shared/brand/mark.ts`). Four round petals
+in peach, pink, lilac and sky, overlapping in turn around a butter centre: four
+people, one flower. It turns an eighth on hover. The favicon, app icons and
+`docs/brand` are renders of `mark.ts`; change it, then run `npm run brand -w web`.
+It is also the assistant's face in chat.
+
+**Avatar** (`features/profiles/components/Avatar`). A person's initial inside
+their shape: circle, squircle, clover, flower, arch, diamond or hexagon. Always
+decorative (`aria-hidden`). `Shape` is the same drawing without an initial.
+
+**Button** (`atoms/Button`). A pill. `primary` (tangerine), `secondary`
+(neutral fill), `destructive` (red tint), `ghost`, and `frost` (translucent
+white, for controls sitting on a person's colour). Minimum 44px tall; `md` is
+48px.
+
+**Fields** (`Input`, `Textarea`, `Select`, `DatePicker`, `SearchField`). White,
+16px corners, 48px tall, 1.5px edge that darkens on hover and turns to the
+focus colour on focus.
+
+**Chips** (`.chip`). A pill of text. Neutral on the page; `.chip-on-color` is
+frosted white and inherits the person's ink.
+
+**Person card** (`molecules/CardProfilePreview`). `.card-person`, 28px
+corners: avatar, name, relationship and pronouns, then zodiac and up to three
+tags as chips.
+
+**Profile page** (`features/profiles/components/ProfileSheet`). A block of the
+person's `-soft` colour holds the controls, avatar, name, who they are, bio and
+tags. Below it, one `.panel-person` per kind of thing, each with a small bold
+heading. Quotes are speech bubbles. Their song is the one solid block.
+
+**Profile form** (`ProfileForm`, `SheetSection`). The same sections as panels,
+tinted with the person's colour when editing, with white fields inside. The
+save bar is fixed to the bottom: white with a line above, the one place a line
+separates two surfaces.
+
+**Dialog** (`overlays/Dialog`). The one modal: a 32px-cornered sheet, a title,
+actions bottom right. A quote opens on a sheet of the person's colour.
+
+**StatusNote** (`molecules/StatusNote`). Empty, missing and failed states: a
+neutral panel with three small shapes, a title, a line of help and the way out.
+
+**Toast** (`shared/ui/toast`). One line in a dark pill at the top of the page.
+The only dark surface, so it reads over white and over any person's colour.
+
+**Chat.** Your messages are neutral bubbles on the right; Nexia's replies are
+plain text. People it finds are small flat person cards. A change it proposes
+is a white card with a line round it and Save / Not now. The composer is one
+rounded field with a tangerine send button.
 
 ## 7. Motion
 
-One easing curve: `--ease-out` (`cubic-bezier(0.22, 1, 0.36, 1)`), exported to
-Framer Motion as `EASE_OUT` from `shared/ui/motion.ts`. Entrances fade and rise
-a few pixels (`enter()`). Nothing overshoots — the old
-`cubic-bezier(0.175, 0.885, 0.32, 1.275)` back-out was removed, and the one
-spring (`SETTLE`, for cards lifting and settling) is critically damped, so it
-arrives without bouncing. The logo tips a few degrees further when its link is
-hovered; that is the whole of its animation.
-
-Framer Motion respects the OS setting through `<MotionConfig reducedMotion="user">`
-in `shared/providers/query-provider.tsx`; the CSS side is handled by the
-`prefers-reduced-motion` block in `globals.css`.
+Ease-out only (`--ease-out-soft`, mirrored by `EASE_OUT` in `shared/ui/motion`);
+nothing overshoots. Entrances fade up a few pixels, staggered by 40ms and capped
+at one screenful. State changes take 150–200ms. `prefers-reduced-motion` stops
+looping animation and removes travel; Framer Motion follows it through
+`MotionConfig`.
 
 ## 8. Do's and Don'ts
 
 ### Do
 
-- **Do** route every page through `PageShell`.
-- **Do** use an `-ink` colour for anything readable.
-- **Do** keep touch targets at 44px or larger.
-- **Do** hide empty profile sections rather than showing placeholders.
-- **Do** keep 16px on form controls at mobile widths.
-- **Do** let the loading skeleton use the loaded state's shell and padding, so
-  nothing shifts when data arrives.
+- Put a `person-*` class on the outermost element that is about one person,
+  and use the `p` utilities inside it.
+- Use `Button`, `Select`, `DatePicker`, `ConfirmDialog`, `toast` and `Tooltip`.
+- Check ink-on-colour contrast when adding a colour: 4.5:1 for text.
+- Draw the sparse case. Only a name and a relationship are required, and the
+  page has to look finished with just those.
 
 ### Don't
 
-- **Don't** add a `box-shadow`. Anywhere.
-- **Don't** add `backdrop-filter`, glass, or blur as decoration.
-- **Don't** tint a form field — fields are white.
-- **Don't** add dark mode.
-- **Don't** put text or icons in `peach`, `lavender`, or `blue`.
-- **Don't** use `min-h-screen` on a page that sits under the navbar.
-- **Don't** hand-roll a button, field label, or container width.
-- **Don't** nest `.paper` inside `.paper`.
-- **Don't** break a profile back into a stack of section cards.
-- **Don't** colour something by its index in a loop — colour it by what it is.
-- **Don't** paste tape on a surface that already carries a wash.
-- **Don't** give a button beside a field a fixed height.
-- **Don't** animate the same property in both CSS and Framer Motion.
-- **Don't** use emoji as an icon system — the app uses Lucide.
-- **Don't** use a native `<select>`, date input, `alert()`, `confirm()` or
-  `title` tooltip — use `Select`, `DatePicker`, `ConfirmDialog`, a toast, or
-  `Tooltip`.
-- **Don't** redraw, recolour or re-tilt the logo in place — change
-  `shared/brand/mark.ts` and re-render with `npm run brand -w web`.
+- Add a shadow, a blur, a gradient, or a border on a card.
+- Tint a field.
+- Use a person colour for text, or as decoration on a signed-in screen.
+- Put a second tangerine button in a view, outside chat.
+- Add a label above a heading, or uppercase tracked text.
+- Imitate a physical material: no tilt, no texture, nothing stuck on.

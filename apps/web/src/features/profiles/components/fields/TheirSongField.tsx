@@ -5,8 +5,8 @@ import Input from "@/components/atoms/Input";
 import type { ProfileFormValues } from "../../form";
 
 /**
- * The peach well from the sheet, in its editable state. The fields inside stay
- * white — a hole punched in the well, not a tinted box on a tinted box.
+ * The one song someone is bound to: a title and, if you remember it, who
+ * sings it. Two fields under one label.
  */
 export default function TheirSongField({
   register,
@@ -16,11 +16,8 @@ export default function TheirSongField({
   errors: FieldErrors<ProfileFormValues>;
 }) {
   return (
-    <fieldset className="rounded-2xl border border-peach-line bg-peach-soft px-4 pb-4 pt-3.5">
-      <legend className="sr-only">Their song</legend>
-      <p className="t-label mb-3 text-peach-ink" aria-hidden="true">
-        Their song
-      </p>
+    <fieldset>
+      <legend className="t-label mb-2">Their song</legend>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <Input
           placeholder="Song name"

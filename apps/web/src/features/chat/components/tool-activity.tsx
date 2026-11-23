@@ -32,13 +32,11 @@ function Note({
   return (
     <span
       className={cn(
-        "inline-flex w-fit max-w-full items-start gap-2 text-[13px] font-semibold leading-snug",
-        tone === "error"
-          ? "rounded-xl border border-red-border bg-red-bg px-3 py-2 text-red-ink"
-          : "text-text-3"
+        "inline-flex w-fit max-w-full items-start gap-2 text-[0.9375rem] font-semibold leading-snug",
+        tone === "error" ? "rounded-[1.125rem] bg-red-bg px-4 py-2.5 text-red-ink" : "text-text-3"
       )}
     >
-      <span className="mt-0.5 shrink-0">{icon}</span>
+      <span className="mt-[0.1875rem] shrink-0">{icon}</span>
       {children}
     </span>
   );
@@ -63,7 +61,7 @@ export function ToolActivity({
     part.state !== "output-denied"
   ) {
     if (part.state === "approval-responded" && !part.approval.approved) {
-      return <Note icon={<X className="h-3.5 w-3.5" aria-hidden="true" />}>Not saved</Note>;
+      return <Note icon={<X className="h-4 w-4" aria-hidden="true" />}>Not saved</Note>;
     }
     return (
       <WriteProposal
@@ -83,17 +81,15 @@ export function ToolActivity({
     case "approval-requested":
     case "approval-responded":
       return (
-        <Note
-          icon={<Loader2 className="h-3.5 w-3.5 animate-spin text-blue-ink" aria-hidden="true" />}
-        >
+        <Note icon={<Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}>
           {meta.active}…
         </Note>
       );
     case "output-denied":
-      return <Note icon={<X className="h-3.5 w-3.5" aria-hidden="true" />}>Not saved</Note>;
+      return <Note icon={<X className="h-4 w-4" aria-hidden="true" />}>Not saved</Note>;
     case "output-error":
       return (
-        <Note tone="error" icon={<TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />}>
+        <Note tone="error" icon={<TriangleAlert className="h-4 w-4" aria-hidden="true" />}>
           {isWrite ? "That couldn't be saved." : "That lookup failed."}
         </Note>
       );
@@ -102,7 +98,7 @@ export function ToolActivity({
   const softError = extractToolError(part.output);
   if (softError) {
     return (
-      <Note tone="error" icon={<TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />}>
+      <Note tone="error" icon={<TriangleAlert className="h-4 w-4" aria-hidden="true" />}>
         {softError}
       </Note>
     );
@@ -114,16 +110,13 @@ export function ToolActivity({
     return (
       <Link
         href={`/profiles/${write.id}`}
-        className="group/write inline-flex w-fit max-w-full items-center gap-2.5 rounded-xl border border-green-line bg-green-soft px-3 py-2 transition-colors hover:border-green-ink"
+        className="group/write inline-flex min-h-11 w-fit max-w-full items-center gap-2.5 rounded-full bg-mint-soft py-2 pl-3.5 pr-4 text-mint-ink transition-colors hover:bg-mint"
       >
-        <Check className="h-4 w-4 shrink-0 text-green-ink" aria-hidden="true" />
-        <span className="min-w-0 truncate text-sm font-semibold text-text-1">
-          {meta.done} <span className="text-text-2">{write.fullName}</span>
+        <Check className="h-4 w-4 shrink-0" strokeWidth={2.6} aria-hidden="true" />
+        <span className="min-w-0 truncate text-[0.9375rem] font-semibold">
+          {meta.done} {write.fullName}
         </span>
-        <ArrowUpRight
-          className="h-3.5 w-3.5 shrink-0 text-text-3 group-hover/write:text-text-1"
-          aria-hidden="true"
-        />
+        <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" />
       </Link>
     );
   }
@@ -135,8 +128,8 @@ export function ToolActivity({
   if (profiles.length === 1 && first) {
     return (
       <div className="w-full max-w-md">
-        <p className="mb-1.5 inline-flex items-center gap-1.5 pl-0.5 text-xs font-semibold text-text-3">
-          <Icon className="h-3 w-3 text-blue-ink" aria-hidden="true" />
+        <p className="mb-2 inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-text-3">
+          <Icon className="h-4 w-4" aria-hidden="true" />
           {meta.done}
         </p>
         <ChatProfileCard profile={first} />
@@ -148,9 +141,7 @@ export function ToolActivity({
   if (profiles.length > 1) return <ProfileDisclosure profiles={profiles} label={meta.done} />;
 
   return (
-    <Note icon={<Icon className="h-3.5 w-3.5" aria-hidden="true" />}>
-      {meta.done}: nothing found
-    </Note>
+    <Note icon={<Icon className="h-4 w-4" aria-hidden="true" />}>{meta.done}: nothing found</Note>
   );
 }
 
@@ -163,17 +154,17 @@ function ProfileDisclosure({ profiles, label }: { profiles: ProfileSummary[]; la
         type="button"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
-        className="inline-flex min-h-11 items-center gap-2 rounded-full py-1 pl-1 pr-3 text-left transition-colors hover:bg-surface-2"
+        className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-surface-2 py-1 pl-1.5 pr-3.5 text-left transition-colors hover:bg-surface-3"
       >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-soft">
-          <Check className="h-3.5 w-3.5 text-blue-ink-deep" aria-hidden="true" />
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mint text-mint-ink">
+          <Check className="h-4 w-4" strokeWidth={2.6} aria-hidden="true" />
         </span>
-        <span className="text-[13px] font-semibold text-text-2">
+        <span className="text-[0.9375rem] font-semibold text-text-1">
           {label} · {profiles.length} people
         </span>
         <ChevronDown
           className={cn(
-            "h-4 w-4 text-text-3 transition-transform duration-200",
+            "h-4 w-4 text-text-2 transition-transform duration-200",
             expanded && "rotate-180"
           )}
           aria-hidden="true"
@@ -189,7 +180,7 @@ function ProfileDisclosure({ profiles, label }: { profiles: ProfileSummary[]; la
             transition={{ duration: 0.22, ease: EASE_OUT }}
             className="overflow-hidden"
           >
-            <div className="pt-2">
+            <div className="pt-2.5">
               <ChatProfileList profiles={profiles} max={6} />
             </div>
           </motion.div>

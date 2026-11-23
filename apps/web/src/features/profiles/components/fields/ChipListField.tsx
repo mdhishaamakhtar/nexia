@@ -28,9 +28,9 @@ export default function ChipListField({
   name: ProfileListField;
   label: string;
   placeholder: string;
-  /** What the list holds, which decides its colour: tags are lavender, quotes
-   *  keep their hanging mark, plain facts stay neutral paper. */
-  kind?: "neutral" | "tag" | "quote" | "memory";
+  /** What the list holds, which decides its shape: short facts are pills, a
+   *  quote is a speech bubble, a memory is a block of prose. */
+  kind?: "neutral" | "quote" | "memory";
 }) {
   const inputId = useId();
   const hintId = useId();
@@ -70,7 +70,7 @@ export default function ChipListField({
     placeholder,
     "aria-describedby": hintId,
     "aria-invalid": fieldState.error ? true : undefined,
-    className: cn("field min-w-0 flex-1 px-4 py-3", fieldState.error && "field-error"),
+    className: cn("field min-w-0 flex-1 px-4 py-2.5", fieldState.error && "field-error"),
   };
 
   return (
@@ -82,7 +82,7 @@ export default function ChipListField({
       {items.length > 0 && (
         <ul
           aria-label={label}
-          className={isBlock ? "mb-2.5 flex flex-col gap-2" : "mb-2.5 flex flex-wrap gap-2"}
+          className={isBlock ? "mb-3 flex flex-col gap-2" : "mb-3 flex flex-wrap gap-2"}
         >
           <AnimatePresence mode="popLayout" initial={false}>
             {items.map((item, index) => (
@@ -94,39 +94,32 @@ export default function ChipListField({
                 exit={{ opacity: 0, scale: 0.94 }}
                 transition={SETTLE}
                 className={cn(
+                  // White on the section's tinted panel, like the fields.
+                  "bg-surface text-text-1",
                   isBlock
-                    ? "relative flex w-full items-start gap-3 rounded-xl border py-3 pr-2 text-sm leading-relaxed text-text-2"
-                    : "inline-flex max-w-full items-center gap-1 py-1 pl-3 pr-1 text-sm",
-                  kind === "quote" && "border-lavender-line bg-lavender-soft pl-11",
-                  kind === "memory" && "border-line bg-surface-2 pl-4",
-                  kind === "tag" && "sticker-tag",
-                  kind === "neutral" && "sticker-chip"
+                    ? "flex w-full items-start gap-2 py-2.5 pl-4.5 pr-1.5 text-[1.0625rem] leading-normal"
+                    : "inline-flex min-h-10 max-w-full items-center gap-0.5 rounded-full py-0.5 pl-4 pr-1 text-base font-semibold",
+                  kind === "quote" && "rounded-[1.25rem] rounded-bl-md font-semibold",
+                  kind === "memory" && "rounded-[1.25rem]"
                 )}
               >
-                {kind === "quote" && (
-                  <span
-                    aria-hidden="true"
-                    className="t-section-title pointer-events-none absolute left-3.5 top-2 select-none leading-none text-lavender-ink/40"
-                  >
-                    &ldquo;
-                  </span>
-                )}
                 <span
-                  className={cn("min-w-0 break-words", isBlock && "flex-1 whitespace-pre-line")}
+                  className={cn(
+                    "min-w-0 break-words",
+                    isBlock && "flex-1 whitespace-pre-line py-1"
+                  )}
                 >
-                  {kind === "tag" ? `#${item}` : item}
+                  {item}
                 </span>
                 <button
                   type="button"
                   onClick={() => removeAt(index)}
                   aria-label={`Remove ${item}`}
                   className={cn(
-                    "hit-44 flex shrink-0 items-center justify-center rounded-full transition-colors hover:bg-surface-3",
-                    isBlock ? "h-8 w-8 text-text-3" : "h-7 w-7",
-                    kind === "tag" ? "text-lavender-ink" : "text-text-3"
+                    "hit-44 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-text-2 transition-colors hover:bg-surface-2 hover:text-text-1"
                   )}
                 >
-                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  <X className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
                 </button>
               </motion.li>
             ))}
@@ -139,7 +132,7 @@ export default function ChipListField({
           <textarea
             rows={2}
             {...inputProps}
-            className={cn(inputProps.className, "resize-y leading-relaxed")}
+            className={cn(inputProps.className, "resize-y py-3 leading-normal")}
           />
         ) : (
           <input {...inputProps} />
@@ -149,7 +142,7 @@ export default function ChipListField({
           aria-label={`Add to ${label.toLowerCase()}`}
           onClick={add}
           disabled={!draft.value.trim()}
-          className="flex w-11 shrink-0 items-center justify-center rounded-xl border border-field-line bg-surface text-text-2 transition-colors hover:bg-surface-2 disabled:border-line disabled:text-text-3"
+          className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center self-end rounded-full bg-text-1 text-white transition-[background-color,transform] active:scale-95 disabled:cursor-default disabled:bg-surface-3 disabled:text-text-3"
         >
           <Plus className="h-5 w-5" aria-hidden="true" />
         </button>
@@ -157,8 +150,8 @@ export default function ChipListField({
       <p
         id={hintId}
         className={cn(
-          "mt-1.5 text-xs",
-          fieldState.error ? "font-semibold text-red-ink" : "text-text-3"
+          "mt-2 text-sm",
+          fieldState.error ? "font-semibold text-red-ink" : "text-text-2"
         )}
       >
         {fieldState.error?.message ??

@@ -5,12 +5,9 @@ import { enter } from "@/shared/ui/motion";
 import type { ProfileSectionDef } from "../sections";
 
 /**
- * One section of a profile sheet — used by both the detail page and the form.
- *
- * A profile is one sheet of paper, not a stack of cards. A strip of tape opens
- * the section, a real title names it, and a hairline runs out to the sheet's
- * edge — the same three moves the PDF export makes. More air above the heading
- * than below it, so the rule reads as the start of what follows.
+ * One section of the profile form: a titled, rounded panel with its fields
+ * inside. The panel takes the colour of the person being edited (a tint of
+ * it), and is neutral when they are new and have no colour yet.
  */
 export default function SheetSection({
   section,
@@ -26,19 +23,11 @@ export default function SheetSection({
       id={section.id}
       aria-labelledby={`${section.id}-heading`}
       {...enter(0.06 + index * 0.06)}
-      className="scroll-mt-20 pt-8 first:pt-0 sm:pt-10"
+      className="panel-person scroll-mt-24 rounded-[1.75rem] px-5 py-6 sm:p-8"
     >
-      <header className="mb-5 flex items-center gap-3">
-        <span
-          className="tape-mark"
-          style={{ background: `var(--${section.tape})` }}
-          aria-hidden="true"
-        />
-        <h2 id={`${section.id}-heading`} className="t-section-title text-text-1">
-          {section.title}
-        </h2>
-        <span className="h-px flex-1 bg-line" aria-hidden="true" />
-      </header>
+      <h2 id={`${section.id}-heading`} className="t-section-title mb-6 text-text-1">
+        {section.title}
+      </h2>
       {children}
     </motion.section>
   );

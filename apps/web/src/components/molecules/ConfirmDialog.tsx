@@ -6,13 +6,11 @@ import Dialog from "@/components/overlays/Dialog";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
-  /** A short label over the title, naming the action ("Delete profile"). */
-  eyebrow?: string;
   title: string;
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  /** Destructive actions get the red button and peach tape; everything else lavender. */
+  /** Destructive actions get the red button; everything else the tangerine one. */
   tone?: "destructive" | "primary";
   onConfirm: () => void;
   onCancel: () => void;
@@ -21,12 +19,11 @@ interface ConfirmDialogProps {
 
 /**
  * Asks before something that can't be taken back. Focus starts on Cancel, so a
- * stray Enter never confirms; while the action runs the note can't be
+ * stray Enter never confirms; while the action runs the sheet can't be
  * dismissed out from under it.
  */
 export default function ConfirmDialog({
   isOpen,
-  eyebrow,
   title,
   description,
   confirmLabel = "Confirm",
@@ -45,11 +42,9 @@ export default function ConfirmDialog({
       open={isOpen}
       onClose={onCancel}
       role="alertdialog"
-      eyebrow={eyebrow}
       title={title}
       titleId={titleId}
       describedBy={descId}
-      tape={tone === "destructive" ? "peach" : "lavender"}
       dismissible={!isConfirming}
       initialFocus={cancelRef}
       className="max-w-md"

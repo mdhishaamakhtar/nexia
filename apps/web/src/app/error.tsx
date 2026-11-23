@@ -25,14 +25,12 @@ export default function Error({
       <Link
         href="/"
         aria-label="Nexia home"
-        className="group/logo mb-7 flex h-14 w-14 items-center justify-center rounded-2xl"
+        className="group/logo mb-6 flex h-16 w-16 items-center justify-center rounded-full"
       >
-        <LogoMark size={44} />
+        <LogoMark size={56} />
       </Link>
       <StatusNote
-        eyebrow="Something broke"
         title="This page hit a problem"
-        tape="peach"
         headingLevel="h1"
         actions={
           <>

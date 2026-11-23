@@ -3,48 +3,49 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { LogoMark } from "@/components/atoms/Logo";
-import Tape, { type TapeColor } from "@/components/atoms/Tape";
 import { enter } from "@/shared/ui/motion";
 
 /**
  * The shell for every signed-out page (sign in, verify email, forgot and
- * reset password): one pinned sheet, centred. The tape colour is the only
- * thing that varies, a light cue that these are steps of one flow.
+ * reset password): the mark, then one neutral panel, centred. The fields
+ * inside stay white.
  */
 export default function AuthCard({
   title,
-  eyebrow,
-  tape = "lavender",
+  subtitle,
   children,
   footer,
 }: {
   title: string;
-  eyebrow?: string;
-  tape?: TapeColor;
+  /** A line under the title. Only the sign-in page has one: the tagline. */
+  subtitle?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
   return (
     <main id="main" className="flex min-h-dvh items-center justify-center px-(--gutter) py-10">
-      <motion.div {...enter(0, 16)} className="relative w-full max-w-sm">
+      <motion.div {...enter(0, 16)} className="w-full max-w-[27rem]">
         <Link
           href="/"
           aria-label="Nexia home"
-          className="group/logo mx-auto mb-7 flex h-14 w-14 items-center justify-center rounded-2xl"
+          className="group/logo mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full"
         >
-          <LogoMark size={44} />
+          <LogoMark size={56} />
         </Link>
-        <div className="paper relative rounded-3xl p-7 sm:p-9">
-          <Tape color={tape} width={96} height={22} />
+        <div className="panel rounded-[2rem] px-6 py-8 sm:px-9 sm:py-10">
           <header className="mb-7 text-center">
-            <h1 className="t-page-title text-balance text-text-1">{title}</h1>
-            {eyebrow && <p className="t-label mt-2">{eyebrow}</p>}
+            <h1 className="text-balance text-[2.125rem] font-bold leading-[1.05] tracking-[-0.03em] text-text-1 sm:text-[2.5rem]">
+              {title}
+            </h1>
+            {subtitle && <p className="t-body mt-2 text-text-2">{subtitle}</p>}
           </header>
           {children}
         </div>
 
         {footer && (
-          <div className="mt-5 text-center text-xs leading-relaxed text-text-3">{footer}</div>
+          <div className="mt-5 text-center text-[0.9375rem] leading-relaxed text-text-2">
+            {footer}
+          </div>
         )}
       </motion.div>
     </main>
@@ -56,7 +57,7 @@ export function AuthLink({ href, children }: { href: string; children: React.Rea
   return (
     <Link
       href={href}
-      className="font-semibold text-text-2 underline underline-offset-2 hover:text-text-1"
+      className="font-semibold text-text-1 underline underline-offset-[3px] hover:decoration-2"
     >
       {children}
     </Link>
@@ -77,8 +78,8 @@ export function AuthNotice({
       {...enter(0, -4)}
       className={
         tone === "error"
-          ? "rounded-xl border border-red-border bg-red-bg px-4 py-3 text-[13px] font-semibold leading-snug text-red-ink"
-          : "rounded-xl border border-green-line bg-green-soft px-4 py-3 text-[13px] font-semibold leading-snug text-green-ink"
+          ? "rounded-[1.125rem] bg-red-bg px-4 py-3 text-[0.9375rem] font-semibold leading-snug text-red-ink"
+          : "rounded-[1.125rem] bg-mint-soft px-4 py-3 text-[0.9375rem] font-semibold leading-snug text-mint-ink"
       }
     >
       {children}

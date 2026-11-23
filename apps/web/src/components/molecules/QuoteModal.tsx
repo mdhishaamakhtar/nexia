@@ -5,22 +5,24 @@ import Dialog from "@/components/overlays/Dialog";
 import { cn } from "@/lib/utils";
 
 /**
- * The full text of a quote or a memory, pinned up on its own. The words are
- * the point, so they are set large and everything else steps back to a label.
+ * The full text of a quote or a memory, on a sheet of its own. The words are
+ * the point, so they are set large and everything else steps back.
  *
- * A quote keeps the lavender wash and the hanging mark and is signed with the
- * person's name — these are their words. A memory stays on the plain well with
- * no mark and says who it is shared with — it is yours.
+ * A quote is theirs: the sheet takes the person's colour and is signed with
+ * their name. A memory is yours: it stays on white and says who it is with.
  */
 export default function QuoteModal({
   text,
   person,
+  personClassName,
   onClose,
   variant = "quote",
 }: {
   /** Null keeps the dialog closed, so its exit can play. */
   text: string | null;
   person: string;
+  /** The `person-*` class of whoever said it, so a quote takes their colour. */
+  personClassName?: string;
   onClose: () => void;
   variant?: "quote" | "memory";
 }) {
@@ -33,41 +35,34 @@ export default function QuoteModal({
     <Dialog
       open={text !== null}
       onClose={onClose}
-      eyebrow={isQuote ? "In their words" : `A memory with ${person}`}
+      title={isQuote ? undefined : `A memory with ${person}`}
       titleId={titleId}
-      tape={isQuote ? "lavender" : "peach"}
-      tone={isQuote ? "lavender" : "sunk"}
+      tone={isQuote ? "person" : "plain"}
       showClose
-      className="max-w-xl"
+      className={cn("max-w-xl", isQuote && personClassName)}
     >
-      <h2 id={titleId} className="sr-only">
-        {isQuote ? `${person}, in their words` : `A memory with ${person}`}
-      </h2>
-      <figure className={cn("relative", isQuote && "pl-10 sm:pl-12")}>
-        {isQuote && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute -left-1 -top-3 select-none text-[4.5rem] font-extrabold leading-none text-lavender-ink/30"
-          >
-            &ldquo;
-          </span>
-        )}
+      {isQuote && (
+        <h2 id={titleId} className="sr-only">
+          {person}, in their words
+        </h2>
+      )}
+      <figure>
         <blockquote>
           <p
             className={cn(
-              "whitespace-pre-line break-words text-pretty font-semibold tracking-tight text-text-1",
-              long ? "text-lg leading-relaxed" : "text-xl leading-snug sm:text-2xl"
+              "whitespace-pre-line break-words text-pretty",
+              isQuote
+                ? cn(
+                    "font-bold tracking-[-0.02em]",
+                    long ? "text-xl leading-snug" : "text-2xl leading-[1.2] sm:text-[2rem]"
+                  )
+                : "text-[1.0625rem] leading-relaxed sm:text-lg"
             )}
           >
             {text}
           </p>
         </blockquote>
-        {isQuote && (
-          <figcaption className="mt-5 flex items-center gap-2.5 text-sm font-bold text-lavender-ink">
-            <span aria-hidden="true" className="h-0.5 w-6 rounded-full bg-lavender-ink/40" />
-            {person}
-          </figcaption>
-        )}
+        {isQuote && <figcaption className="mt-5 text-base font-semibold">{person}</figcaption>}
       </figure>
     </Dialog>
   );

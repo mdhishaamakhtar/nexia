@@ -27,7 +27,7 @@ export default function Textarea({
         aria-invalid={invalid}
         aria-describedby={describedBy}
         className={cn(
-          "field w-full resize-y px-4 py-3 leading-relaxed",
+          "field w-full resize-y px-4 py-3 leading-normal",
           error && "field-error",
           className
         )}

@@ -16,7 +16,7 @@ import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ChatHeader } from "@/features/chat/components/chat-header";
 import { ChatEmptyState } from "@/features/chat/components/chat-empty-state";
 import { ChatMessage } from "@/features/chat/components/chat-message";
-import { NexiaAvatar } from "@/shared/ui/AIIcons";
+import { LogoMark } from "@/components/atoms/Logo";
 import { EASE_OUT, enter } from "@/shared/ui/motion";
 
 function ThinkingIndicator() {
@@ -26,10 +26,10 @@ function ThinkingIndicator() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3, ease: EASE_OUT }}
-      className="flex w-full items-center gap-2 pl-0.5"
+      className="flex w-full items-center gap-2"
     >
-      <NexiaAvatar size={18} />
-      <span className="text-[13px] font-bold text-text-3">Thinking</span>
+      <LogoMark size={18} />
+      <span className="text-[0.9375rem] font-semibold text-text-3">Thinking</span>
       <span className="flex items-center gap-1" aria-hidden="true">
         <span className="streaming-dot" style={{ animationDelay: "0ms" }} />
         <span className="streaming-dot" style={{ animationDelay: "150ms" }} />
@@ -118,10 +118,13 @@ export default function ChatPage() {
               <motion.div
                 role="alert"
                 {...enter(0, 4)}
-                className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-red-border bg-red-bg px-4 py-3"
+                className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[1.375rem] bg-red-bg py-2.5 pl-4.5 pr-2.5"
               >
-                <AlertCircle className="h-4 w-4 shrink-0 text-red-ink" aria-hidden="true" />
-                <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-red-ink">
+                <AlertCircle
+                  className="h-[1.125rem] w-[1.125rem] shrink-0 text-red-ink"
+                  aria-hidden="true"
+                />
+                <p className="min-w-0 flex-1 text-[0.9375rem] font-semibold leading-snug text-red-ink">
                   {problem.message}
                 </p>
                 {problem.retry ? (
@@ -155,7 +158,6 @@ export default function ChatPage() {
 
       <ConfirmDialog
         isOpen={confirmingNew}
-        eyebrow="New conversation"
         title="Start over?"
         description="This conversation will be cleared. Your profiles aren't affected."
         confirmLabel="Start over"

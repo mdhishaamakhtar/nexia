@@ -1,27 +1,22 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import Tape, { type TapeColor } from "@/components/atoms/Tape";
 
 /**
- * A pinned note on the page itself, for the states a screen can land in
- * instead of its content: not found, can't load, nothing here yet. It is the
- * in-page twin of the Dialog — same tape, eyebrow, title and actions — so an
- * empty or broken state still looks like part of the scrapbook.
+ * What a screen shows in place of its content: not found, can't load, nothing
+ * here yet. A neutral panel with a title, a line of help and the way out. Three
+ * small shapes sit above the title so an empty state still looks like Nexia
+ * rather than an error page.
  */
 export default function StatusNote({
-  eyebrow,
   title,
   children,
   actions,
-  tape = "lavender",
   headingLevel = "h2",
   className,
 }: {
-  eyebrow?: string;
   title: string;
   children?: ReactNode;
   actions?: ReactNode;
-  tape?: TapeColor;
   headingLevel?: "h1" | "h2";
   className?: string;
 }) {
@@ -29,18 +24,31 @@ export default function StatusNote({
   return (
     <div
       className={cn(
-        "paper relative mx-auto max-w-md rounded-3xl px-7 pb-7 pt-9 text-center sm:px-9",
+        "panel mx-auto max-w-lg rounded-[2rem] px-7 py-10 text-center sm:px-10 sm:py-12",
         className
       )}
     >
-      <Tape color={tape} width={92} height={22} tilt={-2.5} />
-      {eyebrow && <p className="t-label mb-2">{eyebrow}</p>}
+      <svg
+        viewBox="0 0 132 48"
+        aria-hidden="true"
+        focusable="false"
+        className="mx-auto mb-6 h-12 w-[8.25rem]"
+      >
+        <circle cx="24" cy="24" r="22" fill="var(--sky)" />
+        <rect x="46" y="4" width="40" height="40" rx="14" fill="var(--butter)" />
+        <g fill="var(--pink)">
+          <circle cx="98" cy="14" r="12" />
+          <circle cx="118" cy="14" r="12" />
+          <circle cx="98" cy="34" r="12" />
+          <circle cx="118" cy="34" r="12" />
+        </g>
+      </svg>
       <Heading className="t-section-title text-balance text-text-1">{title}</Heading>
       {children && (
-        <div className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-text-2">{children}</div>
+        <div className="t-body mx-auto mt-2.5 max-w-sm text-pretty text-text-2">{children}</div>
       )}
       {actions && (
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">{actions}</div>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-2">{actions}</div>
       )}
     </div>
   );

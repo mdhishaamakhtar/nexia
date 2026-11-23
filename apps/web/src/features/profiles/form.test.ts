@@ -1,7 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { makeFullProfile } from "@test/fixtures";
 import { profileFormSchema, toFormValues, toProfilePayload, withItem } from "./form";
-import { tapeFor, tiltFor } from "./identity";
+import { PERSON_COLORS } from "@nexia/shared/brand";
+import { identityFor, PERSON_SHAPES } from "./identity";
+import { SHAPE_PARTS, shapeSvg } from "./shapes";
 import { FIELD_LABELS, PROFILE_SECTIONS } from "./sections";
 
 describe("list items", () => {
@@ -80,11 +82,50 @@ describe("validation", () => {
 });
 
 describe("identity", () => {
-  test("a person's tape and tilt depend only on their id", () => {
-    expect(tapeFor(3)).toEqual(tapeFor(3));
-    expect(tapeFor(-3)).toEqual(tapeFor(3));
-    expect(tapeFor(0)).not.toEqual(tapeFor(1));
-    expect(tiltFor(8)).toBe(tiltFor(13));
+  test("a person's colour and shape depend only on their id", () => {
+    expect(identityFor(3)).toEqual(identityFor(3));
+    expect(identityFor(-3)).toEqual(identityFor(3));
+    expect(identityFor(10)).toEqual({ color: "lilac", shape: "flower", className: "person-lilac" });
+  });
+
+  test("an id that isn't a number still gets a colour and a shape", () => {
+    expect(identityFor(Number.NaN)).toEqual(identityFor(0));
+    expect(identityFor(Number.POSITIVE_INFINITY)).toEqual(identityFor(0));
+    expect(identityFor(2.9)).toEqual(identityFor(2));
+  });
+
+  test("two people added one after the other share neither colour nor shape", () => {
+    for (let id = 0; id < 60; id++) {
+      const a = identityFor(id);
+      const b = identityFor(id + 1);
+      expect(a.color).not.toBe(b.color);
+      expect(a.shape).not.toBe(b.shape);
+    }
+  });
+
+  test("the pairing only repeats after every colour has met every shape", () => {
+    const pairs = new Set(
+      Array.from({ length: 42 }, (_, id) => `${identityFor(id).color}/${identityFor(id).shape}`)
+    );
+    expect(pairs.size).toBe(PERSON_COLORS.length * PERSON_SHAPES.length);
+    expect(identityFor(42)).toEqual(identityFor(0));
+  });
+});
+
+describe("shapes", () => {
+  test("every shape is drawn, and as an image it is one colour on a 100-unit grid", () => {
+    for (const shape of PERSON_SHAPES) {
+      expect(SHAPE_PARTS[shape].length).toBeGreaterThan(0);
+      const svg = shapeSvg(shape, "#a58cf5");
+      expect(svg).toContain('viewBox="0 0 100 100"');
+      expect(svg).toContain('<g fill="#a58cf5">');
+    }
+  });
+
+  test("the diamond is a turned square, and the hexagon's corners are rounded by its stroke", () => {
+    expect(shapeSvg("diamond", "#000")).toContain('transform="rotate(45 50 50)"');
+    expect(shapeSvg("hexagon", "#ff7fae")).toContain('stroke="#ff7fae" stroke-width="10"');
+    expect(shapeSvg("circle", "#000", 64)).toContain('width="64" height="64"');
   });
 });
 

@@ -1,11 +1,14 @@
-import { Music } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PERSON_COLORS } from "@nexia/shared/brand";
+import { ArrowRight } from "lucide-react";
 import Button from "@/components/atoms/Button";
 import Logo from "@/components/atoms/Logo";
 import SignedInRedirect from "@/components/atoms/SignedInRedirect";
-import Tape, { type TapeColor } from "@/components/atoms/Tape";
 import PageShell from "@/components/layout/PageShell";
+import Avatar, { Shape } from "@/features/profiles/components/Avatar";
+import { identityFor } from "@/features/profiles/identity";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Nexia — Your Digital Slambook",
@@ -13,59 +16,34 @@ export const metadata: Metadata = {
     "Capture the people who matter most. Store rich profiles for your friends, family, and connections — then ask anything about them.",
 };
 
-/** What the product does, as one sheet with three columns rather than three feature cards. */
-const FEATURES: Array<{ title: string; body: string; tape: TapeColor }> = [
+/** What the product does: three things, said plainly, each with its own shape. */
+const FEATURES = [
   {
     title: "Rich profiles",
     body: "Birthdays, zodiac signs, top songs, favourite films, food quirks, quotes, memories: every detail that makes them them.",
-    tape: "lavender",
+    id: 3,
   },
   {
     title: "Ask Nexia",
     body: "Ask who loves jazz, who has a nut allergy, or whose birthday is next. It answers from your slambook and nothing else.",
-    tape: "peach",
+    id: 22,
   },
   {
     title: "Always find them",
     body: "Search by name, filter by how you know them. Your whole circle, organised and easy to look up.",
-    tape: "blue",
+    id: 30,
   },
-];
+] as const;
 
-// Fictional people, shaped exactly like a real card so the page shows the
-// product rather than describing it.
+// Fictional people, drawn exactly like a real card so the page shows the
+// product rather than describing it. Each id picks a colour and a shape the
+// way a real profile's would (see identity.ts).
 const SAMPLES = [
-  {
-    initial: "A",
-    name: "Alex Chen",
-    meta: "Gemini · Friend",
-    tags: ["coffee-lover", "bookworm"],
-    song: { name: "Yellow", artist: "Coldplay" },
-    tape: "peach" as const,
-    tilt: "-0.8deg",
-    avatarTilt: -3,
-  },
-  {
-    initial: "S",
-    name: "Sana Mirza",
-    meta: "Pisces · Best friend",
-    tags: ["artist", "overthinker", "cat-person"],
-    song: { name: "Liability", artist: "Lorde" },
-    tape: "lavender" as const,
-    tilt: "0.4deg",
-    avatarTilt: 2,
-  },
-  {
-    initial: "R",
-    name: "Rohan Verma",
-    meta: "Leo · Classmate",
-    tags: ["gym-rat", "foodie"],
-    song: { name: "HUMBLE.", artist: "Kendrick Lamar" },
-    tape: "blue" as const,
-    tilt: "-0.5deg",
-    avatarTilt: -2,
-  },
-];
+  { id: 1, name: "Alex Chen", who: "Friend · he/him", chips: ["Gemini", "coffee-lover"] },
+  { id: 10, name: "Sana Mirza", who: "Friend · she/her", chips: ["Pisces", "artist"] },
+  { id: 23, name: "Ammi", who: "Family", chips: ["Cancer", "gardener"] },
+  { id: 32, name: "Rohan Verma", who: "Classmate · he/him", chips: ["Leo", "foodie"] },
+] as const;
 
 const STORABLE = [
   "Birthday & zodiac",
@@ -84,141 +62,144 @@ const STORABLE = [
   "How you know them",
 ];
 
+function SampleCard({ sample }: { sample: (typeof SAMPLES)[number] }) {
+  return (
+    <li
+      className={cn(
+        identityFor(sample.id).className,
+        "card-person flex min-h-[12.5rem] flex-col rounded-[1.75rem] p-5 sm:min-h-[14rem]"
+      )}
+    >
+      <Avatar id={sample.id} name={sample.name} className="h-14 w-14 sm:h-16 sm:w-16" />
+      <div className="mt-auto pt-5">
+        <p className="text-xl font-bold leading-[1.1] tracking-[-0.02em] sm:text-[1.375rem]">
+          {sample.name}
+        </p>
+        <p className="mt-1 text-sm font-medium sm:text-[0.9375rem]">{sample.who}</p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {sample.chips.map((chip) => (
+            <span key={chip} className="chip chip-on-color h-[1.875rem] px-3 text-[0.8125rem]">
+              {chip}
+            </span>
+          ))}
+        </div>
+      </div>
+    </li>
+  );
+}
+
 export default function LandingPage() {
   return (
     <>
       <SignedInRedirect />
-      <nav
-        aria-label="Main"
-        className="sticky top-0 z-40 h-(--navbar-h) border-b border-line bg-surface"
-      >
+      <nav aria-label="Main" className="h-(--navbar-h)">
         <PageShell width="wide" className="flex h-full items-center justify-between">
-          <Link href="/" className="group/logo -ml-2 inline-flex h-11 items-center rounded-xl px-2">
+          <Link
+            href="/"
+            className="group/logo -ml-2 inline-flex h-11 items-center rounded-full px-2"
+          >
             <Logo />
           </Link>
-          <Button href="/login" size="sm">
+          <Button href="/login" variant="secondary" size="sm" className="px-5">
             Sign in
           </Button>
         </PageShell>
       </nav>
 
       <main id="main">
-        <PageShell width="wide" as="section" className="pb-14 pt-16 text-center sm:pt-24">
-          <h1 className="t-display mx-auto max-w-3xl text-balance text-text-1">
-            Capture the people
-            <br />
-            <span className="text-text-3">who matter most.</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-lg text-base leading-relaxed text-text-2 sm:text-lg">
-            Keep the small things you&apos;d hate to forget: their songs, their quirks, the stories.
-            Then just ask when you need them.
-          </p>
-          <Button href="/login#signup" size="lg" className="mt-9">
-            Start your slambook
-          </Button>
+        <PageShell
+          width="wide"
+          as="section"
+          className="grid items-center gap-x-12 gap-y-12 pb-20 pt-10 sm:pt-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:pb-28 lg:pt-20"
+        >
+          <div>
+            <h1 className="t-display text-balance text-text-1">
+              Capture the people who matter most.
+            </h1>
+            <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-text-2 sm:text-xl">
+              Keep the small things you&apos;d hate to forget: their songs, their quirks, the
+              stories. Then just ask when you need them.
+            </p>
+            <Button href="/login#signup" size="lg" className="mt-9">
+              Start your slambook
+              <ArrowRight className="h-5 w-5" strokeWidth={2.4} aria-hidden="true" />
+            </Button>
+          </div>
+
+          {/* Two columns of cards, the second set a step lower, so the group
+              reads as people gathered rather than a table. */}
+          <div>
+            <h2 className="sr-only">What a profile looks like</h2>
+            <ul className="grid grid-cols-2 gap-3 sm:gap-4 [&>li:nth-child(even)]:translate-y-6 sm:[&>li:nth-child(even)]:translate-y-10">
+              {SAMPLES.map((sample) => (
+                <SampleCard key={sample.name} sample={sample} />
+              ))}
+            </ul>
+          </div>
         </PageShell>
 
-        {/* Sample cards. One on a phone — three tilted cards stacked vertically
-            read as a mistake rather than a scrapbook. */}
-        <PageShell width="wide" as="section" className="pb-20">
-          <h2 className="sr-only">What a profile looks like</h2>
-          <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {SAMPLES.map((sample, i) => (
-              <li
-                key={sample.name}
-                className={`paper relative rounded-2xl p-6 text-left ${i > 0 ? "hidden md:block" : ""}`}
-                style={{ transform: `rotate(${sample.tilt})` }}
-              >
-                <Tape color={sample.tape} width={80} />
-                <div className="mb-4 flex items-center gap-3">
-                  <span
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-lavender text-lg font-extrabold text-lavender-ink"
-                    style={{ transform: `rotate(${sample.avatarTilt}deg)` }}
-                    aria-hidden="true"
-                  >
-                    {sample.initial}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-text-1">{sample.name}</p>
-                    <p className="text-xs text-text-3">{sample.meta}</p>
-                  </div>
-                </div>
-                <div className="mb-4 flex flex-wrap gap-1.5">
-                  {sample.tags.map((tag) => (
-                    <span key={tag} className="sticker-tag px-2.5 py-1 text-xs font-semibold">
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3 rounded-xl border border-peach-line bg-peach-soft p-3">
-                  <Music className="h-4 w-4 shrink-0 text-peach-ink" aria-hidden="true" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-text-1">{sample.song.name}</p>
-                    <p className="text-xs text-text-2">{sample.song.artist}</p>
-                  </div>
+        <PageShell
+          width="wide"
+          as="section"
+          className="grid gap-x-12 gap-y-8 pb-20 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:pb-28"
+        >
+          <h2 className="t-page-title text-text-1">What it&apos;s for</h2>
+          <ul className="flex flex-col gap-9">
+            {FEATURES.map(({ title, body, id }) => (
+              <li key={title} className="flex gap-5">
+                <Shape id={id} className="mt-0.5 h-11 w-11" />
+                <div>
+                  <h3 className="t-section-title text-text-1">{title}</h3>
+                  <p className="t-body mt-1.5 max-w-xl text-pretty text-text-2">{body}</p>
                 </div>
               </li>
             ))}
           </ul>
         </PageShell>
 
-        <PageShell width="wide" as="section" className="pb-20">
-          <div className="paper relative rounded-3xl px-7 py-9 sm:px-10">
-            <Tape color="lavender" width={92} height={22} />
-            <h2 className="t-section-title mb-8 text-center text-text-1">What it&apos;s for</h2>
-            <ul className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-0 md:divide-x md:divide-line">
-              {FEATURES.map(({ title, body, tape }) => (
-                <li key={title} className="md:px-8 md:first:pl-0 md:last:pr-0">
-                  <div className="mb-3 flex items-center gap-3">
-                    <span
-                      className="tape-mark"
-                      style={{ background: `var(--${tape})` }}
-                      aria-hidden="true"
-                    />
-                    <h3 className="text-base font-bold text-text-1">{title}</h3>
-                  </div>
-                  <p className="t-body text-text-2">{body}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <PageShell width="wide" as="section" className="pb-20 lg:pb-28">
+          <h2 className="t-page-title max-w-3xl text-balance text-text-1">
+            Everything that makes them them.
+          </h2>
+          <ul className="mt-8 flex flex-wrap gap-2 sm:gap-2.5">
+            {STORABLE.map((item, i) => (
+              <li
+                key={item}
+                className={cn(
+                  `person-${PERSON_COLORS[i % PERSON_COLORS.length]}`,
+                  "card-person rounded-full px-4 py-2.5 text-base font-semibold sm:px-5 sm:py-3 sm:text-lg"
+                )}
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
         </PageShell>
 
         <PageShell width="wide" as="section" className="pb-20">
-          <div className="paper rounded-3xl p-7 sm:p-10">
-            <h2 className="t-section-title mb-5 text-text-1">
-              Everything that makes them <span className="italic text-text-3">them.</span>
-            </h2>
-            <ul className="flex flex-wrap gap-2">
-              {STORABLE.map((item) => (
-                <li key={item} className="sticker-chip px-3 py-1.5 text-xs font-semibold">
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </PageShell>
-
-        <PageShell width="wide" as="section" className="pb-24">
-          <div className="paper relative rounded-3xl p-10 text-center sm:p-12">
-            <Tape color="peach" width={128} height={26} />
-            <h2 className="t-page-title text-balance text-text-1">Start your slambook today.</h2>
-            <p className="mx-auto mt-3 max-w-sm text-sm text-text-2">
-              Free to use. No credit card. Your people, beautifully kept.
-            </p>
-            <Button href="/login#signup" size="lg" className="mt-8">
+          <div className="person-butter card-person flex flex-wrap items-end justify-between gap-x-12 gap-y-8 rounded-[2rem] px-6 py-10 sm:rounded-[2.5rem] sm:p-14">
+            <div className="max-w-2xl">
+              <h2 className="t-display text-balance">Start your slambook today.</h2>
+              <p className="mt-5 text-lg font-medium sm:text-xl">
+                Free to use. No credit card. Your people, beautifully kept.
+              </p>
+            </div>
+            <Button href="/login#signup" size="lg">
               Create your account
             </Button>
-            <p className="mx-auto mt-6 max-w-md text-xs leading-relaxed text-text-3">
-              Your profiles are yours. When you ask Nexia a question, the profiles it reads to
-              answer are sent to the AI services that power it.
-            </p>
           </div>
+          <p className="mt-5 max-w-2xl text-sm leading-relaxed text-text-3">
+            Your profiles are yours. When you ask Nexia a question, the profiles it reads to answer
+            are sent to the AI services that power it.
+          </p>
         </PageShell>
       </main>
 
-      <footer className="border-t border-line">
-        <PageShell width="wide" className="flex h-16 items-center justify-between text-xs">
+      <footer>
+        <PageShell
+          width="wide"
+          className="flex h-20 items-center justify-between gap-4 text-[0.9375rem]"
+        >
           <Logo size="sm" />
           <span className="text-text-3">
             Made by{" "}
@@ -226,7 +207,7 @@ export default function LandingPage() {
               href="https://hishaam.dev"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-text-2 hover:underline"
+              className="font-semibold text-text-1 underline underline-offset-[3px] hover:decoration-2"
             >
               Hishaam Akhtar
             </a>
